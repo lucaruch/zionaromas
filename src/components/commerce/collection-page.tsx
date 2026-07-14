@@ -14,7 +14,7 @@ export function CollectionPage({
   products: Product[];
 }) {
   return (
-    <section className="bg-[#f7f5ef] pb-20 pt-28">
+    <section className="bg-black pb-20 pt-28 text-white">
       <div className="arabic-pattern border-b border-gold/20 bg-black text-white">
         <div className="container py-16">
           <Badge className="border-gold/40 bg-black/40 text-gold">{eyebrow}</Badge>
@@ -25,7 +25,7 @@ export function CollectionPage({
       <div className="container pt-12">
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {products.map((product) => (
-            <ProductCard key={product.slug} product={product} />
+            <ProductCard key={product.slug} product={product} dark />
           ))}
         </div>
       </div>

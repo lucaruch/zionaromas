@@ -24,7 +24,7 @@ export default async function ProductsPage({
   });
 
   return (
-    <section className="bg-[#f7f5ef] pb-20 pt-28">
+    <section className="bg-black pb-20 pt-28 text-white">
       <div className="arabic-pattern border-b border-gold/20 bg-black text-white">
         <div className="container py-16">
           <Badge className="border-gold/40 bg-black/40 text-gold">Catálogo</Badge>
@@ -46,40 +46,40 @@ export default async function ProductsPage({
 
       <div className="container pt-12">
         <div className="grid gap-8 lg:grid-cols-[280px_1fr]">
-          <aside className="h-max border border-black/10 bg-white p-5 shadow-sm">
+          <aside className="h-max border border-gold/20 bg-white/[0.035] p-5 shadow-[0_24px_80px_rgba(0,0,0,.35)]">
             <h2 className="font-display text-2xl">Filtros</h2>
             <div className="luxury-divider my-5" />
             <div className="grid gap-7">
               <div>
-                <p className="mb-3 text-xs uppercase tracking-[0.16em] text-black/45">Categoria</p>
+                <p className="mb-3 text-xs uppercase tracking-[0.16em] text-gold/70">Categoria</p>
                 <div className="grid gap-2">
                   {categories.map((category) => (
-                    <a key={category.slug} href={`/produtos?categoria=${category.slug}`} className="rounded-full px-3 py-2 text-sm transition hover:bg-black hover:text-gold">
+                    <a key={category.slug} href={`/produtos?categoria=${category.slug}`} className="rounded-full px-3 py-2 text-sm text-white/70 transition hover:bg-gold hover:text-black">
                       {category.name}
                     </a>
                   ))}
                 </div>
               </div>
               <div>
-                <p className="mb-3 text-xs uppercase tracking-[0.16em] text-black/45">Preço</p>
-                <div className="grid gap-2 text-sm text-black/65">
+                <p className="mb-3 text-xs uppercase tracking-[0.16em] text-gold/70">Preço</p>
+                <div className="grid gap-2 text-sm text-white/65">
                   <span>Até R$ 200</span>
                   <span>R$ 200 a R$ 400</span>
                   <span>Acima de R$ 400</span>
                 </div>
               </div>
               <div>
-                <p className="mb-3 text-xs uppercase tracking-[0.16em] text-black/45">Disponibilidade</p>
-                <label className="flex items-center gap-2 text-sm">
+                <p className="mb-3 text-xs uppercase tracking-[0.16em] text-gold/70">Disponibilidade</p>
+                <label className="flex items-center gap-2 text-sm text-white/70">
                   <input type="checkbox" defaultChecked className="accent-gold" /> Em estoque
                 </label>
               </div>
             </div>
           </aside>
           <div>
-            <div className="mb-6 flex flex-col gap-3 border-b border-black/10 pb-5 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-black/55">{filtered.length} produtos encontrados</p>
-              <select className="rounded-full border border-black/10 bg-white px-4 py-2 text-sm outline-none transition focus:border-gold focus:ring-4 focus:ring-gold/10">
+            <div className="mb-6 flex flex-col gap-3 border-b border-gold/15 pb-5 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-white/55">{filtered.length} produtos encontrados</p>
+              <select className="rounded-full border border-gold/20 bg-black px-4 py-2 text-sm text-white outline-none transition focus:border-gold focus:ring-4 focus:ring-gold/10">
                 <option>Mais relevantes</option>
                 <option>Menor preço</option>
                 <option>Maior preço</option>
@@ -88,7 +88,7 @@ export default async function ProductsPage({
             </div>
             <div className="grid gap-8 sm:grid-cols-2 xl:grid-cols-3">
               {filtered.map((product) => (
-                <ProductCard key={product.slug} product={product} />
+                <ProductCard key={product.slug} product={product} dark />
               ))}
             </div>
           </div>
