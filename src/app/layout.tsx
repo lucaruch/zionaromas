@@ -1,8 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { CartProvider } from "@/components/commerce/cart-provider";
-import { SiteFooter } from "@/components/layout/site-footer";
-import { SiteHeader } from "@/components/layout/site-header";
 import { PwaRegister } from "@/components/layout/pwa-register";
+import { SiteChrome } from "@/components/layout/site-chrome";
 import { defaultMetadata } from "@/lib/seo";
 import "./globals.css";
 
@@ -20,9 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <CartProvider>
           <PwaRegister />
-          <SiteHeader />
-          <main>{children}</main>
-          <SiteFooter />
+          <SiteChrome>{children}</SiteChrome>
         </CartProvider>
       </body>
     </html>
