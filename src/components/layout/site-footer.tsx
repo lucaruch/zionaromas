@@ -39,7 +39,7 @@ const columns = [
 
 export function SiteFooter() {
   return (
-    <footer className="bg-black text-white">
+    <footer className="arabic-pattern border-t border-gold/20 bg-black text-white">
       <div className="container grid gap-10 py-16 lg:grid-cols-[1.1fr_1.2fr]">
         <div>
           <Image
@@ -88,7 +88,7 @@ export function SiteFooter() {
           ))}
         </div>
       </div>
-      <div className="border-t border-white/10">
+      <div className="border-t border-gold/15 bg-black/55">
         <div className="container grid gap-6 py-8 md:grid-cols-[1fr_auto] md:items-center">
           <form className="flex max-w-xl gap-3">
             <Input

@@ -1,9 +1,10 @@
 export default function TermsPage() {
   return (
-    <section className="bg-white pb-20 pt-32">
+    <section className="arabic-pattern bg-black pb-20 pt-32 text-white">
       <div className="container max-w-3xl">
-        <h1 className="font-display text-5xl">Termos de Uso</h1>
-        <div className="mt-8 grid gap-6 leading-8 text-black/62">
+        <p className="text-xs uppercase tracking-[0.22em] text-gold">Condições</p>
+        <h1 className="mt-3 font-display text-5xl">Termos de Uso</h1>
+        <div className="mt-8 grid gap-6 border border-gold/18 bg-white/[0.03] p-8 leading-8 text-white/62">
           <p>
             Ao comprar na ZION AROMAS, o cliente declara que leu e concorda com as condições de compra, pagamento,
             entrega, trocas e atendimento descritas no site.

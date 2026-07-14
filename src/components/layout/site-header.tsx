@@ -68,11 +68,11 @@ export function SiteHeader() {
             ))}
             <div className="group relative py-7">
               <button className="text-sm font-medium transition hover:text-gold">Coleções</button>
-              <div className="pointer-events-none absolute left-1/2 top-full grid w-[620px] -translate-x-1/2 translate-y-3 grid-cols-3 gap-4 rounded-lg border border-black/10 bg-white p-5 text-black opacity-0 shadow-premium transition group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
+              <div className="pointer-events-none absolute left-1/2 top-full grid w-[620px] -translate-x-1/2 translate-y-3 grid-cols-3 gap-4 border border-gold/20 bg-black/95 p-5 text-white opacity-0 shadow-[0_28px_90px_rgba(0,0,0,.55)] backdrop-blur-xl transition group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
                 {collections.map(([label, href]) => (
-                  <Link key={href} href={href} className="rounded-md p-4 hover:bg-pearl">
-                    <p className="font-display text-xl">{label}</p>
-                    <p className="mt-2 text-sm leading-6 text-black/55">Curadoria árabe com oud, âmbar e especiarias.</p>
+                  <Link key={href} href={href} className="border border-transparent p-4 transition hover:border-gold/30 hover:bg-white/[0.04]">
+                    <p className="font-display text-xl text-gold">{label}</p>
+                    <p className="mt-2 text-sm leading-6 text-white/55">Curadoria árabe com oud, âmbar e especiarias.</p>
                   </Link>
                 ))}
               </div>
@@ -93,13 +93,13 @@ export function SiteHeader() {
           </div>
         </div>
         {mobileOpen ? (
-          <nav className="border-t border-black/10 bg-white p-4 text-black lg:hidden">
+          <nav className="border-t border-gold/20 bg-black/95 p-4 text-white backdrop-blur-xl lg:hidden">
             <div className="container grid gap-2">
               {nav.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="rounded-md px-3 py-3 hover:bg-pearl"
+                  className="border border-transparent px-3 py-3 hover:border-gold/25 hover:bg-white/[0.04] hover:text-gold"
                   onClick={() => setMobileOpen(false)}
                 >
                   {item.label}

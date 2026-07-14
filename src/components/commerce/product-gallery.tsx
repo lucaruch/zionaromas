@@ -14,13 +14,13 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
           <button
             key={image}
             onClick={() => setSelected(image)}
-            className="relative h-20 w-20 overflow-hidden rounded-md border border-black/10 bg-pearl transition hover:border-gold"
+            className="relative h-20 w-20 overflow-hidden border border-gold/20 bg-black transition hover:border-gold"
           >
             <Image src={image} alt={name} fill sizes="80px" className="object-cover" />
           </button>
         ))}
       </div>
-      <div className="group relative order-1 aspect-[4/5] overflow-hidden rounded-lg bg-pearl md:order-2">
+      <div className="group relative order-1 aspect-[4/5] overflow-hidden border border-gold/20 bg-black md:order-2">
         <Image
           src={selected}
           alt={name}

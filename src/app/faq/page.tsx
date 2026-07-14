@@ -27,17 +27,18 @@ const faqs = [
 
 export default function FaqPage() {
   return (
-    <section className="bg-white pb-20 pt-32">
+    <section className="arabic-pattern bg-black pb-20 pt-32 text-white">
       <div className="container max-w-4xl">
-        <h1 className="font-display text-5xl">FAQ</h1>
-        <p className="mt-4 leading-7 text-black/60">
+        <p className="text-xs uppercase tracking-[0.22em] text-gold">Atendimento</p>
+        <h1 className="mt-3 font-display text-5xl">FAQ</h1>
+        <p className="mt-4 leading-7 text-white/60">
           Dúvidas frequentes sobre perfumes árabes, compra, entrega e atendimento.
         </p>
         <div className="mt-10 grid gap-4">
           {faqs.map(([question, answer]) => (
-            <details key={question} className="rounded-lg border border-black/10 p-6">
-              <summary className="cursor-pointer font-semibold">{question}</summary>
-              <p className="mt-4 leading-7 text-black/60">{answer}</p>
+            <details key={question} className="border border-gold/18 bg-white/[0.03] p-6">
+              <summary className="cursor-pointer font-semibold text-gold">{question}</summary>
+              <p className="mt-4 leading-7 text-white/60">{answer}</p>
             </details>
           ))}
         </div>

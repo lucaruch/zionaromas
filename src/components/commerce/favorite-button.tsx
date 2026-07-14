@@ -23,7 +23,7 @@ export function FavoriteButton({ slug }: { slug: string }) {
     <button
       aria-label="Favoritar produto"
       onClick={toggle}
-      className="grid h-10 w-10 place-items-center rounded-full border border-black/10 bg-white/90 text-black shadow-sm backdrop-blur transition hover:-translate-y-0.5 hover:border-gold hover:text-gold-deep"
+      className="grid h-10 w-10 place-items-center rounded-full border border-gold/25 bg-black/75 text-white shadow-sm backdrop-blur transition hover:-translate-y-0.5 hover:border-gold hover:text-gold"
     >
       <Heart className={cn("h-4 w-4", active && "fill-gold text-gold-deep")} />
     </button>
