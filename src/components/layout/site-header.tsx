@@ -34,8 +34,8 @@ export function SiteHeader() {
         className={cn(
           "fixed left-0 right-0 top-0 z-40 border-b transition-all duration-300",
           solid
-            ? "border-black/10 bg-white/92 text-black shadow-sm backdrop-blur-xl"
-            : "border-white/10 bg-transparent text-white"
+            ? "border-gold/20 bg-black/92 text-white shadow-sm backdrop-blur-xl"
+            : "border-white/10 bg-black/45 text-white backdrop-blur-md"
         )}
       >
         <div className="container flex h-20 items-center justify-between gap-4">
@@ -76,7 +76,7 @@ export function SiteHeader() {
               onClick={() => setSearchOpen(true)}
               className={cn(
                 "grid h-10 w-10 place-items-center rounded-full border transition",
-                solid ? "border-black/10 bg-white" : "border-white/20 bg-white/10 backdrop-blur"
+                solid ? "border-white/15 bg-white/10" : "border-white/20 bg-white/10"
               )}
               aria-label="Buscar"
             >
@@ -86,7 +86,7 @@ export function SiteHeader() {
               href="/minha-conta"
               className={cn(
                 "hidden h-10 w-10 place-items-center rounded-full border transition sm:grid",
-                solid ? "border-black/10 bg-white" : "border-white/20 bg-white/10 backdrop-blur"
+                solid ? "border-white/15 bg-white/10" : "border-white/20 bg-white/10"
               )}
               aria-label="Minha conta"
             >

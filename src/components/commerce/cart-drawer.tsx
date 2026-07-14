@@ -16,7 +16,7 @@ export function CartDrawer() {
       <button
         aria-label="Abrir carrinho"
         onClick={() => setOpen(true)}
-        className="relative grid h-10 w-10 place-items-center rounded-full border border-black/10 bg-white text-black transition hover:border-gold"
+        className="relative grid h-10 w-10 place-items-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur transition hover:border-gold hover:text-gold"
       >
         <ShoppingBag className="h-4 w-4" />
         {count > 0 ? (

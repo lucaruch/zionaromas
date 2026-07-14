@@ -12,7 +12,7 @@ export default function AdminDashboardPage() {
   return (
     <div>
       <div className="mb-8">
-        <p className="text-xs uppercase tracking-[0.18em] text-gold-deep">Painel protegido por login</p>
+        <p className="text-xs uppercase tracking-[0.18em] text-gold-deep">Painel administrativo aberto</p>
         <h1 className="mt-3 font-display text-5xl">Dashboard</h1>
       </div>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
