@@ -1,10 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Check, Gem, Sparkles, Truck } from "lucide-react";
+import { ArrowRight, Check, Gem, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ProductCard } from "@/components/commerce/product-card";
-import { categories, products, testimonials } from "@/lib/data";
+import { categories, products } from "@/lib/data";
 
 export default function HomePage() {
   const featured = products.filter((product) => product.featured);
@@ -128,27 +128,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="section-pad bg-black text-white">
-        <div className="container">
-          <div className="mb-10 text-center">
-            <Badge className="border-gold/40 bg-gold/10 text-gold">Depoimentos</Badge>
-            <h2 className="mt-4 font-display text-4xl md:text-5xl">Experiência de boutique</h2>
-            <div className="luxury-divider mx-auto mt-6 max-w-sm" />
-          </div>
-          <div className="grid gap-5 md:grid-cols-3">
-            {testimonials.map((testimonial) => (
-              <figure key={testimonial.name} className="border border-gold/18 bg-white/[0.035] p-7 shadow-[0_24px_80px_rgba(0,0,0,.38)]">
-                <Sparkles className="mb-5 h-5 w-5 text-gold" />
-                <blockquote className="leading-7 text-white/62">"{testimonial.text}"</blockquote>
-                <figcaption className="mt-6">
-                  <p className="font-semibold text-white">{testimonial.name}</p>
-                  <p className="text-sm text-gold">{testimonial.role}</p>
-                </figcaption>
-              </figure>
-            ))}
-          </div>
-        </div>
-      </section>
     </>
   );
 }
