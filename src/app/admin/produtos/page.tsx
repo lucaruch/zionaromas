@@ -1,5 +1,6 @@
 import Image from "next/image";
-import { Eye, Pencil, Package, Search, SlidersHorizontal, ShoppingBag, Trash2, MessageSquare, Ticket } from "lucide-react";
+import { Eye, Pencil, Package, Search, SlidersHorizontal, ShoppingBag, Trash2, MessageSquare, Ticket, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/admin/stat-card";
 import { products } from "@/lib/data";
 import { formatCurrency } from "@/lib/utils";
@@ -20,9 +21,12 @@ export default function AdminProductsPage() {
             <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#252b42]/70">Gestão de produtos</p>
             <h2 className="mt-2 text-2xl font-black">Catálogo da loja</h2>
           </div>
-          <span className="w-max rounded-full bg-[#f3f4f7] px-4 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-[#252b42]">
-            {products.length} itens
-          </span>
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="w-max rounded-full bg-[#f3f4f7] px-4 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-[#252b42]">
+              {products.length} itens
+            </span>
+            <Button size="sm"><Plus className="h-4 w-4" /> Adicionar produto</Button>
+          </div>
         </div>
 
         <div className="grid gap-2 border-b border-black/10 bg-[#fbfbfc] p-4 md:grid-cols-[1fr_160px_152px]">
