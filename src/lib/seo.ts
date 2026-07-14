@@ -9,8 +9,8 @@ export const defaultMetadata: Metadata = {
     template: "%s | ZION AROMAS"
   },
   description:
-    "Loja premium de perfumes autorais, aromas de ambiente, velas e kits sofisticados.",
-  keywords: ["perfume premium", "ZION AROMAS", "aromas de luxo", "velas premium", "difusor"],
+    "Loja premium de perfumes árabes, fragrâncias orientais, oud, âmbar, musk e kits presenteáveis.",
+  keywords: ["perfume árabe", "perfumes árabes", "oud", "musk", "âmbar", "ZION AROMAS", "perfumaria oriental"],
   openGraph: {
     type: "website",
     locale: "pt_BR",

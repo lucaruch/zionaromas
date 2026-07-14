@@ -1,8 +1,28 @@
 const faqs = [
-  ["Como funciona o frete?", "O checkout calcula o frete a partir do CEP e pode ser configurado no painel administrativo."],
-  ["Quais formas de pagamento?", "PIX, cartão e boleto estão previstos no fluxo de checkout."],
-  ["Posso trocar um produto?", "Sim. A política de trocas segue o prazo legal e pode ser ajustada pelo painel."],
-  ["Os produtos são originais?", "Sim. A loja foi estruturada para produtos autorais e curadoria da marca ZION AROMAS."]
+  [
+    "Os perfumes são árabes?",
+    "Sim. A ZION AROMAS trabalha com fragrâncias de inspiração árabe e oriental, com destaque para oud, âmbar, musk, especiarias, rosas e madeiras nobres."
+  ],
+  [
+    "Qual a diferença dos perfumes árabes?",
+    "Eles costumam ter maior intensidade, projeção marcante e notas mais encorpadas. São perfumes pensados para deixar presença e fixar por mais tempo na pele."
+  ],
+  [
+    "Como escolher meu perfume?",
+    "Para fragrâncias intensas, escolha oud e amadeirados. Para algo elegante e levemente adocicado, escolha florais orientais. Para presente, os kits são a opção mais segura."
+  ],
+  [
+    "Como funciona o frete?",
+    "O checkout calcula PAC e SEDEX pelos Correios via Melhor Envio. O prazo e valor aparecem após informar o CEP."
+  ],
+  [
+    "Quais formas de pagamento?",
+    "A loja está preparada para PIX, cartão e boleto. As opções finais podem variar conforme a configuração de pagamento ativa."
+  ],
+  [
+    "Posso trocar um perfume?",
+    "Sim, desde que o produto esteja sem uso, lacrado, na embalagem original e dentro do prazo informado na política de trocas."
+  ]
 ];
 
 export default function FaqPage() {
@@ -10,6 +30,9 @@ export default function FaqPage() {
     <section className="bg-white pb-20 pt-32">
       <div className="container max-w-4xl">
         <h1 className="font-display text-5xl">FAQ</h1>
+        <p className="mt-4 leading-7 text-black/60">
+          Dúvidas frequentes sobre perfumes árabes, compra, entrega e atendimento.
+        </p>
         <div className="mt-10 grid gap-4">
           {faqs.map(([question, answer]) => (
             <details key={question} className="rounded-lg border border-black/10 p-6">

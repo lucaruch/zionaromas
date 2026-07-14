@@ -8,8 +8,8 @@ export default function NewProductsPage() {
   return (
     <CollectionPage
       eyebrow="Novidades"
-      title="Lançamentos recentes"
-      description="Novas assinaturas olfativas e produtos para casa adicionados à curadoria ZION."
+      title="Lançamentos orientais"
+      description="Novas fragrâncias árabes com oud, musk, âmbar, especiarias e florais sofisticados."
       products={products.filter((product) => product.isNew)}
     />
   );

@@ -5,7 +5,7 @@ import { categories, products } from "@/lib/data";
 
 export const metadata: Metadata = {
   title: "Produtos",
-  description: "Catálogo completo de perfumes, velas, difusores e kits premium ZION AROMAS."
+  description: "Catálogo completo de perfumes árabes, oud, musk, âmbar, florais orientais e kits ZION AROMAS."
 };
 
 export default async function ProductsPage({
@@ -28,9 +28,9 @@ export default async function ProductsPage({
       <div className="container">
         <div className="mb-10">
           <Badge>Catálogo</Badge>
-          <h1 className="mt-4 font-display text-5xl">Produtos ZION</h1>
+          <h1 className="mt-4 font-display text-5xl">Perfumes árabes ZION</h1>
           <p className="mt-4 max-w-2xl leading-7 text-black/60">
-            Navegue por categorias, disponibilidade, marcas e faixas de preço com carregamento leve e cards otimizados.
+            Encontre fragrâncias orientais por família olfativa, intensidade, preço e disponibilidade.
           </p>
         </div>
         <div className="grid gap-8 lg:grid-cols-[260px_1fr]">

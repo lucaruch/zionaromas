@@ -8,8 +8,8 @@ export default function BestSellersPage() {
   return (
     <CollectionPage
       eyebrow="Mais vendidos"
-      title="Favoritos dos clientes"
-      description="Produtos com maior procura, alto valor percebido e excelente potencial de recompra."
+      title="Perfumes favoritos dos clientes"
+      description="Fragrâncias árabes com maior procura, excelente fixação e alto valor percebido."
       products={products.filter((product) => product.bestSeller)}
     />
   );

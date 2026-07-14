@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Menu, Search, User } from "lucide-react";
+import { Menu, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CartDrawer } from "@/components/commerce/cart-drawer";
 import { SearchOverlay } from "@/components/layout/search-overlay";
@@ -13,7 +13,14 @@ const nav = [
   { href: "/categorias", label: "Categorias" },
   { href: "/promocoes", label: "Promoções" },
   { href: "/novidades", label: "Novidades" },
-  { href: "/mais-vendidos", label: "Mais vendidos" }
+  { href: "/mais-vendidos", label: "Mais vendidos" },
+  { href: "/sobre", label: "Sobre" }
+];
+
+const collections = [
+  ["Perfumes Árabes", "/produtos?categoria=perfumes-arabes"],
+  ["Oud & Amadeirados", "/produtos?categoria=oud-amadeirados"],
+  ["Florais Orientais", "/produtos?categoria=florais-orientais"]
 ];
 
 export function SiteHeader() {
@@ -62,10 +69,10 @@ export function SiteHeader() {
             <div className="group relative py-7">
               <button className="text-sm font-medium transition hover:text-gold">Coleções</button>
               <div className="pointer-events-none absolute left-1/2 top-full grid w-[620px] -translate-x-1/2 translate-y-3 grid-cols-3 gap-4 rounded-lg border border-black/10 bg-white p-5 text-black opacity-0 shadow-premium transition group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
-                {["Assinaturas Noturnas", "Casa Perfumada", "Presentes Premium"].map((item) => (
-                  <Link key={item} href="/produtos" className="rounded-md p-4 hover:bg-pearl">
-                    <p className="font-display text-xl">{item}</p>
-                    <p className="mt-2 text-sm leading-6 text-black/55">Curadoria elegante com acabamento ZION.</p>
+                {collections.map(([label, href]) => (
+                  <Link key={href} href={href} className="rounded-md p-4 hover:bg-pearl">
+                    <p className="font-display text-xl">{label}</p>
+                    <p className="mt-2 text-sm leading-6 text-black/55">Curadoria árabe com oud, âmbar e especiarias.</p>
                   </Link>
                 ))}
               </div>
@@ -82,16 +89,6 @@ export function SiteHeader() {
             >
               <Search className="h-4 w-4" />
             </button>
-            <Link
-              href="/minha-conta"
-              className={cn(
-                "hidden h-10 w-10 place-items-center rounded-full border transition sm:grid",
-                solid ? "border-white/15 bg-white/10" : "border-white/20 bg-white/10"
-              )}
-              aria-label="Minha conta"
-            >
-              <User className="h-4 w-4" />
-            </Link>
             <CartDrawer />
           </div>
         </div>
@@ -99,7 +96,12 @@ export function SiteHeader() {
           <nav className="border-t border-black/10 bg-white p-4 text-black lg:hidden">
             <div className="container grid gap-2">
               {nav.map((item) => (
-                <Link key={item.href} href={item.href} className="rounded-md px-3 py-3 hover:bg-pearl" onClick={() => setMobileOpen(false)}>
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="rounded-md px-3 py-3 hover:bg-pearl"
+                  onClick={() => setMobileOpen(false)}
+                >
                   {item.label}
                 </Link>
               ))}

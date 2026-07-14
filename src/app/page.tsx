@@ -15,7 +15,7 @@ export default function HomePage() {
       <section className="relative min-h-[92vh] overflow-hidden bg-black text-white">
         <Image
           src="https://images.unsplash.com/photo-1590736969955-71cc94901144?auto=format&fit=crop&w=1900&q=88"
-          alt="Perfumes premium ZION AROMAS"
+          alt="Perfumes árabes premium ZION AROMAS"
           fill
           priority
           sizes="100vw"
@@ -25,28 +25,28 @@ export default function HomePage() {
         <div className="container relative flex min-h-[92vh] items-center pb-20 pt-28">
           <div className="max-w-2xl soft-reveal">
             <Image src="/brand/zion-aromas-logo.png" alt="ZION AROMAS" width={130} height={130} className="mb-8 h-28 w-28 object-contain" />
-            <Badge className="border-white/25 bg-white/10 text-gold">Alta perfumaria autoral</Badge>
-            <h1 className="mt-6 font-display text-5xl leading-[1.02] tracking-normal md:text-7xl">
-              ZION AROMAS
-            </h1>
+            <Badge className="border-white/25 bg-white/10 text-gold">Perfumes árabes premium</Badge>
+            <h1 className="mt-6 font-display text-5xl leading-[1.02] tracking-normal md:text-7xl">ZION AROMAS</h1>
             <p className="mt-6 max-w-xl text-lg leading-8 text-white/72">
-              Perfumes, velas e rituais aromáticos desenhados para presença, sofisticação e memórias que permanecem.
+              Fragrâncias orientais com oud, âmbar, musk e especiarias para quem busca presença, fixação e sofisticação.
             </p>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
               <Link href="/produtos">
-                <Button size="lg">Comprar agora <ArrowRight className="h-4 w-4" /></Button>
+                <Button size="lg">
+                  Comprar perfumes <ArrowRight className="h-4 w-4" />
+                </Button>
               </Link>
               <Link href="/sobre">
-                <Button size="lg" variant="glass">Conhecer a marca</Button>
+                <Button size="lg" variant="glass">Conhecer a ZION</Button>
               </Link>
             </div>
           </div>
         </div>
         <div className="absolute bottom-0 left-0 right-0 border-t border-white/10 bg-black/35 backdrop-blur">
           <div className="container grid gap-4 py-5 text-sm text-white/70 md:grid-cols-3">
-            <span className="inline-flex items-center gap-2"><Truck className="h-4 w-4 text-gold" /> Frete com cálculo por CEP</span>
+            <span className="inline-flex items-center gap-2"><Truck className="h-4 w-4 text-gold" /> Frete por CEP com Correios</span>
             <span className="inline-flex items-center gap-2"><Check className="h-4 w-4 text-gold" /> PIX, cartão e boleto</span>
-            <span className="inline-flex items-center gap-2"><Sparkles className="h-4 w-4 text-gold" /> Embalagem premium</span>
+            <span className="inline-flex items-center gap-2"><Sparkles className="h-4 w-4 text-gold" /> Perfumes árabes selecionados</span>
           </div>
         </div>
       </section>
@@ -56,7 +56,7 @@ export default function HomePage() {
           <div className="mb-10 flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <div>
               <Badge>Categorias</Badge>
-              <h2 className="mt-4 font-display text-4xl md:text-5xl">Rituais de fragrância</h2>
+              <h2 className="mt-4 font-display text-4xl md:text-5xl">Escolha por família olfativa</h2>
             </div>
             <Link href="/categorias" className="inline-flex items-center gap-2 text-sm font-semibold text-gold-deep">
               Ver categorias <ArrowRight className="h-4 w-4" />
@@ -81,7 +81,7 @@ export default function HomePage() {
         <div className="container">
           <div className="mb-10 text-center">
             <Badge>Destaques</Badge>
-            <h2 className="mt-4 font-display text-4xl md:text-5xl">Escolhas da maison</h2>
+            <h2 className="mt-4 font-display text-4xl md:text-5xl">Perfumes em evidência</h2>
           </div>
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
             {featured.map((product) => (
@@ -95,9 +95,9 @@ export default function HomePage() {
         <div className="container grid items-center gap-10 lg:grid-cols-[0.85fr_1.15fr]">
           <div>
             <Badge className="border-white/20 bg-white/10 text-gold">Mais vendidos</Badge>
-            <h2 className="mt-5 font-display text-4xl md:text-5xl">Fragrâncias com assinatura memorável</h2>
+            <h2 className="mt-5 font-display text-4xl md:text-5xl">Fragrâncias árabes com rastro marcante</h2>
             <p className="mt-5 leading-8 text-white/62">
-              Uma curadoria com alta conversão: produtos de rastro elegante, excelente apresentação e valor percebido elevado.
+              Uma curadoria de perfumes intensos, elegantes e memoráveis para uso diário, noite e ocasiões especiais.
             </p>
             <Link href="/mais-vendidos" className="mt-8 inline-flex">
               <Button>Ver best sellers</Button>
@@ -126,7 +126,7 @@ export default function HomePage() {
           <div className="grid gap-5 md:grid-cols-3">
             {testimonials.map((testimonial) => (
               <figure key={testimonial.name} className="rounded-lg border border-black/10 bg-white p-7 shadow-sm">
-                <blockquote className="leading-7 text-black/65">“{testimonial.text}”</blockquote>
+                <blockquote className="leading-7 text-black/65">"{testimonial.text}"</blockquote>
                 <figcaption className="mt-6">
                   <p className="font-semibold">{testimonial.name}</p>
                   <p className="text-sm text-gold-deep">{testimonial.role}</p>

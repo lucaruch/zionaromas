@@ -14,7 +14,7 @@ export default function AdminReportsPage() {
       <div className="mt-5 rounded-lg border border-black/10 bg-white p-6 shadow-sm">
         <h2 className="text-2xl font-black">Performance por categoria</h2>
         <div className="mt-8 grid gap-4">
-          {["Perfumes Autorais", "Aromas de Ambiente", "Velas Premium", "Kits Presente"].map((category, index) => (
+          {["Perfumes Árabes", "Oud & Amadeirados", "Florais Orientais", "Kits Presente"].map((category, index) => (
             <div key={category}>
               <div className="mb-2 flex justify-between text-sm">
                 <span>{category}</span>

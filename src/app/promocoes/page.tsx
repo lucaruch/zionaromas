@@ -8,8 +8,8 @@ export default function PromotionsPage() {
   return (
     <CollectionPage
       eyebrow="Promoções"
-      title="Seleções com condição especial"
-      description="Produtos premium com preço promocional, mantendo a mesma experiência de embalagem e atendimento ZION."
+      title="Perfumes árabes com condição especial"
+      description="Seleções premium com preço promocional, embalagem cuidadosa e atendimento ZION."
       products={products.filter((product) => product.salePrice)}
     />
   );
