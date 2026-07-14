@@ -1,8 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Instagram, Mail, MapPin, Phone } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 
 const address =
   "Avenida Presidente Costa e Silva, 501 - Galeria PG - Ljs 70/75 - Boqueirão - Praia Grande - SP - CEP: 11700-007";
@@ -89,19 +87,12 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="border-t border-gold/15 bg-black/55">
-        <div className="container grid gap-6 py-8 md:grid-cols-[1fr_auto] md:items-center">
-          <form className="flex max-w-xl gap-3">
-            <Input
-              placeholder="Receba novidades sobre perfumes árabes"
-              className="border-white/10 bg-white/10 text-white placeholder:text-white/45"
-            />
-            <Button type="submit">Assinar</Button>
-          </form>
-          <div className="flex flex-wrap items-center gap-4 text-sm text-white/60">
-            <a href="https://www.instagram.com/zion_aromas/" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 transition hover:text-gold">
-              <Instagram className="h-5 w-5" />
-              @zion_aromas
-            </a>
+        <div className="container flex flex-wrap items-center justify-between gap-4 py-8 text-sm text-white/60">
+          <a href="https://www.instagram.com/zion_aromas/" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 transition hover:text-gold">
+            <Instagram className="h-5 w-5" />
+            @zion_aromas
+          </a>
+          <div className="flex flex-wrap items-center gap-4">
             <span>© 2026 ZION AROMAS</span>
             <span>
               Feito por{" "}
