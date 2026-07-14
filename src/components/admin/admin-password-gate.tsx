@@ -1,17 +1,18 @@
 "use client";
 
 import Image from "next/image";
-import { LockKeyhole } from "lucide-react";
+import { Lock } from "lucide-react";
+import type { FormEvent } from "react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 export function AdminPasswordGate() {
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
     setError("");
@@ -22,40 +23,35 @@ export function AdminPasswordGate() {
       body: JSON.stringify({ password })
     });
 
-    setLoading(false);
-
-    if (!response.ok) {
-      setError("Senha inválida.");
+    if (response.ok) {
+      window.location.reload();
       return;
     }
 
-    window.location.reload();
+    setError("Senha inválida.");
+    setLoading(false);
   }
 
   return (
-    <section className="grid min-h-screen place-items-center bg-[#eeeeef] px-4 py-16">
-      <form onSubmit={handleSubmit} className="w-full max-w-sm rounded-lg border border-black/10 bg-white p-8 shadow-sm">
-        <Image
-          src="/brand/zion-aromas-logo.png"
-          alt="ZION AROMAS"
-          width={82}
-          height={82}
-          className="mx-auto mb-6 h-20 w-20 rounded-full object-contain"
-        />
-        <div className="mb-6 text-center">
-          <LockKeyhole className="mx-auto mb-3 h-6 w-6 text-gold-deep" />
-          <h1 className="font-display text-3xl">Área administrativa</h1>
-          <p className="mt-2 text-sm text-black/55">Digite a senha para acessar o painel.</p>
+    <section className="arabic-pattern grid min-h-screen place-items-center bg-black px-4 py-16 text-white">
+      <form onSubmit={handleSubmit} className="w-full max-w-sm border border-gold/20 bg-[#0d0b08] p-8 shadow-[0_28px_90px_rgba(0,0,0,.55)]">
+        <Image src="/brand/zion-aromas-logo.png" alt="ZION AROMAS" width={110} height={110} className="mx-auto mb-5 h-24 w-24 object-contain" />
+        <div className="text-center">
+          <span className="mx-auto grid h-11 w-11 place-items-center rounded-full border border-gold/25 bg-black text-gold">
+            <Lock className="h-5 w-5" />
+          </span>
+          <h1 className="mt-5 font-display text-4xl">Área administrativa</h1>
+          <p className="mt-2 text-sm text-white/55">Digite a senha para acessar o painel.</p>
         </div>
-        <div className="grid gap-3">
+        <div className="mt-7 grid gap-3">
           <Input
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            placeholder="Senha do admin"
+            placeholder="Senha"
             autoFocus
           />
-          {error ? <p className="text-sm text-red-600">{error}</p> : null}
+          {error ? <p className="text-sm text-red-300">{error}</p> : null}
           <Button type="submit" disabled={loading}>
             {loading ? "Entrando..." : "Entrar"}
           </Button>

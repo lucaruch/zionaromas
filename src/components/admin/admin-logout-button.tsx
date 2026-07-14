@@ -11,7 +11,7 @@ export function AdminLogoutButton() {
   return (
     <button
       onClick={logout}
-      className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-black/10 bg-white text-black transition hover:border-black hover:bg-black hover:text-white"
+      className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gold/25 bg-black text-white transition hover:border-gold hover:text-gold"
       aria-label="Sair do admin"
     >
       <LogOut className="h-4 w-4" />
