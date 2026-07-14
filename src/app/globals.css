@@ -18,7 +18,7 @@ html {
 
 body {
   margin: 0;
-  background: #ffffff;
+  background: #050505;
   color: #000000;
   font-family: var(--font-sans);
 }
@@ -43,6 +43,32 @@ body {
 
 .section-pad {
   padding-block: clamp(4rem, 8vw, 7rem);
+}
+
+.arabic-pattern {
+  background-image:
+    linear-gradient(rgba(212, 175, 55, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(212, 175, 55, 0.06) 1px, transparent 1px),
+    radial-gradient(circle at 18% 20%, rgba(212, 175, 55, 0.18), transparent 26%),
+    linear-gradient(135deg, #050505 0%, #12100a 48%, #000000 100%);
+  background-size: 56px 56px, 56px 56px, auto, auto;
+}
+
+.gold-frame {
+  position: relative;
+}
+
+.gold-frame::before {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  pointer-events: none;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+}
+
+.luxury-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.75), transparent);
 }
 
 .soft-reveal {

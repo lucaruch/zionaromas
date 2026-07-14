@@ -24,24 +24,37 @@ export default async function ProductsPage({
   });
 
   return (
-    <section className="bg-white pb-20 pt-32">
-      <div className="container">
-        <div className="mb-10">
-          <Badge>Catálogo</Badge>
-          <h1 className="mt-4 font-display text-5xl">Perfumes árabes ZION</h1>
-          <p className="mt-4 max-w-2xl leading-7 text-black/60">
-            Encontre fragrâncias orientais por família olfativa, intensidade, preço e disponibilidade.
-          </p>
+    <section className="bg-[#f7f5ef] pb-20 pt-28">
+      <div className="arabic-pattern border-b border-gold/20 bg-black text-white">
+        <div className="container py-16">
+          <Badge className="border-gold/40 bg-black/40 text-gold">Catálogo</Badge>
+          <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_340px] lg:items-end">
+            <div>
+              <h1 className="font-display text-5xl md:text-6xl">
+                Perfumes <span className="gold-text">árabes ZION</span>
+              </h1>
+              <p className="mt-5 max-w-2xl leading-8 text-white/68">
+                Fragrâncias orientais com oud, âmbar, musk e especiarias para quem busca presença sofisticada.
+              </p>
+            </div>
+            <div className="border border-gold/20 bg-white/[0.04] p-5 text-sm leading-7 text-white/62">
+              Curadoria de boutique, embalagens elegantes e opções para uso diário, noite e presentes especiais.
+            </div>
+          </div>
         </div>
-        <div className="grid gap-8 lg:grid-cols-[260px_1fr]">
-          <aside className="h-max rounded-lg border border-black/10 bg-pearl p-5">
-            <h2 className="font-semibold">Filtros</h2>
-            <div className="mt-5 grid gap-6">
+      </div>
+
+      <div className="container pt-12">
+        <div className="grid gap-8 lg:grid-cols-[280px_1fr]">
+          <aside className="h-max border border-black/10 bg-white p-5 shadow-sm">
+            <h2 className="font-display text-2xl">Filtros</h2>
+            <div className="luxury-divider my-5" />
+            <div className="grid gap-7">
               <div>
                 <p className="mb-3 text-xs uppercase tracking-[0.16em] text-black/45">Categoria</p>
                 <div className="grid gap-2">
                   {categories.map((category) => (
-                    <a key={category.slug} href={`/produtos?categoria=${category.slug}`} className="rounded-full px-3 py-2 text-sm hover:bg-white">
+                    <a key={category.slug} href={`/produtos?categoria=${category.slug}`} className="rounded-full px-3 py-2 text-sm transition hover:bg-black hover:text-gold">
                       {category.name}
                     </a>
                   ))}
@@ -64,9 +77,9 @@ export default async function ProductsPage({
             </div>
           </aside>
           <div>
-            <div className="mb-6 flex items-center justify-between">
+            <div className="mb-6 flex flex-col gap-3 border-b border-black/10 pb-5 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-black/55">{filtered.length} produtos encontrados</p>
-              <select className="rounded-full border border-black/10 bg-white px-4 py-2 text-sm">
+              <select className="rounded-full border border-black/10 bg-white px-4 py-2 text-sm outline-none transition focus:border-gold focus:ring-4 focus:ring-gold/10">
                 <option>Mais relevantes</option>
                 <option>Menor preço</option>
                 <option>Maior preço</option>

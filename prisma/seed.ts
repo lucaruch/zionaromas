@@ -119,7 +119,7 @@ async function main() {
       id: "home-hero",
       title: "Perfumes árabes para quem deixa presença",
       subtitle: "Curadoria oriental com oud, âmbar, musk, especiarias e fragrâncias de alta fixação.",
-      image: "https://images.unsplash.com/photo-1590736969955-71cc94901144?auto=format&fit=crop&w=1800&q=85",
+      image: "https://images.unsplash.com/photo-1600612253971-422e7f7faeb6?auto=format&fit=crop&w=1800&q=85",
       ctaLabel: "Explorar perfumes",
       ctaHref: "/produtos",
       location: "home",

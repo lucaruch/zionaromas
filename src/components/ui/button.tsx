@@ -7,8 +7,8 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        gold: "bg-gold-metal text-black shadow-gold hover:-translate-y-0.5 hover:shadow-premium",
-        black: "bg-black text-white hover:bg-black/85",
+        gold: "bg-gold-metal text-black shadow-gold hover:-translate-y-0.5 hover:shadow-[0_22px_60px_rgba(212,175,55,.35)]",
+        black: "bg-black text-white ring-1 ring-gold/25 hover:bg-black/85 hover:text-gold",
         outline: "border border-black/15 bg-white text-black hover:border-gold hover:text-gold-deep",
         ghost: "text-black hover:bg-black/5",
         glass: "border border-white/20 bg-white/10 text-white backdrop-blur hover:bg-white/15"
