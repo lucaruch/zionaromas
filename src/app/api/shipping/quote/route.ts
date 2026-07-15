@@ -1,15 +1,19 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { products } from "@/lib/data";
+import { isRateLimited, parseJson } from "@/lib/security";
 
 const quoteSchema = z.object({
-  postalCode: z.string().min(8),
-  items: z.array(
-    z.object({
-      slug: z.string(),
-      quantity: z.number().int().positive()
-    })
-  )
+  postalCode: z.string().regex(/^\d{5}-?\d{3}$/),
+  items: z
+    .array(
+      z.object({
+        slug: z.string().trim().min(1).max(80),
+        quantity: z.number().int().positive().max(20)
+      })
+    )
+    .min(1)
+    .max(30)
 });
 
 type MelhorEnvioService = {
@@ -53,12 +57,29 @@ function fallbackCorreiosQuote() {
   ];
 }
 
-export async function POST(request: Request) {
-  const payload = await request.json();
-  const parsed = quoteSchema.safeParse(payload);
+function melhorEnvioBaseUrl() {
+  const fallback = "https://sandbox.melhorenvio.com.br";
+  const configured = process.env.MELHOR_ENVIO_BASE_URL || fallback;
 
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Dados inválidos para cotação." }, { status: 400 });
+  try {
+    const url = new URL(configured);
+    const allowedHosts = new Set(["sandbox.melhorenvio.com.br", "www.melhorenvio.com.br", "melhorenvio.com.br"]);
+    if (url.protocol !== "https:" || !allowedHosts.has(url.hostname)) return fallback;
+    return url.origin;
+  } catch {
+    return fallback;
+  }
+}
+
+export async function POST(request: Request) {
+  if (isRateLimited(request, "shipping-quote", 40, 60_000)) {
+    return NextResponse.json({ error: "Muitas tentativas. Aguarde um instante." }, { status: 429 });
+  }
+
+  const parsed = await parseJson(request, quoteSchema, 32_000);
+
+  if (!parsed.ok) {
+    return NextResponse.json({ error: "Dados invalidos para cotacao." }, { status: 400 });
   }
 
   const destinationPostalCode = cleanPostalCode(parsed.data.postalCode);
@@ -67,7 +88,7 @@ export async function POST(request: Request) {
   if (!token) {
     return NextResponse.json({
       options: fallbackCorreiosQuote(),
-      warning: "Configure MELHOR_ENVIO_TOKEN para usar a cotação real do Melhor Envio."
+      warning: "Configure MELHOR_ENVIO_TOKEN para usar a cotacao real do Melhor Envio."
     });
   }
 
@@ -89,57 +110,63 @@ export async function POST(request: Request) {
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
 
   if (!selectedProducts.length) {
-    return NextResponse.json({ error: "Nenhum produto válido para cotação." }, { status: 400 });
+    return NextResponse.json({ error: "Nenhum produto valido para cotacao." }, { status: 400 });
   }
 
-  const baseUrl = process.env.MELHOR_ENVIO_BASE_URL || "https://sandbox.melhorenvio.com.br";
   const services = process.env.MELHOR_ENVIO_CORREIOS_SERVICES || "1,2";
   const originPostalCode = cleanPostalCode(process.env.MELHOR_ENVIO_ORIGIN_POSTAL_CODE || "11700007");
 
-  const response = await fetch(`${baseUrl}/api/v2/me/shipment/calculate`, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      "User-Agent": process.env.MELHOR_ENVIO_USER_AGENT || "ZION AROMAS (zionaromasp@gmail.com)"
-    },
-    body: JSON.stringify({
-      from: { postal_code: originPostalCode },
-      to: { postal_code: destinationPostalCode },
-      products: selectedProducts,
-      options: {
-        receipt: false,
-        own_hand: false
+  try {
+    const response = await fetch(`${melhorEnvioBaseUrl()}/api/v2/me/shipment/calculate`, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        "User-Agent": process.env.MELHOR_ENVIO_USER_AGENT || "ZION AROMAS (zionaromasp@gmail.com)"
       },
-      services
-    })
-  });
+      body: JSON.stringify({
+        from: { postal_code: originPostalCode },
+        to: { postal_code: destinationPostalCode },
+        products: selectedProducts,
+        options: {
+          receipt: false,
+          own_hand: false
+        },
+        services
+      }),
+      signal: AbortSignal.timeout(8_000)
+    });
 
-  const data = (await response.json()) as MelhorEnvioService[];
+    const data = (await response.json()) as MelhorEnvioService[];
 
-  if (!response.ok) {
-    return NextResponse.json(
-      {
-        error: "Não foi possível consultar o Melhor Envio.",
-        details: data,
-        options: fallbackCorreiosQuote()
-      },
-      { status: 502 }
-    );
+    if (!response.ok) {
+      return NextResponse.json(
+        {
+          error: "Nao foi possivel consultar o frete agora.",
+          options: fallbackCorreiosQuote()
+        },
+        { status: 502 }
+      );
+    }
+
+    const options = data
+      .filter((service) => !service.error)
+      .map((service) => ({
+        id: service.id,
+        name: service.name || "Correios",
+        company: service.company?.name || "Correios",
+        price: Number(service.custom_price || service.price || 0),
+        deliveryTime: service.custom_delivery_time || service.delivery_time || 0,
+        source: "melhor-envio"
+      }))
+      .filter((service) => service.price > 0);
+
+    return NextResponse.json({ options: options.length ? options : fallbackCorreiosQuote() });
+  } catch {
+    return NextResponse.json({
+      error: "Nao foi possivel consultar o frete agora.",
+      options: fallbackCorreiosQuote()
+    });
   }
-
-  const options = data
-    .filter((service) => !service.error)
-    .map((service) => ({
-      id: service.id,
-      name: service.name || "Correios",
-      company: service.company?.name || "Correios",
-      price: Number(service.custom_price || service.price || 0),
-      deliveryTime: service.custom_delivery_time || service.delivery_time || 0,
-      source: "melhor-envio"
-    }))
-    .filter((service) => service.price > 0);
-
-  return NextResponse.json({ options });
 }

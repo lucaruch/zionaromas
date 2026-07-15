@@ -1,25 +1,33 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { ADMIN_COOKIE_NAME, getAdminPassword, getAdminSessionToken } from "@/lib/admin-auth";
+import { ADMIN_COOKIE_NAME, getAdminPassword, getAdminSessionToken, secureCompare } from "@/lib/admin-auth";
+import { isRateLimited, parseJson } from "@/lib/security";
 
 const schema = z.object({
-  password: z.string().min(1)
+  password: z.string().min(1).max(120)
 });
 
-export async function POST(request: Request) {
-  const payload = await request.json();
-  const parsed = schema.safeParse(payload);
+const cookieOptions = {
+  httpOnly: true,
+  sameSite: "strict" as const,
+  secure: process.env.NODE_ENV === "production",
+  path: "/"
+};
 
-  if (!parsed.success || parsed.data.password !== getAdminPassword()) {
-    return NextResponse.json({ error: "Senha inválida." }, { status: 401 });
+export async function POST(request: Request) {
+  if (isRateLimited(request, "admin-session", 5, 60_000)) {
+    return NextResponse.json({ error: "Muitas tentativas. Aguarde um instante." }, { status: 429 });
+  }
+
+  const parsed = await parseJson(request, schema, 2_000);
+
+  if (!parsed.ok || !secureCompare(parsed.data.password, getAdminPassword())) {
+    return NextResponse.json({ error: "Credenciais invalidas." }, { status: 401 });
   }
 
   const response = NextResponse.json({ ok: true });
   response.cookies.set(ADMIN_COOKIE_NAME, getAdminSessionToken(), {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
+    ...cookieOptions,
     maxAge: 60 * 60 * 8
   });
 
@@ -29,10 +37,7 @@ export async function POST(request: Request) {
 export async function DELETE() {
   const response = NextResponse.json({ ok: true });
   response.cookies.set(ADMIN_COOKIE_NAME, "", {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
+    ...cookieOptions,
     maxAge: 0
   });
   return response;

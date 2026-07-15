@@ -5,8 +5,8 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 
 const credentialsSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6)
+  email: z.string().trim().email().max(120),
+  password: z.string().min(8).max(120)
 });
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -21,11 +21,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: "Senha", type: "password" }
       },
       async authorize(credentials) {
+        if (process.env.ENABLE_CUSTOMER_AUTH !== "true") return null;
+
         const parsed = credentialsSchema.safeParse(credentials);
         if (!parsed.success) return null;
 
         const user = await prisma.user.findUnique({
-          where: { email: parsed.data.email }
+          where: { email: parsed.data.email.toLowerCase() }
         });
 
         if (!user?.passwordHash) return null;
