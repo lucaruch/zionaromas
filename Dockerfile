@@ -12,7 +12,7 @@ RUN npm ci
 
 FROM base AS builder
 
-COPY --from=builder /app/node_modules ./node_modules
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 ENV DATABASE_URL=postgresql://postgres:postgres@localhost:5432/zion_aromas?schema=public
@@ -36,7 +36,7 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-COPY --from=deps /app/node_modules ./node_modules
+COPY --from=builder /app/node_modules ./node_modules
 
 RUN mkdir -p /app/public/uploads && chown -R nextjs:nodejs /app/public
 
