@@ -90,7 +90,7 @@ export const products: Product[] = [
     volume: "100 ml",
     weight: "0,42 kg",
     status: "active",
-    image: "/brands/maison-alhambra-real.png",
+    image: "/products/sultan-oud.png",
     gallery: [
       "/products/sultan-oud.png",
       "/brands/maison-alhambra-real.png",

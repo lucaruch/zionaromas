@@ -14,20 +14,20 @@ export function ProductGallery({ images, name }: { images: string[]; name: strin
           <button
             key={image}
             onClick={() => setSelected(image)}
-            className="relative h-20 w-20 shrink-0 overflow-hidden border border-gold/20 bg-black transition hover:border-gold"
+            className="relative h-20 w-20 shrink-0 overflow-hidden border border-gold/20 bg-[#f6f2e8] transition hover:border-gold"
           >
-            <Image src={image} alt={name} fill sizes="80px" className="object-cover" />
+            <Image src={image} alt={name} fill sizes="80px" className="object-contain p-1.5" />
           </button>
         ))}
       </div>
-      <div className="group relative order-1 aspect-[4/5] min-w-0 overflow-hidden border border-gold/20 bg-black md:order-2">
+      <div className="group relative order-1 aspect-[4/5] min-w-0 overflow-hidden border border-gold/20 bg-[#f6f2e8] md:order-2">
         <Image
           src={selected}
           alt={name}
           fill
           priority
           sizes="(max-width: 768px) 100vw, 50vw"
-          className="object-cover transition duration-700 group-hover:scale-110"
+          className="object-contain p-6 transition duration-700 group-hover:scale-[1.03]"
         />
         <div className="absolute bottom-4 left-4 right-4 inline-flex items-center justify-center gap-2 rounded-full border border-white/30 bg-white/15 px-4 py-2 text-xs text-white backdrop-blur sm:right-auto">
           <Search className="h-3.5 w-3.5" />

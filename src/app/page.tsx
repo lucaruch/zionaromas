@@ -79,17 +79,19 @@ export default function HomePage() {
               <Link
                 key={category.slug}
                 href={`/produtos?categoria=${category.slug}`}
-                className="group gold-frame relative aspect-[4/5] overflow-hidden rounded-sm border border-gold/20 bg-[#070604] shadow-[0_24px_80px_rgba(0,0,0,.45)] sm:aspect-[3/4]"
+                className="group gold-frame relative min-h-[430px] overflow-hidden rounded-sm border border-gold/20 bg-[#070604] shadow-[0_24px_80px_rgba(0,0,0,.45)]"
               >
-                <Image
-                  src={category.image}
-                  alt={`Perfumes árabes ${category.name}`}
-                  fill
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                  className="object-cover opacity-74 transition duration-700 group-hover:scale-105 group-hover:opacity-92"
-                />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_28%,rgba(212,175,55,.08),transparent_34%),linear-gradient(180deg,rgba(0,0,0,.02),rgba(0,0,0,.18)_42%,rgba(0,0,0,.78))]" />
-                <div className="absolute bottom-0 p-5 text-white">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_22%,rgba(212,175,55,.12),transparent_38%),linear-gradient(180deg,rgba(255,255,255,.035),rgba(0,0,0,.18)_45%,rgba(0,0,0,.88))]" />
+                <div className="relative mx-5 mt-5 aspect-square overflow-hidden border border-gold/12 bg-[#f6f2e8]">
+                  <Image
+                    src={category.image}
+                    alt={`Perfumes árabes ${category.name}`}
+                    fill
+                    sizes="(max-width: 640px) 80vw, (max-width: 1024px) 40vw, 22vw"
+                    className="object-contain p-4 transition duration-700 group-hover:scale-[1.03]"
+                  />
+                </div>
+                <div className="relative p-5 text-white">
                   <p className="mb-3 text-[10px] font-black uppercase tracking-[0.22em] text-gold/70">Perfumes árabes</p>
                   <h3 className="font-display text-2xl text-gold">{category.name}</h3>
                   <p className="mt-2 text-sm leading-6 text-white/58">{category.description}</p>
@@ -130,8 +132,8 @@ export default function HomePage() {
           <div className="grid gap-5 sm:grid-cols-2">
             {bestSellers.map((product) => (
               <Link key={product.slug} href={`/produto/${product.slug}`} className="group min-w-0 border border-gold/20 bg-white/[0.025] p-4 transition hover:border-gold/60 hover:bg-white/[0.045]">
-                <div className="relative aspect-[4/3] overflow-hidden bg-black">
-                  <Image src={product.image} alt={product.name} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 30vw" className="object-cover opacity-56 grayscale transition duration-700 group-hover:scale-105 group-hover:opacity-75" />
+                <div className="relative aspect-[4/3] overflow-hidden bg-[#f6f2e8]">
+                  <Image src={product.image} alt={product.name} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 30vw" className="object-contain p-4 transition duration-700 group-hover:scale-[1.03]" />
                 </div>
                 <h3 className="mt-4 font-display text-2xl text-gold">{product.name}</h3>
                 <p className="mt-2 text-sm leading-6 text-white/55">{product.shortDescription}</p>

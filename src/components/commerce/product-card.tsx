@@ -17,7 +17,7 @@ export function ProductCard({ product, dark = false }: { product: Product; dark?
           : "hover:-translate-y-1"
       )}
     >
-      <div className={cn("relative aspect-[4/5] overflow-hidden bg-pearl", dark ? "rounded-sm bg-black" : "rounded-lg")}>
+      <div className={cn("relative aspect-[4/5] overflow-hidden bg-pearl", dark ? "rounded-sm bg-[#f6f2e8]" : "rounded-lg")}>
         <Link href={`/produto/${product.slug}`} aria-label={product.name} className="absolute inset-0 block">
           <Image
             src={product.image}
@@ -25,12 +25,11 @@ export function ProductCard({ product, dark = false }: { product: Product; dark?
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             className={cn(
-              "object-cover transition duration-700 group-hover:scale-105",
-              dark ? "opacity-[.88] group-hover:opacity-[.72]" : ""
+              "object-contain p-4 transition duration-700 group-hover:scale-[1.03]",
+              dark ? "opacity-100" : ""
             )}
           />
         </Link>
-        {dark ? <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/58 via-transparent to-transparent" /> : null}
         <div className="absolute left-2 top-2 flex max-w-[calc(100%-3.5rem)] flex-wrap gap-1.5 sm:left-3 sm:top-3 sm:gap-2">
           {product.salePrice ? <Badge>Promoção</Badge> : null}
           {product.isNew ? <Badge>Novo</Badge> : null}
