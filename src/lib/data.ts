@@ -92,9 +92,9 @@ export const products: Product[] = [
     status: "active",
     image: "/brands/maison-alhambra-real.png",
     gallery: [
+      "/products/sultan-oud.png",
       "/brands/maison-alhambra-real.png",
-      "/brands/lattafa-real.png",
-      "/brands/afnan-real.png"
+      "/brands/lattafa-real.png"
     ],
     shortDescription: "Oud nobre, açafrão e âmbar quente em uma assinatura imponente.",
     description: "Uma fragrância intensa para quem gosta de presença marcante, acabamento sofisticado e alta fixação.",
@@ -119,10 +119,10 @@ export const products: Product[] = [
     volume: "100 ml",
     weight: "0,45 kg",
     status: "active",
-    image: "/brands/lattafa-real.png",
+    image: "/products/ameer-al-layl.png",
     gallery: [
-      "/brands/lattafa-real.png",
-      "/brands/maison-alhambra-real.png"
+      "/products/ameer-al-layl.png",
+      "/brands/lattafa-real.png"
     ],
     shortDescription: "Madeiras escuras, incenso e baunilha seca para ocasiões especiais.",
     description: "Um perfume árabe amadeirado e elegante, ideal para momentos em que a fragrância precisa acompanhar a presença.",
@@ -146,10 +146,10 @@ export const products: Product[] = [
     volume: "100 ml",
     weight: "0,40 kg",
     status: "active",
-    image: "/brands/armaf-real.png",
+    image: "/products/rose-dubai.png",
     gallery: [
-      "/brands/armaf-real.png",
-      "/brands/french-avenue-real.png"
+      "/products/rose-dubai.png",
+      "/brands/armaf-real.png"
     ],
     shortDescription: "Rosa damascena, praline e almíscar branco em assinatura sofisticada.",
     description: "Um perfume árabe floral, elegante e levemente adocicado, com projeção equilibrada e toque feminino refinado.",
@@ -174,10 +174,10 @@ export const products: Product[] = [
     volume: "100 ml",
     weight: "0,40 kg",
     status: "active",
-    image: "/brands/afnan-real.png",
+    image: "/products/golden-musk.png",
     gallery: [
-      "/brands/afnan-real.png",
-      "/brands/orientica-real.png"
+      "/products/golden-musk.png",
+      "/brands/afnan-real.png"
     ],
     shortDescription: "Almíscar dourado, flores brancas e âmbar macio.",
     description: "Uma fragrância limpa, elegante e envolvente para quem busca sofisticação discreta no dia a dia.",
@@ -200,10 +200,10 @@ export const products: Product[] = [
     volume: "Kit",
     weight: "1,1 kg",
     status: "active",
-    image: "/brands/french-avenue-real.png",
+    image: "/products/royal-arabian-set.png",
     gallery: [
-      "/brands/french-avenue-real.png",
-      "/brands/zakat-real.png"
+      "/products/royal-arabian-set.png",
+      "/brands/french-avenue-real.png"
     ],
     shortDescription: "Seleção de perfumes árabes com perfis complementares.",
     description: "Uma composição elegante de perfumes árabes marcantes, bem apresentados e fáceis de encantar.",
@@ -226,10 +226,10 @@ export const products: Product[] = [
     volume: "100 ml",
     weight: "0,39 kg",
     status: "active",
-    image: "/brands/al-wataniah-real.png",
+    image: "/products/desert-vanilla.png",
     gallery: [
-      "/brands/al-wataniah-real.png",
-      "/brands/orientica-real.png"
+      "/products/desert-vanilla.png",
+      "/brands/al-wataniah-real.png"
     ],
     shortDescription: "Baunilha árabe, tâmaras e madeiras doces em uma assinatura quente.",
     description: "Um perfume árabe gourmand, confortável, sofisticado e envolvente, sem perder elegância.",
