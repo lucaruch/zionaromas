@@ -30,7 +30,7 @@ export const categories = [
     name: "Maison Alhambra",
     slug: "maison-alhambra",
     image: "https://images.unsplash.com/photo-1619994403073-2cec844b8e63?auto=format&fit=crop&w=1000&q=85",
-    description: "Fragrâncias orientais com presença sofisticada, ótimas para quem busca impacto e elegância."
+    description: "Perfumes árabes com presença sofisticada, ótimos para quem busca impacto e elegância."
   },
   {
     name: "Al Wataniah",
@@ -42,7 +42,7 @@ export const categories = [
     name: "Armaf",
     slug: "armaf",
     image: "https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&w=1000&q=85",
-    description: "Criações modernas com alto desempenho e perfis olfativos fáceis de amar."
+    description: "Perfumes árabes modernos, com alto desempenho e perfis fáceis de amar."
   },
   {
     name: "Lattafa",
@@ -54,7 +54,7 @@ export const categories = [
     name: "Orientica",
     slug: "orientica",
     image: "https://images.unsplash.com/photo-1602874801007-bd458bb1b8b6?auto=format&fit=crop&w=1000&q=85",
-    description: "Perfumes orientais com apresentação refinada e presença de alto padrão."
+    description: "Perfumes árabes com apresentação refinada e presença de alto padrão."
   },
   {
     name: "French Avenue",
@@ -66,13 +66,13 @@ export const categories = [
     name: "Afnan",
     slug: "afnan",
     image: "https://images.unsplash.com/photo-1600612253971-422e7f7faeb6?auto=format&fit=crop&w=1000&q=85",
-    description: "Perfumes conhecidos pela projeção, fixação e assinatura olfativa marcante."
+    description: "Perfumes árabes conhecidos por projeção, fixação e assinatura marcante."
   },
   {
     name: "Zakat",
     slug: "zakat",
     image: "https://images.unsplash.com/photo-1556228578-8c89e6adf883?auto=format&fit=crop&w=1000&q=85",
-    description: "Opções orientais escolhidas para quem procura intensidade, estilo e bom valor."
+    description: "Perfumes árabes escolhidos para quem procura intensidade, estilo e bom valor."
   }
 ];
 
@@ -125,7 +125,7 @@ export const products: Product[] = [
       "https://images.unsplash.com/photo-1615634260167-c8cdede054de?auto=format&fit=crop&w=1200&q=85"
     ],
     shortDescription: "Madeiras escuras, incenso e baunilha seca para ocasiões especiais.",
-    description: "Um amadeirado oriental elegante, ideal para eventos, encontros e momentos em que a fragrância precisa acompanhar a presença.",
+    description: "Um perfume árabe amadeirado e elegante, ideal para momentos em que a fragrância precisa acompanhar a presença.",
     richDescription: "Incenso, madeira de agar e baunilha seca evoluem de forma cremosa, mantendo intensidade sem perder refinamento.",
     featured: true,
     isNew: true,
@@ -152,7 +152,7 @@ export const products: Product[] = [
       "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&w=1200&q=85"
     ],
     shortDescription: "Rosa damascena, praline e almíscar branco em assinatura sofisticada.",
-    description: "Um floral oriental elegante, levemente adocicado, com projeção equilibrada e toque feminino refinado.",
+    description: "Um perfume árabe floral, elegante e levemente adocicado, com projeção equilibrada e toque feminino refinado.",
     richDescription: "Rosa damascena e jasmim se apoiam em uma base cremosa de praline, musk e âmbar suave.",
     bestSeller: true,
     isNew: true,
@@ -205,13 +205,13 @@ export const products: Product[] = [
       "https://images.unsplash.com/photo-1513201099705-a9746e1e201f?auto=format&fit=crop&w=1200&q=85",
       "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=1200&q=85"
     ],
-    shortDescription: "Seleção presenteável com fragrâncias árabes de perfis complementares.",
-    description: "Uma opção elegante para presentear com perfumes marcantes, bem apresentados e fáceis de encantar.",
-    richDescription: "Reúne fragrâncias harmonizadas em uma apresentação elegante, pensada para datas especiais e presentes de impacto.",
+    shortDescription: "Seleção de perfumes árabes com perfis complementares.",
+    description: "Uma composição elegante de perfumes árabes marcantes, bem apresentados e fáceis de encantar.",
+    richDescription: "Reúne fragrâncias árabes harmonizadas em uma apresentação elegante, pensada para quem deseja conhecer mais de uma assinatura ZION.",
     bestSeller: true,
     rating: 4.8,
     reviews: 49,
-    notes: ["Presente", "Oud", "Musk"]
+    notes: ["Perfumes árabes", "Oud", "Musk"]
   },
   {
     id: "desert-vanilla",
@@ -231,8 +231,8 @@ export const products: Product[] = [
       "https://images.unsplash.com/photo-1629198688000-71f23e745b6e?auto=format&fit=crop&w=1200&q=85",
       "https://images.unsplash.com/photo-1556228578-8c89e6adf883?auto=format&fit=crop&w=1200&q=85"
     ],
-    shortDescription: "Baunilha oriental, tâmaras e madeiras doces em uma assinatura quente.",
-    description: "Um gourmand oriental confortável, sofisticado e envolvente, sem perder elegância.",
+    shortDescription: "Baunilha árabe, tâmaras e madeiras doces em uma assinatura quente.",
+    description: "Um perfume árabe gourmand, confortável, sofisticado e envolvente, sem perder elegância.",
     richDescription: "Baunilha, tâmaras e âmbar se unem a madeiras doces para criar um rastro acolhedor e memorável.",
     isNew: true,
     rating: 4.6,
@@ -249,7 +249,7 @@ export const testimonials = [
   },
   {
     name: "Rafael C.",
-    text: "Comprei o kit para presente e a apresentação veio impecável.",
+    text: "Comprei uma seleção de perfumes árabes e a apresentação veio impecável.",
     role: "Cliente ZION"
   },
   {

@@ -1,7 +1,7 @@
 const faqs = [
   [
     "Os perfumes vendidos pela ZION AROMAS são originais?",
-    "Trabalhamos com fragrâncias árabes e orientais selecionadas de marcas como Lattafa, Maison Alhambra, Armaf, Afnan, Al Wataniah, French Avenue, Orientica e Zakat. Cada pedido é conferido antes do envio para preservar apresentação, lacre e integridade da embalagem."
+    "Sim. A ZION AROMAS trabalha exclusivamente com perfumes árabes selecionados de marcas como Lattafa, Maison Alhambra, Armaf, Afnan, Al Wataniah, French Avenue, Orientica e Zakat. Cada pedido é conferido antes do envio para preservar apresentação, lacre e integridade da embalagem."
   ],
   [
     "Perfume árabe fixa mais?",
@@ -9,7 +9,7 @@ const faqs = [
   ],
   [
     "Como escolher uma fragrância sem experimentar?",
-    "Observe as notas principais e a ocasião de uso. Oud e madeiras são mais imponentes; musk e florais orientais ficam mais elegantes; baunilha, âmbar e especiarias trazem calor e sensualidade. Se quiser uma indicação mais precisa, chame no WhatsApp."
+    "Observe as notas principais e a ocasião de uso. Oud e madeiras são mais imponentes; musk e notas florais ficam mais elegantes; baunilha, âmbar e especiarias trazem calor e sensualidade. Se quiser uma indicação mais precisa, chame no WhatsApp."
   ],
   [
     "Vocês têm pronta entrega?",

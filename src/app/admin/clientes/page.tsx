@@ -18,9 +18,9 @@ const messages = [
   {
     status: "Nova",
     date: "30 de jun., 18:35",
-    subject: "Disponibilidade de kit",
+    subject: "Disponibilidade de perfume árabe",
     name: "Gustavo Martins",
-    text: "Vocês ainda têm o Royal Arabian Set para presente?"
+    text: "Vocês ainda têm o Royal Arabian Set disponível?"
   }
 ];
 

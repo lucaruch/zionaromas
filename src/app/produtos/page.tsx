@@ -34,11 +34,11 @@ export default async function ProductsPage({
                 Perfumes árabes <span className="gold-text">selecionados</span>
               </h1>
               <p className="mt-5 max-w-2xl leading-8 text-white/68">
-                Uma vitrine de fragrâncias orientais com presença, fixação e acabamento para diferentes estilos de uso.
+                Uma vitrine dedicada a perfumes árabes com presença, fixação e acabamento para diferentes estilos de uso.
               </p>
             </div>
             <div className="border border-gold/20 bg-white/[0.04] p-5 text-sm leading-7 text-white/62">
-              Escolha por marca, compare famílias olfativas e encontre uma assinatura que combine com sua rotina, ocasião ou presente.
+              Escolha por marca árabe, veja as notas principais de cada perfume e encontre uma fragrância que combine com sua rotina.
             </div>
           </div>
         </div>

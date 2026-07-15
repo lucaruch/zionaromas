@@ -43,9 +43,10 @@ export default function AdminProductsPage() {
           <label className="flex h-10 items-center gap-3 rounded-md border border-gold/18 bg-black px-3 text-sm text-white">
             <SlidersHorizontal className="h-4 w-4 text-gold" />
             <select className="w-full bg-transparent font-semibold outline-none">
-              <option>Todos</option>
-              <option>Perfumes</option>
-              <option>Kits</option>
+              <option>Todas as marcas</option>
+              {categories.map((category) => (
+                <option key={category.slug}>{category.name}</option>
+              ))}
             </select>
           </label>
           <select className="h-10 rounded-md border border-gold/18 bg-black px-3 text-sm font-semibold text-white outline-none">

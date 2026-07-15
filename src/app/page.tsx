@@ -79,11 +79,15 @@ export default function HomePage() {
               <Link
                 key={category.slug}
                 href={`/produtos?categoria=${category.slug}`}
-                className="group gold-frame relative aspect-[4/5] overflow-hidden rounded-sm border border-gold/20 bg-black shadow-[0_24px_80px_rgba(0,0,0,.45)] sm:aspect-[3/4]"
+                className="group gold-frame relative aspect-[4/5] overflow-hidden rounded-sm border border-gold/20 bg-[#070604] shadow-[0_24px_80px_rgba(0,0,0,.45)] sm:aspect-[3/4]"
               >
-                <Image src={category.image} alt={category.name} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" className="object-cover opacity-48 grayscale transition duration-700 group-hover:scale-105 group-hover:opacity-62" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-black/15" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_34%,rgba(212,175,55,.22),transparent_34%),linear-gradient(180deg,rgba(212,175,55,.08),transparent_38%),linear-gradient(180deg,transparent,rgba(0,0,0,.88))]" />
+                <div className="absolute inset-x-8 top-10 h-40 rounded-t-[64px] border border-gold/25 bg-black/45 shadow-[0_0_60px_rgba(212,175,55,.08)] transition duration-700 group-hover:border-gold/55" />
+                <div className="absolute left-1/2 top-20 grid h-24 w-24 -translate-x-1/2 place-items-center border border-gold/25 bg-black shadow-[0_18px_60px_rgba(0,0,0,.45)]">
+                  <Image src="/brand/zion-aromas-logo.png" alt="ZION AROMAS" width={72} height={72} className="h-16 w-16 object-contain" />
+                </div>
                 <div className="absolute bottom-0 p-5 text-white">
+                  <p className="mb-3 text-[10px] font-black uppercase tracking-[0.22em] text-gold/70">Perfumes árabes</p>
                   <h3 className="font-display text-2xl text-gold">{category.name}</h3>
                   <p className="mt-2 text-sm leading-6 text-white/58">{category.description}</p>
                 </div>
