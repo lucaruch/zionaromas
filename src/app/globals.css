@@ -14,6 +14,7 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 body {
@@ -21,6 +22,22 @@ body {
   background: #050505;
   color: #000000;
   font-family: var(--font-sans);
+  overflow-x: hidden;
+  text-rendering: optimizeLegibility;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
 }
 
 ::selection {
@@ -42,7 +59,7 @@ body {
 }
 
 .section-pad {
-  padding-block: clamp(4rem, 8vw, 7rem);
+  padding-block: clamp(3.5rem, 7vw, 7rem);
 }
 
 .arabic-pattern {
@@ -61,7 +78,7 @@ body {
 .gold-frame::before {
   content: "";
   position: absolute;
-  inset: 12px;
+  inset: clamp(8px, 2vw, 12px);
   pointer-events: none;
   border: 1px solid rgba(212, 175, 55, 0.35);
 }
@@ -69,6 +86,12 @@ body {
 .luxury-divider {
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.75), transparent);
+}
+
+@media (max-width: 640px) {
+  .section-pad {
+    padding-block: 3.25rem;
+  }
 }
 
 .soft-reveal {

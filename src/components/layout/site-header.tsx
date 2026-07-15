@@ -45,22 +45,26 @@ export function SiteHeader() {
             : "border-white/10 bg-black/45 text-white backdrop-blur-md"
         )}
       >
-        <div className="container flex h-20 items-center justify-between gap-4">
-          <button className="lg:hidden" onClick={() => setMobileOpen(!mobileOpen)} aria-label="Abrir menu">
-            <Menu className="h-6 w-6" />
+        <div className="container flex h-16 items-center justify-between gap-3 sm:h-20 sm:gap-4">
+          <button
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-white/15 bg-white/10 lg:hidden"
+            onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label="Abrir menu"
+          >
+            <Menu className="h-5 w-5" />
           </button>
-          <Link href="/" className="flex items-center gap-3">
+          <Link href="/" className="flex min-w-0 items-center gap-3">
             <Image
               src="/brand/zion-aromas-logo.png"
               alt="ZION AROMAS"
               width={70}
               height={70}
               priority
-              className="h-14 w-14 rounded-full object-contain"
+              className="h-11 w-11 shrink-0 rounded-full object-contain sm:h-14 sm:w-14"
             />
-            <span className="hidden font-display text-2xl tracking-[0.18em] sm:block">ZION</span>
+            <span className="hidden truncate font-display text-2xl tracking-[0.18em] sm:block">ZION</span>
           </Link>
-          <nav className="hidden items-center gap-7 lg:flex">
+          <nav className="hidden items-center gap-5 lg:flex xl:gap-7">
             {nav.map((item) => (
               <Link key={item.href} href={item.href} className="text-sm font-medium transition hover:text-gold">
                 {item.label}
@@ -78,7 +82,7 @@ export function SiteHeader() {
               </div>
             </div>
           </nav>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <button
               onClick={() => setSearchOpen(true)}
               className={cn(
@@ -93,16 +97,26 @@ export function SiteHeader() {
           </div>
         </div>
         {mobileOpen ? (
-          <nav className="border-t border-gold/20 bg-black/95 p-4 text-white backdrop-blur-xl lg:hidden">
-            <div className="container grid gap-2">
+          <nav className="max-h-[calc(100dvh-4rem)] overflow-y-auto border-t border-gold/20 bg-black/95 p-3 text-white backdrop-blur-xl lg:hidden">
+            <div className="container grid gap-2 sm:grid-cols-2">
               {nav.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="border border-transparent px-3 py-3 hover:border-gold/25 hover:bg-white/[0.04] hover:text-gold"
+                  className="border border-gold/10 px-3 py-3 text-sm hover:border-gold/25 hover:bg-white/[0.04] hover:text-gold"
                   onClick={() => setMobileOpen(false)}
                 >
                   {item.label}
+                </Link>
+              ))}
+              {collections.map(([label, href]) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className="border border-gold/10 px-3 py-3 text-sm text-gold hover:border-gold/25 hover:bg-white/[0.04]"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  {label}
                 </Link>
               ))}
             </div>

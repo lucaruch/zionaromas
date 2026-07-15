@@ -37,22 +37,22 @@ export function CartDrawer() {
               onClick={() => setOpen(false)}
             />
             <motion.aside
-              className="fixed right-0 top-0 z-50 flex h-dvh w-full max-w-md flex-col border-l border-gold/20 bg-black text-white shadow-[0_28px_90px_rgba(0,0,0,.65)]"
+              className="fixed right-0 top-0 z-50 flex h-dvh w-full max-w-md flex-col border-l border-gold/20 bg-black text-white shadow-[0_28px_90px_rgba(0,0,0,.65)] sm:w-[min(92vw,28rem)]"
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", stiffness: 260, damping: 28 }}
             >
-              <div className="flex items-center justify-between border-b border-gold/15 p-5">
+              <div className="flex items-center justify-between border-b border-gold/15 p-4 sm:p-5">
                 <div>
                   <p className="text-xs uppercase tracking-[0.18em] text-gold">Sacola ZION</p>
                   <h2 className="font-display text-2xl">Carrinho</h2>
                 </div>
-                <button className="rounded-full p-2 text-white/70 hover:bg-white/10 hover:text-gold" onClick={() => setOpen(false)}>
+                <button className="rounded-full p-2 text-white/70 hover:bg-white/10 hover:text-gold" onClick={() => setOpen(false)} aria-label="Fechar carrinho">
                   <X className="h-5 w-5" />
                 </button>
               </div>
-              <div className="flex-1 space-y-5 overflow-y-auto p-5">
+              <div className="flex-1 space-y-5 overflow-y-auto p-4 sm:p-5">
                 {items.length === 0 ? (
                   <div className="grid h-full place-items-center text-center">
                     <div>
@@ -63,27 +63,27 @@ export function CartDrawer() {
                   </div>
                 ) : (
                   items.map((item) => (
-                    <div key={item.slug} className="flex gap-4 border-b border-gold/15 pb-5">
-                      <div className="relative h-24 w-20 overflow-hidden border border-gold/20 bg-black">
+                    <div key={item.slug} className="flex min-w-0 gap-3 border-b border-gold/15 pb-5 sm:gap-4">
+                      <div className="relative h-24 w-20 shrink-0 overflow-hidden border border-gold/20 bg-black">
                         <Image src={item.image} alt={item.name} fill sizes="80px" className="object-cover opacity-80" />
                       </div>
-                      <div className="flex flex-1 flex-col">
-                        <div className="flex justify-between gap-3">
-                          <div>
-                            <h3 className="font-medium">{item.name}</h3>
+                      <div className="flex min-w-0 flex-1 flex-col">
+                        <div className="flex min-w-0 justify-between gap-3">
+                          <div className="min-w-0">
+                            <h3 className="line-clamp-2 font-medium">{item.name}</h3>
                             <p className="text-sm text-white/50">{item.volume}</p>
                           </div>
-                          <button onClick={() => removeItem(item.slug)} className="text-white/40 hover:text-gold">
+                          <button onClick={() => removeItem(item.slug)} className="shrink-0 text-white/40 hover:text-gold" aria-label={`Remover ${item.name}`}>
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
-                        <div className="mt-auto flex items-center justify-between">
+                        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 sm:mt-auto">
                           <div className="inline-flex items-center rounded-full border border-gold/20">
-                            <button className="p-2" onClick={() => updateQuantity(item.slug, item.quantity - 1)}>
+                            <button className="p-2" onClick={() => updateQuantity(item.slug, item.quantity - 1)} aria-label="Diminuir quantidade">
                               <Minus className="h-3 w-3" />
                             </button>
                             <span className="w-8 text-center text-sm">{item.quantity}</span>
-                            <button className="p-2" onClick={() => updateQuantity(item.slug, item.quantity + 1)}>
+                            <button className="p-2" onClick={() => updateQuantity(item.slug, item.quantity + 1)} aria-label="Aumentar quantidade">
                               <Plus className="h-3 w-3" />
                             </button>
                           </div>
@@ -94,7 +94,7 @@ export function CartDrawer() {
                   ))
                 )}
               </div>
-              <div className="border-t border-gold/15 p-5">
+              <div className="border-t border-gold/15 p-4 sm:p-5">
                 <div className="mb-4 flex items-center justify-between text-lg">
                   <span className="text-white/70">Subtotal</span>
                   <strong>{formatCurrency(subtotal)}</strong>

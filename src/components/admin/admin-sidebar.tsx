@@ -16,8 +16,8 @@ export function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="grid h-max gap-4">
-      <nav className="border border-gold/18 bg-[#0d0b08] p-2 shadow-[0_18px_50px_rgba(0,0,0,.28)]">
+    <aside className="grid h-max min-w-0 gap-4">
+      <nav className="grid gap-2 border border-gold/18 bg-[#0d0b08] p-2 shadow-[0_18px_50px_rgba(0,0,0,.28)] sm:grid-cols-2 lg:grid-cols-1">
         {links.map(({ href, label, count, icon: Icon }) => {
           const active = pathname === href;
           return (
@@ -26,20 +26,20 @@ export function AdminSidebar() {
               href={href}
               className={
                 active
-                  ? "flex items-center justify-between rounded-md bg-gold-metal px-4 py-4 text-sm font-black text-black"
-                  : "flex items-center justify-between rounded-md px-4 py-4 text-sm font-semibold text-white/72 transition hover:bg-white/[0.04] hover:text-gold"
+                  ? "flex min-w-0 items-center justify-between gap-3 rounded-md bg-gold-metal px-4 py-4 text-sm font-black text-black"
+                  : "flex min-w-0 items-center justify-between gap-3 rounded-md px-4 py-4 text-sm font-semibold text-white/72 transition hover:bg-white/[0.04] hover:text-gold"
               }
             >
-              <span className="inline-flex items-center gap-3">
-                <Icon className="h-4 w-4" />
-                {label}
+              <span className="inline-flex min-w-0 items-center gap-3">
+                <Icon className="h-4 w-4 shrink-0" />
+                <span className="truncate">{label}</span>
               </span>
-              <span className={active ? "text-black" : "text-gold/70"}>{count}</span>
+              <span className={active ? "shrink-0 text-black" : "shrink-0 text-gold/70"}>{count}</span>
             </Link>
           );
         })}
       </nav>
-      <div className="border border-gold/18 bg-[#0d0b08] p-5 shadow-[0_18px_50px_rgba(0,0,0,.28)]">
+      <div className="hidden border border-gold/18 bg-[#0d0b08] p-5 shadow-[0_18px_50px_rgba(0,0,0,.28)] lg:block">
         <p className="mb-6 text-[10px] font-black uppercase tracking-[0.22em] text-gold/70">Resumo operacional</p>
         {[
           ["Produtos ativos", products.length],
