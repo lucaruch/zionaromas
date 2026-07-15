@@ -5,12 +5,12 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 export const defaultMetadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "ZION AROMAS | Perfumaria Premium",
+    default: "ZION AROMAS | Perfumes Árabes Selecionados",
     template: "%s | ZION AROMAS"
   },
   description:
-    "Loja premium de perfumes árabes, fragrâncias orientais, oud, âmbar, musk e kits presenteáveis.",
-  keywords: ["perfume árabe", "perfumes árabes", "oud", "musk", "âmbar", "ZION AROMAS", "perfumaria oriental"],
+    "Perfumes árabes selecionados de marcas como Lattafa, Maison Alhambra, Armaf, Afnan, Al Wataniah e French Avenue.",
+  keywords: ["perfume árabe", "perfumes árabes", "Lattafa", "Maison Alhambra", "Armaf", "Afnan", "oud", "âmbar", "ZION AROMAS"],
   openGraph: {
     type: "website",
     locale: "pt_BR",

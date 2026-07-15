@@ -8,8 +8,8 @@ export default function NewProductsPage() {
   return (
     <CollectionPage
       eyebrow="Novidades"
-      title="Lançamentos orientais"
-      description="Novas fragrâncias árabes com oud, musk, âmbar, especiarias e florais sofisticados."
+      title="Novas escolhas para renovar sua assinatura"
+      description="Perfumes recém-adicionados à seleção ZION, com notas orientais, desempenho marcante e perfis para diferentes ocasiões."
       products={products.filter((product) => product.isNew)}
     />
   );

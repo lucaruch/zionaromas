@@ -28,18 +28,18 @@ export default function HomePage() {
               priority
               className="mx-auto mb-7 h-28 w-28 object-contain drop-shadow-[0_0_45px_rgba(212,175,55,.24)] sm:h-36 sm:w-36"
             />
-            <Badge className="border-gold/45 bg-black/50 text-gold">Perfumaria árabe premium</Badge>
+            <Badge className="border-gold/45 bg-black/50 text-gold">Perfumaria árabe selecionada</Badge>
             <h1 className="mt-7 break-words font-display text-5xl leading-[0.95] tracking-normal sm:text-6xl md:text-8xl">
               ZION <span className="gold-text">AROMAS</span>
             </h1>
             <div className="luxury-divider mx-auto mt-7 max-w-lg" />
             <p className="mx-auto mt-7 max-w-2xl text-base leading-8 text-white/72 sm:text-lg">
-              Fragrâncias árabes intensas, elegantes e memoráveis. Oud, âmbar, musk e especiarias em uma curadoria de presença sofisticada.
+              Perfumes árabes de marcas desejadas, escolhidos pela presença, fixação e personalidade que transformam a fragrância em assinatura.
             </p>
             <div className="mx-auto mt-9 flex max-w-md flex-col justify-center gap-3 sm:max-w-none sm:flex-row">
               <Link href="/produtos" className="w-full sm:w-auto">
                 <Button size="lg" className="w-full sm:w-auto">
-                  Comprar perfumes <ArrowRight className="h-4 w-4" />
+                  Ver perfumes <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
               <Link href="/categorias" className="w-full sm:w-auto">
@@ -55,7 +55,7 @@ export default function HomePage() {
           <div className="container grid gap-3 py-4 text-sm text-white/72 sm:grid-cols-3">
             <span className="inline-flex items-center justify-center gap-2 text-center"><Truck className="h-4 w-4 shrink-0 text-gold" /> Frete por CEP com Correios</span>
             <span className="inline-flex items-center justify-center gap-2 text-center"><Check className="h-4 w-4 shrink-0 text-gold" /> PIX, cartão e boleto</span>
-            <span className="inline-flex items-center justify-center gap-2 text-center"><Gem className="h-4 w-4 shrink-0 text-gold" /> Curadoria árabe selecionada</span>
+            <span className="inline-flex items-center justify-center gap-2 text-center"><Gem className="h-4 w-4 shrink-0 text-gold" /> Marcas árabes selecionadas</span>
           </div>
         </div>
       </section>
@@ -67,7 +67,7 @@ export default function HomePage() {
               <Badge className="border-gold/40 bg-gold/10 text-gold">Marcas</Badge>
               <h2 className="mt-4 font-display text-4xl sm:text-5xl">Marcas árabes selecionadas</h2>
               <p className="mt-4 max-w-2xl leading-7 text-white/58">
-                Escolha por Maison Alhambra, Lattafa, Armaf, Afnan, Al Wataniah e outras casas orientais de alto desejo.
+                Encontre fragrâncias de casas orientais reconhecidas por desempenho, elegância e excelente valor percebido.
               </p>
             </div>
             <Link href="/categorias" className="inline-flex items-center gap-2 text-sm font-semibold text-gold">
@@ -97,7 +97,7 @@ export default function HomePage() {
         <div className="container">
           <div className="mb-10 text-center">
             <Badge className="border-gold/40 bg-gold/10 text-gold">Destaques</Badge>
-            <h2 className="mt-4 font-display text-4xl sm:text-5xl">Perfumes em evidência</h2>
+            <h2 className="mt-4 font-display text-4xl sm:text-5xl">Escolhas em evidência</h2>
             <div className="luxury-divider mx-auto mt-6 max-w-sm" />
           </div>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -112,12 +112,12 @@ export default function HomePage() {
         <div className="container grid items-center gap-10 lg:grid-cols-[0.85fr_1.15fr]">
           <div>
             <Badge className="border-gold/40 bg-gold/10 text-gold">Mais vendidos</Badge>
-            <h2 className="mt-5 font-display text-4xl sm:text-5xl">Rastro marcante, acabamento sofisticado</h2>
+            <h2 className="mt-5 font-display text-4xl sm:text-5xl">Fragrâncias que permanecem</h2>
             <p className="mt-5 leading-8 text-white/60">
-              Os favoritos da ZION combinam intensidade árabe, projeção elegante e notas que permanecem na memória.
+              Os favoritos da ZION reúnem projeção elegante, notas marcantes e aquele rastro que chama atenção na medida certa.
             </p>
             <Link href="/mais-vendidos" className="mt-8 inline-flex w-full sm:w-auto">
-              <Button className="w-full sm:w-auto">Ver best sellers</Button>
+              <Button className="w-full sm:w-auto">Ver mais vendidos</Button>
             </Link>
           </div>
           <div className="grid gap-5 sm:grid-cols-2">

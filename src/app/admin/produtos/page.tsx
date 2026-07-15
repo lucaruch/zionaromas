@@ -132,7 +132,7 @@ function ProductModal({ onClose }: { onClose: () => void }) {
         </div>
         <div className="grid gap-6 p-5">
           <Fieldset title="Informações principais">
-            <InputLike placeholder="Ex.: Sultan Oud Premium" className="md:col-span-2" />
+            <InputLike placeholder="Ex.: Sultan Oud Intense" className="md:col-span-2" />
             <InputLike placeholder="Marca" />
             <SelectLike options={categories.map((category) => category.name)} />
             <textarea placeholder="Descrição curta" className="min-h-24 rounded-md border border-gold/18 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-gold md:col-span-2" />
@@ -151,7 +151,7 @@ function ProductModal({ onClose }: { onClose: () => void }) {
           </Fieldset>
           <Fieldset title="Variações e imagem">
             <InputLike placeholder="Tamanhos / volumes" />
-            <InputLike placeholder="Cores ou famílias" />
+            <InputLike placeholder="Variações ou observações" />
             <label className="grid cursor-pointer place-items-center border border-dashed border-gold/30 p-8 text-center text-sm text-white/55 transition hover:border-gold md:col-span-2">
               <Upload className="mb-3 h-6 w-6 text-gold" />
               Arraste as fotos aqui
@@ -165,7 +165,7 @@ function ProductModal({ onClose }: { onClose: () => void }) {
               <input type="checkbox" defaultChecked className="accent-gold" />
             </label>
             <label className="flex items-center justify-between border border-gold/18 bg-black p-4 text-sm">
-              <span><strong>Em destaque</strong><small className="mt-1 block text-white/45">Aparece na seleção inicial</small></span>
+              <span><strong>Em destaque</strong><small className="mt-1 block text-white/45">Aparece nas vitrines principais</small></span>
               <input type="checkbox" className="accent-gold" />
             </label>
           </Fieldset>

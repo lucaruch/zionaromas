@@ -64,8 +64,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
               <strong className="gold-text break-words font-display text-4xl sm:text-5xl">{formatCurrency(product.salePrice ?? product.price)}</strong>
             </div>
             <div className="mt-7 grid gap-3 border border-gold/20 bg-white/[0.035] p-4 text-sm text-white/65 sm:p-5">
-              <span className="inline-flex items-start gap-2"><Truck className="mt-0.5 h-4 w-4 shrink-0 text-gold" /> CEP automático e frete configurável</span>
-              <span className="inline-flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-gold" /> Compra protegida e pagamento seguro</span>
+              <span className="inline-flex items-start gap-2"><Truck className="mt-0.5 h-4 w-4 shrink-0 text-gold" /> Calcule o frete pelo CEP no checkout</span>
+              <span className="inline-flex items-start gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-gold" /> Pedido conferido antes do envio</span>
             </div>
             <div className="mt-7">
               <AddToCart product={product} />
@@ -80,7 +80,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
                 </div>
               </div>
               <div>
-                <h2 className="font-semibold text-white">Descrição rica</h2>
+                <h2 className="font-semibold text-white">Sobre a fragrância</h2>
                 <p className="mt-3 leading-7 text-white/62">{product.richDescription}</p>
               </div>
               <div className="grid gap-4 text-sm text-white/62 sm:grid-cols-2">
@@ -94,15 +94,15 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         </div>
         <div className="mt-20">
           <div className="mb-8">
-            <Badge className="border-gold/40 bg-gold/10 text-gold">Avaliações</Badge>
-            <h2 className="mt-4 font-display text-4xl">O que os clientes dizem</h2>
+            <Badge className="border-gold/40 bg-gold/10 text-gold">Experiência</Badge>
+            <h2 className="mt-4 font-display text-4xl">Impressões de uso</h2>
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             {["Fixação impecável", "Entrega elegante", "Fragrância sofisticada"].map((title, index) => (
               <div key={title} className="border border-gold/18 bg-white/[0.035] p-5 sm:p-6">
                 <p className="mb-3 flex gap-1 text-gold">{Array.from({ length: 5 }).map((_, star) => <Star key={star} className="h-4 w-4 fill-current" />)}</p>
                 <h3 className="font-semibold">{title}</h3>
-                <p className="mt-2 text-sm leading-6 text-white/58">Experiência premium do começo ao fim, com acabamento digno de presente.</p>
+                <p className="mt-2 text-sm leading-6 text-white/58">Fragrância bem apresentada, marcante e com sensação de cuidado em cada detalhe.</p>
                 <p className="mt-4 text-xs uppercase tracking-[0.16em] text-gold/60">Cliente {index + 1}</p>
               </div>
             ))}
@@ -112,7 +112,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           <div className="mt-20">
             <div className="mb-8">
               <Badge className="border-gold/40 bg-gold/10 text-gold">Relacionados</Badge>
-              <h2 className="mt-4 font-display text-4xl">Combine com</h2>
+              <h2 className="mt-4 font-display text-4xl">Você também pode gostar</h2>
             </div>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {related.map((item) => <ProductCard key={item.slug} product={item} dark />)}

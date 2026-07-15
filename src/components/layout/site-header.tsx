@@ -73,7 +73,7 @@ export function SiteHeader() {
                 {collections.map(([label, href]) => (
                   <Link key={href} href={href} className="border border-transparent p-4 transition hover:border-gold/30 hover:bg-white/[0.04]">
                     <p className="font-display text-lg text-gold">{label}</p>
-                    <p className="mt-2 text-sm leading-6 text-white/55">Ver perfumes da marca.</p>
+                    <p className="mt-2 text-sm leading-6 text-white/55">Explorar fragrâncias disponíveis.</p>
                   </Link>
                 ))}
               </div>

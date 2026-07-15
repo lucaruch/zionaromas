@@ -11,9 +11,9 @@ export default function ContactPage() {
       <div className="container grid gap-10 lg:grid-cols-[0.9fr_1.1fr]">
         <div>
           <p className="text-xs uppercase tracking-[0.22em] text-gold">Atendimento ZION</p>
-          <h1 className="mt-3 font-display text-5xl">Contato</h1>
+          <h1 className="mt-3 font-display text-5xl">Fale com a nossa equipe</h1>
           <p className="mt-4 leading-7 text-white/60">
-            Atendimento consultivo para compras, presentes corporativos e suporte pós-venda.
+            Receba orientação para escolher sua fragrância, consultar disponibilidade, acompanhar pedidos ou montar um presente especial.
           </p>
           <div className="mt-8 grid gap-4 text-sm text-white/65">
             <a href="https://wa.me/5513997566750" target="_blank" rel="noreferrer" className="inline-flex items-center gap-3 transition hover:text-gold">
@@ -40,11 +40,11 @@ export default function ContactPage() {
         </div>
         <form className="border border-gold/20 bg-white/[0.035] p-6 shadow-[0_24px_80px_rgba(0,0,0,.35)]">
           <div className="grid gap-4">
-            <Input placeholder="Nome" />
-            <Input placeholder="E-mail" type="email" />
-            <Input placeholder="Assunto" />
+            <Input placeholder="Seu nome" />
+            <Input placeholder="Seu e-mail" type="email" />
+            <Input placeholder="Assunto do atendimento" />
             <textarea
-              placeholder="Mensagem"
+              placeholder="Conte o que você procura: perfume para uso próprio, presente, ocasião ou pedido já realizado."
               className="min-h-36 rounded-3xl border border-gold/20 bg-black p-4 text-sm text-white outline-none placeholder:text-white/40 focus:border-gold"
             />
             <Button type="submit">Enviar mensagem</Button>

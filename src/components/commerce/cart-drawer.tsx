@@ -45,8 +45,8 @@ export function CartDrawer() {
             >
               <div className="flex items-center justify-between border-b border-gold/15 p-4 sm:p-5">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.18em] text-gold">Sacola ZION</p>
-                  <h2 className="font-display text-2xl">Carrinho</h2>
+                  <p className="text-xs uppercase tracking-[0.18em] text-gold">Sua seleção</p>
+                  <h2 className="font-display text-2xl">Sacola</h2>
                 </div>
                 <button className="rounded-full p-2 text-white/70 hover:bg-white/10 hover:text-gold" onClick={() => setOpen(false)} aria-label="Fechar carrinho">
                   <X className="h-5 w-5" />
@@ -57,8 +57,8 @@ export function CartDrawer() {
                   <div className="grid h-full place-items-center text-center">
                     <div>
                       <ShoppingBag className="mx-auto mb-4 h-10 w-10 text-gold" />
-                      <p className="font-display text-2xl">Sua sacola está vazia</p>
-                      <p className="mt-2 text-sm text-white/55">Escolha uma fragrância para começar.</p>
+                      <p className="font-display text-2xl">Nenhuma fragrância selecionada</p>
+                      <p className="mt-2 text-sm text-white/55">Adicione um perfume para continuar a compra.</p>
                     </div>
                   </div>
                 ) : (

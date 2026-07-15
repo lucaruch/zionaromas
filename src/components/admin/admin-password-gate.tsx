@@ -28,7 +28,7 @@ export function AdminPasswordGate() {
       return;
     }
 
-    setError("Senha inválida.");
+    setError("Senha incorreta. Tente novamente.");
     setLoading(false);
   }
 
@@ -40,8 +40,8 @@ export function AdminPasswordGate() {
           <span className="mx-auto grid h-11 w-11 place-items-center rounded-full border border-gold/25 bg-black text-gold">
             <Lock className="h-5 w-5" />
           </span>
-          <h1 className="mt-5 font-display text-4xl">Área administrativa</h1>
-          <p className="mt-2 text-sm text-white/55">Digite a senha para acessar o painel.</p>
+          <h1 className="mt-5 font-display text-4xl">Painel ZION AROMAS</h1>
+          <p className="mt-2 text-sm text-white/55">Acesso reservado para gestão da loja.</p>
         </div>
         <div className="mt-7 grid gap-3">
           <Input
@@ -53,7 +53,7 @@ export function AdminPasswordGate() {
           />
           {error ? <p className="text-sm text-red-300">{error}</p> : null}
           <Button type="submit" disabled={loading}>
-            {loading ? "Entrando..." : "Entrar"}
+            {loading ? "Validando..." : "Acessar painel"}
           </Button>
         </div>
       </form>

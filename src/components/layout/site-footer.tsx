@@ -45,7 +45,7 @@ export function SiteFooter() {
           />
           <h2 className="font-display text-3xl">ZION AROMAS</h2>
           <p className="mt-4 max-w-md leading-7 text-white/60">
-            Loja especializada em perfumes árabes, fragrâncias orientais, oud, âmbar, musk e presentes premium.
+            Perfumes árabes selecionados para quem busca presença, elegância e uma assinatura olfativa memorável.
           </p>
           <div className="mt-6 grid gap-3 text-sm text-white/65">
             <a

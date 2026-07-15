@@ -2,25 +2,20 @@ export default function ReturnsPage() {
   return (
     <section className="arabic-pattern bg-black pb-20 pt-32 text-white">
       <div className="container max-w-3xl">
-        <p className="text-xs uppercase tracking-[0.22em] text-gold">Atendimento</p>
+        <p className="text-xs uppercase tracking-[0.22em] text-gold">Pós-venda</p>
         <h1 className="mt-3 font-display text-5xl">Trocas e Devoluções</h1>
         <div className="mt-8 grid gap-6 border border-gold/18 bg-white/[0.03] p-8 leading-8 text-white/62">
           <p>
-            A ZION AROMAS segue o Código de Defesa do Consumidor. Você pode solicitar arrependimento da compra em até
-            7 dias corridos após o recebimento.
+            A ZION AROMAS segue o Código de Defesa do Consumidor. Em compras online, o arrependimento pode ser solicitado em até 7 dias corridos após o recebimento.
           </p>
           <p>
-            Para troca ou devolução, o perfume precisa estar sem uso, lacrado, com embalagem original, acessórios e nota
-            ou comprovante do pedido. Produtos abertos, usados ou violados não podem ser trocados por motivo de higiene e
-            segurança.
+            Por se tratar de perfume, a troca ou devolução exige produto sem uso, lacrado, com embalagem original, acessórios e comprovante do pedido. Itens abertos, violados ou usados não podem ser aceitos por segurança e higiene.
           </p>
           <p>
-            Em caso de avaria no transporte ou divergência no pedido, entre em contato pelo WhatsApp informando número do
-            pedido, fotos da embalagem e do produto recebido.
+            Se o pedido chegar com avaria, divergência ou indício de violação, entre em contato pelo WhatsApp informando número do pedido e fotos da embalagem e do produto.
           </p>
           <p>
-            Após aprovação da solicitação, enviaremos as orientações de postagem e prazos para análise, troca, cupom ou
-            reembolso.
+            Após a análise, nossa equipe orientará sobre postagem, troca, cupom, reembolso ou solução adequada para o caso.
           </p>
         </div>
       </div>

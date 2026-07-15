@@ -8,7 +8,7 @@ export function CrudPage({
   columns,
   rows,
   fields,
-  actionLabel = "Novo cadastro",
+  actionLabel = "Adicionar item",
   showAction = true,
   showEditor = true
 }: {
@@ -52,18 +52,18 @@ export function CrudPage({
         </div>
         {showEditor ? (
           <form className="h-max min-w-0 border border-gold/18 bg-[#0d0b08] p-4 shadow-[0_18px_50px_rgba(0,0,0,.28)] sm:p-5">
-            <h2 className="font-display text-3xl text-white">Editor</h2>
+            <h2 className="font-display text-3xl text-white">Detalhes</h2>
             <div className="mt-5 grid gap-3">
               {fields.map((field) => (
                 <Input key={field} placeholder={field} />
               ))}
               <label className="grid cursor-pointer place-items-center border border-dashed border-gold/25 p-6 text-center text-sm text-white/50 transition hover:border-gold hover:text-gold">
                 <Upload className="mb-2 h-5 w-5 text-gold" />
-                Upload múltiplo de imagens
+                Adicionar imagens
                 <input type="file" multiple className="hidden" />
               </label>
-              <textarea placeholder="Descrição rica / conteúdo institucional" className="min-h-32 rounded-2xl border border-gold/20 bg-black p-4 text-sm text-white outline-none placeholder:text-white/40 focus:border-gold" />
-              <Button type="submit">Salvar alterações</Button>
+              <textarea placeholder="Descrição, observações ou texto da página" className="min-h-32 rounded-2xl border border-gold/20 bg-black p-4 text-sm text-white outline-none placeholder:text-white/40 focus:border-gold" />
+              <Button type="submit">Salvar informações</Button>
             </div>
           </form>
         ) : null}

@@ -80,17 +80,17 @@ export default function CheckoutPage() {
   return (
     <section className="arabic-pattern bg-black pb-20 pt-28 text-white sm:pt-32">
       <div className="container">
-        <p className="text-xs uppercase tracking-[0.22em] text-gold">Compra segura</p>
-        <h1 className="mt-3 font-display text-4xl sm:text-5xl">Checkout</h1>
+        <p className="text-xs uppercase tracking-[0.22em] text-gold">Finalização segura</p>
+        <h1 className="mt-3 font-display text-4xl sm:text-5xl">Concluir pedido</h1>
         <div className="mt-8 grid gap-6 lg:mt-10 lg:grid-cols-[minmax(0,1fr)_380px]">
           <form className="grid min-w-0 gap-6 sm:gap-8">
             <div className="border border-gold/18 bg-white/[0.03] p-4 sm:p-6">
-              <h2 className="font-display text-3xl">Identificação</h2>
+              <h2 className="font-display text-3xl">Seus dados</h2>
               <div className="mt-5 grid gap-4 md:grid-cols-2">
                 <Input placeholder="Nome completo" />
                 <Input placeholder="E-mail" type="email" />
                 <Input placeholder="Telefone" />
-                <Input placeholder="CPF/CNPJ" />
+                <Input placeholder="CPF ou CNPJ" />
               </div>
             </div>
 
@@ -98,19 +98,19 @@ export default function CheckoutPage() {
               <h2 className="font-display text-3xl">Entrega</h2>
               <div className="mt-5 grid gap-4 md:grid-cols-[180px_1fr]">
                 <Input placeholder="CEP" value={cep} onChange={(event) => lookupCep(event.target.value)} />
-                <Input placeholder="Endereço automático" value={address} onChange={(event) => setAddress(event.target.value)} />
+                <Input placeholder="Endereço localizado pelo CEP" value={address} onChange={(event) => setAddress(event.target.value)} />
                 <Input placeholder="Número" />
                 <Input placeholder="Complemento" />
               </div>
               <div className="mt-5 border border-gold/20 bg-black/45 p-4 sm:p-5">
                 <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-gold">
                   <Truck className="h-4 w-4" />
-                  Frete Correios via Melhor Envio
+                  Entrega pelos Correios
                 </div>
                 {shippingLoading ? (
                   <p className="inline-flex items-center gap-2 text-sm text-white/55">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Calculando PAC e SEDEX...
+                    Consultando opções disponíveis...
                   </p>
                 ) : shippingOptions.length ? (
                   <div className="grid gap-2">
@@ -139,7 +139,7 @@ export default function CheckoutPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-white/55">Informe o CEP para calcular PAC e SEDEX.</p>
+                  <p className="text-sm text-white/55">Informe o CEP para visualizar prazo e valor de entrega.</p>
                 )}
                 {shippingMessage ? <p className="mt-3 text-xs text-gold">{shippingMessage}</p> : null}
               </div>
@@ -164,7 +164,7 @@ export default function CheckoutPage() {
           </form>
 
           <aside className="h-max border border-gold/25 bg-black p-4 text-white shadow-[0_24px_80px_rgba(0,0,0,.45)] sm:p-6 lg:sticky lg:top-28">
-            <h2 className="font-display text-3xl">Resumo do pedido</h2>
+            <h2 className="font-display text-3xl">Resumo da compra</h2>
             <div className="mt-6 grid gap-4">
               {items.map((item) => (
                 <div key={item.slug} className="flex min-w-0 justify-between gap-3 text-sm text-white/70">
@@ -175,7 +175,7 @@ export default function CheckoutPage() {
                 </div>
               ))}
             </div>
-            <Input placeholder="Cupom" className="mt-6" />
+            <Input placeholder="Cupom de desconto" className="mt-6" />
             <div className="mt-6 grid gap-3 border-t border-gold/15 pt-6 text-sm text-white/70">
               <div className="flex justify-between gap-4">
                 <span>Subtotal</span>
@@ -186,7 +186,7 @@ export default function CheckoutPage() {
                 <strong className="text-white">{shipping ? formatCurrency(shipping) : "Calcular"}</strong>
               </div>
               <div className="flex justify-between gap-4">
-                <span>Cupom automático</span>
+                <span>Desconto aplicado</span>
                 <strong className="text-gold">-{formatCurrency(discount)}</strong>
               </div>
               <div className="flex justify-between gap-4 text-lg text-white">
@@ -195,7 +195,7 @@ export default function CheckoutPage() {
               </div>
             </div>
             <Button className="mt-6 w-full" disabled={!items.length || !selectedShippingId} onClick={clear}>
-              Confirmar pedido
+              Finalizar pedido
             </Button>
           </aside>
         </div>

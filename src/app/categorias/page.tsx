@@ -12,9 +12,9 @@ export default function CategoriesPage() {
     <section className="arabic-pattern bg-black pb-20 pt-32 text-white">
       <div className="container">
         <Badge className="border-gold/40 bg-gold/10 text-gold">Marcas</Badge>
-        <h1 className="mt-4 max-w-3xl font-display text-5xl md:text-6xl">Marcas selecionadas</h1>
+        <h1 className="mt-4 max-w-3xl font-display text-5xl md:text-6xl">Escolha pela marca</h1>
         <p className="mt-5 max-w-2xl leading-8 text-white/60">
-          Navegue pelas principais casas de perfumaria árabe disponíveis na ZION AROMAS.
+          Reunimos casas de perfumaria árabe conhecidas por intensidade, apresentação e excelente valor olfativo.
         </p>
         <div className="mt-10 grid gap-5 md:grid-cols-2">
           {categories.map((category) => (

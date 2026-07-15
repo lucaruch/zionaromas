@@ -4,22 +4,22 @@ export default function AdminSettingsPage() {
   return (
     <CrudPage
       title="Configurações"
-      description="Configure textos institucionais, redes sociais, frete, pagamentos e parâmetros gerais da loja."
-      columns={["Grupo", "Chave", "Valor"]}
+      description="Mantenha dados institucionais, contatos, formas de entrega e informações gerais sempre atualizados."
+      columns={["Seção", "Item", "Informação"]}
       rows={[
-        ["Frete", "free_shipping_min", "R$ 499"],
-        ["Pagamento", "pix_enabled", "true"],
-        ["Social", "instagram", "https://www.instagram.com/zion_aromas/"],
-        ["Contato", "whatsapp", "13997566750"],
-        ["Contato", "email", "zionaromasp@gmail.com"],
+        ["Frete", "Valor mínimo para frete especial", "R$ 499"],
+        ["Pagamento", "PIX habilitado", "Sim"],
+        ["Social", "Instagram", "https://www.instagram.com/zion_aromas/"],
+        ["Contato", "WhatsApp", "(13) 99756-6750"],
+        ["Contato", "E-mail", "zionaromasp@gmail.com"],
         [
           "Contato",
-          "address",
+          "Endereço",
           "Avenida Presidente Costa e Silva, 501 - Galeria PG - Ljs 70/75 - Boqueirão - Praia Grande - SP - CEP: 11700-007"
         ],
-        ["Créditos", "agency", "Black Sites - https://bksly.com.br"]
+        ["Créditos", "Desenvolvimento", "Black Sites - https://bksly.com.br"]
       ]}
-      fields={["Grupo", "Chave", "Valor JSON", "Rótulo"]}
+      fields={["Seção", "Nome do item", "Informação exibida", "Observação interna"]}
     />
   );
 }

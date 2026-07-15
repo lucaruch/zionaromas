@@ -5,7 +5,7 @@ import { categories, products } from "@/lib/data";
 
 export const metadata: Metadata = {
   title: "Produtos",
-  description: "Catálogo completo de perfumes árabes, oud, musk, âmbar, florais orientais e kits ZION AROMAS."
+  description: "Perfumes árabes selecionados de marcas como Lattafa, Maison Alhambra, Armaf, Afnan, Al Wataniah e French Avenue."
 };
 
 export default async function ProductsPage({
@@ -27,18 +27,18 @@ export default async function ProductsPage({
     <section className="bg-black pb-20 pt-28 text-white">
       <div className="arabic-pattern border-b border-gold/20 bg-black text-white">
         <div className="container py-16">
-          <Badge className="border-gold/40 bg-black/40 text-gold">Catálogo</Badge>
+          <Badge className="border-gold/40 bg-black/40 text-gold">Seleção ZION</Badge>
           <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_340px] lg:items-end">
             <div>
               <h1 className="font-display text-5xl md:text-6xl">
-                Perfumes <span className="gold-text">árabes ZION</span>
+                Perfumes árabes <span className="gold-text">selecionados</span>
               </h1>
               <p className="mt-5 max-w-2xl leading-8 text-white/68">
-                Fragrâncias orientais com oud, âmbar, musk e especiarias para quem busca presença sofisticada.
+                Uma vitrine de fragrâncias orientais com presença, fixação e acabamento para diferentes estilos de uso.
               </p>
             </div>
             <div className="border border-gold/20 bg-white/[0.04] p-5 text-sm leading-7 text-white/62">
-              Curadoria de boutique, embalagens elegantes e opções para uso diário, noite e presentes especiais.
+              Escolha por marca, compare famílias olfativas e encontre uma assinatura que combine com sua rotina, ocasião ou presente.
             </div>
           </div>
         </div>
@@ -47,7 +47,7 @@ export default async function ProductsPage({
       <div className="container pt-12">
         <div className="grid gap-8 lg:grid-cols-[280px_1fr]">
           <aside className="h-max border border-gold/20 bg-white/[0.035] p-5 shadow-[0_24px_80px_rgba(0,0,0,.35)]">
-            <h2 className="font-display text-2xl">Filtros</h2>
+            <h2 className="font-display text-2xl">Refinar busca</h2>
             <div className="luxury-divider my-5" />
             <div className="grid gap-7">
               <div>
@@ -78,7 +78,7 @@ export default async function ProductsPage({
           </aside>
           <div>
             <div className="mb-6 flex flex-col gap-3 border-b border-gold/15 pb-5 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-white/55">{filtered.length} produtos encontrados</p>
+              <p className="text-sm text-white/55">{filtered.length} fragrâncias encontradas</p>
               <select className="rounded-full border border-gold/20 bg-black px-4 py-2 text-sm text-white outline-none transition focus:border-gold focus:ring-4 focus:ring-gold/10">
                 <option>Mais relevantes</option>
                 <option>Menor preço</option>

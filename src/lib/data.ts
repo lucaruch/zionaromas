@@ -30,49 +30,49 @@ export const categories = [
     name: "Maison Alhambra",
     slug: "maison-alhambra",
     image: "https://images.unsplash.com/photo-1619994403073-2cec844b8e63?auto=format&fit=crop&w=1000&q=85",
-    description: "Perfumes árabes intensos, elegantes e com excelente presença."
+    description: "Fragrâncias orientais com presença sofisticada, ótimas para quem busca impacto e elegância."
   },
   {
     name: "Al Wataniah",
     slug: "al-wataniah",
     image: "https://images.unsplash.com/photo-1629198688000-71f23e745b6e?auto=format&fit=crop&w=1000&q=85",
-    description: "Fragrâncias orientais marcantes com ótimo acabamento para o dia a dia."
+    description: "Perfumes envolventes, versáteis e marcantes para usar com personalidade."
   },
   {
     name: "Armaf",
     slug: "armaf",
     image: "https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&w=1000&q=85",
-    description: "Perfumes sofisticados, versáteis e reconhecidos pelo alto desempenho."
+    description: "Criações modernas com alto desempenho e perfis olfativos fáceis de amar."
   },
   {
     name: "Lattafa",
     slug: "lattafa",
     image: "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=1000&q=85",
-    description: "Assinaturas árabes envolventes com oud, âmbar, especiarias e doçura refinada."
+    description: "Assinaturas árabes envolventes, com notas quentes, especiadas e memoráveis."
   },
   {
     name: "Orientica",
     slug: "orientica",
     image: "https://images.unsplash.com/photo-1602874801007-bd458bb1b8b6?auto=format&fit=crop&w=1000&q=85",
-    description: "Criações orientais premium para quem busca presença e exclusividade."
+    description: "Perfumes orientais com apresentação refinada e presença de alto padrão."
   },
   {
     name: "French Avenue",
     slug: "french-avenue",
     image: "https://images.unsplash.com/photo-1513201099705-a9746e1e201f?auto=format&fit=crop&w=1000&q=85",
-    description: "Perfumes modernos com inspiração internacional e acabamento elegante."
+    description: "Fragrâncias com inspiração contemporânea, bom desempenho e acabamento elegante."
   },
   {
     name: "Afnan",
     slug: "afnan",
     image: "https://images.unsplash.com/photo-1600612253971-422e7f7faeb6?auto=format&fit=crop&w=1000&q=85",
-    description: "Fragrâncias de alta projeção, fixação e assinatura sofisticada."
+    description: "Perfumes conhecidos pela projeção, fixação e assinatura olfativa marcante."
   },
   {
     name: "Zakat",
     slug: "zakat",
     image: "https://images.unsplash.com/photo-1556228578-8c89e6adf883?auto=format&fit=crop&w=1000&q=85",
-    description: "Perfumes árabes selecionados para quem procura intensidade e valor."
+    description: "Opções orientais escolhidas para quem procura intensidade, estilo e bom valor."
   }
 ];
 
@@ -96,9 +96,9 @@ export const products: Product[] = [
       "https://images.unsplash.com/photo-1600612253971-422e7f7faeb6?auto=format&fit=crop&w=1200&q=85",
       "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=1200&q=85"
     ],
-    shortDescription: "Oud nobre, açafrão e âmbar quente com rastro imponente.",
-    description: "Uma fragrância árabe intensa, criada para quem gosta de perfumes marcantes, sofisticados e de alta fixação.",
-    richDescription: "A saída especiada abre caminho para um coração de oud e rosa escura. No fundo, âmbar, couro e madeiras deixam uma assinatura envolvente.",
+    shortDescription: "Oud nobre, açafrão e âmbar quente em uma assinatura imponente.",
+    description: "Uma fragrância intensa para quem gosta de presença marcante, acabamento sofisticado e alta fixação.",
+    richDescription: "A abertura especiada revela um coração de oud e rosa escura. No fundo, âmbar, couro e madeiras criam um rastro envolvente e elegante.",
     featured: true,
     bestSeller: true,
     rating: 4.9,
@@ -124,9 +124,9 @@ export const products: Product[] = [
       "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=1200&q=85",
       "https://images.unsplash.com/photo-1615634260167-c8cdede054de?auto=format&fit=crop&w=1200&q=85"
     ],
-    shortDescription: "Madeiras escuras, incenso e baunilha seca para noites especiais.",
-    description: "Perfume árabe amadeirado com presença elegante, ideal para eventos, encontros e uso noturno.",
-    richDescription: "Combina incenso, madeira de agar e baunilha seca em uma evolução cremosa, sem perder intensidade.",
+    shortDescription: "Madeiras escuras, incenso e baunilha seca para ocasiões especiais.",
+    description: "Um amadeirado oriental elegante, ideal para eventos, encontros e momentos em que a fragrância precisa acompanhar a presença.",
+    richDescription: "Incenso, madeira de agar e baunilha seca evoluem de forma cremosa, mantendo intensidade sem perder refinamento.",
     featured: true,
     isNew: true,
     rating: 4.8,
@@ -151,9 +151,9 @@ export const products: Product[] = [
       "https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&w=1200&q=85",
       "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&w=1200&q=85"
     ],
-    shortDescription: "Rosa damascena, praline e almíscar branco em assinatura oriental.",
-    description: "Um floral árabe elegante, levemente adocicado, com excelente projeção e toque feminino sofisticado.",
-    richDescription: "Rosa damascena e jasmim aparecem sobre uma base cremosa de praline, musk e âmbar suave.",
+    shortDescription: "Rosa damascena, praline e almíscar branco em assinatura sofisticada.",
+    description: "Um floral oriental elegante, levemente adocicado, com projeção equilibrada e toque feminino refinado.",
+    richDescription: "Rosa damascena e jasmim se apoiam em uma base cremosa de praline, musk e âmbar suave.",
     bestSeller: true,
     isNew: true,
     rating: 4.7,
@@ -180,8 +180,8 @@ export const products: Product[] = [
       "https://images.unsplash.com/photo-1602874801007-bd458bb1b8b6?auto=format&fit=crop&w=1200&q=85"
     ],
     shortDescription: "Almíscar dourado, flores brancas e âmbar macio.",
-    description: "Perfume árabe limpo, elegante e envolvente, perfeito para quem busca sofisticação no dia a dia.",
-    richDescription: "A fragrância abre fresca e floral, evoluindo para uma base de musk, âmbar claro e baunilha delicada.",
+    description: "Uma fragrância limpa, elegante e envolvente para quem busca sofisticação discreta no dia a dia.",
+    richDescription: "A saída fresca e floral evolui para uma base de musk, âmbar claro e baunilha delicada.",
     featured: true,
     rating: 4.9,
     reviews: 61,
@@ -205,9 +205,9 @@ export const products: Product[] = [
       "https://images.unsplash.com/photo-1513201099705-a9746e1e201f?auto=format&fit=crop&w=1200&q=85",
       "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=1200&q=85"
     ],
-    shortDescription: "Kit com fragrâncias árabes selecionadas em embalagem presenteável.",
-    description: "Curadoria especial para presentear com perfumes intensos, sofisticados e memoráveis.",
-    richDescription: "Acompanha seleção harmonizada, embalagem rígida e apresentação premium para datas especiais.",
+    shortDescription: "Seleção presenteável com fragrâncias árabes de perfis complementares.",
+    description: "Uma opção elegante para presentear com perfumes marcantes, bem apresentados e fáceis de encantar.",
+    richDescription: "Reúne fragrâncias harmonizadas em uma apresentação elegante, pensada para datas especiais e presentes de impacto.",
     bestSeller: true,
     rating: 4.8,
     reviews: 49,
@@ -231,9 +231,9 @@ export const products: Product[] = [
       "https://images.unsplash.com/photo-1629198688000-71f23e745b6e?auto=format&fit=crop&w=1200&q=85",
       "https://images.unsplash.com/photo-1556228578-8c89e6adf883?auto=format&fit=crop&w=1200&q=85"
     ],
-    shortDescription: "Baunilha oriental, tâmaras e madeiras doces.",
-    description: "Um perfume árabe gourmand sofisticado, quente e confortável, sem perder elegância.",
-    richDescription: "Notas de baunilha, tâmaras e âmbar se unem a madeiras doces para um rastro envolvente.",
+    shortDescription: "Baunilha oriental, tâmaras e madeiras doces em uma assinatura quente.",
+    description: "Um gourmand oriental confortável, sofisticado e envolvente, sem perder elegância.",
+    richDescription: "Baunilha, tâmaras e âmbar se unem a madeiras doces para criar um rastro acolhedor e memorável.",
     isNew: true,
     rating: 4.6,
     reviews: 37,
@@ -249,7 +249,7 @@ export const testimonials = [
   },
   {
     name: "Rafael C.",
-    text: "Comprei o kit para presente e a apresentação ficou muito premium.",
+    text: "Comprei o kit para presente e a apresentação veio impecável.",
     role: "Cliente ZION"
   },
   {
