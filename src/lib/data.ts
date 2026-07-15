@@ -29,49 +29,49 @@ export const categories = [
   {
     name: "Maison Alhambra",
     slug: "maison-alhambra",
-    image: "https://images.unsplash.com/photo-1619994403073-2cec844b8e63?auto=format&fit=crop&w=1000&q=85",
+    image: "/brands/maison-alhambra.svg",
     description: "Perfumes árabes com presença sofisticada, ótimos para quem busca impacto e elegância."
   },
   {
     name: "Al Wataniah",
     slug: "al-wataniah",
-    image: "https://images.unsplash.com/photo-1629198688000-71f23e745b6e?auto=format&fit=crop&w=1000&q=85",
+    image: "/brands/al-wataniah.svg",
     description: "Perfumes envolventes, versáteis e marcantes para usar com personalidade."
   },
   {
     name: "Armaf",
     slug: "armaf",
-    image: "https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&w=1000&q=85",
+    image: "/brands/armaf.svg",
     description: "Perfumes árabes modernos, com alto desempenho e perfis fáceis de amar."
   },
   {
     name: "Lattafa",
     slug: "lattafa",
-    image: "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=1000&q=85",
+    image: "/brands/lattafa.svg",
     description: "Assinaturas árabes envolventes, com notas quentes, especiadas e memoráveis."
   },
   {
     name: "Orientica",
     slug: "orientica",
-    image: "https://images.unsplash.com/photo-1602874801007-bd458bb1b8b6?auto=format&fit=crop&w=1000&q=85",
+    image: "/brands/orientica.svg",
     description: "Perfumes árabes com apresentação refinada e presença de alto padrão."
   },
   {
     name: "French Avenue",
     slug: "french-avenue",
-    image: "https://images.unsplash.com/photo-1513201099705-a9746e1e201f?auto=format&fit=crop&w=1000&q=85",
+    image: "/brands/french-avenue.svg",
     description: "Fragrâncias com inspiração contemporânea, bom desempenho e acabamento elegante."
   },
   {
     name: "Afnan",
     slug: "afnan",
-    image: "https://images.unsplash.com/photo-1600612253971-422e7f7faeb6?auto=format&fit=crop&w=1000&q=85",
+    image: "/brands/afnan.svg",
     description: "Perfumes árabes conhecidos por projeção, fixação e assinatura marcante."
   },
   {
     name: "Zakat",
     slug: "zakat",
-    image: "https://images.unsplash.com/photo-1556228578-8c89e6adf883?auto=format&fit=crop&w=1000&q=85",
+    image: "/brands/zakat.svg",
     description: "Perfumes árabes escolhidos para quem procura intensidade, estilo e bom valor."
   }
 ];

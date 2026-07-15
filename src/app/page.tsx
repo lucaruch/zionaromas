@@ -86,9 +86,9 @@ export default function HomePage() {
                   alt={`Perfumes árabes ${category.name}`}
                   fill
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                  className="object-cover opacity-54 grayscale transition duration-700 group-hover:scale-105 group-hover:opacity-72"
+                  className="object-cover opacity-74 transition duration-700 group-hover:scale-105 group-hover:opacity-92"
                 />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_28%,rgba(212,175,55,.18),transparent_34%),linear-gradient(180deg,rgba(0,0,0,.08),rgba(0,0,0,.34)_42%,rgba(0,0,0,.92))]" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_28%,rgba(212,175,55,.08),transparent_34%),linear-gradient(180deg,rgba(0,0,0,.02),rgba(0,0,0,.18)_42%,rgba(0,0,0,.78))]" />
                 <div className="absolute left-5 top-5 grid h-16 w-16 place-items-center border border-gold/25 bg-black/78 shadow-[0_18px_60px_rgba(0,0,0,.45)] backdrop-blur">
                   <Image src="/brand/zion-aromas-logo.png" alt="ZION AROMAS" width={48} height={48} className="h-12 w-12 object-contain" />
                 </div>

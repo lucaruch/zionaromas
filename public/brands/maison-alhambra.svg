@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="34%" r="52%">
+      <stop offset="0" stop-color="#D4AF37" stop-opacity=".42"/>
+      <stop offset=".48" stop-color="#090806" stop-opacity=".2"/>
+      <stop offset="1" stop-color="#000000"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff1a8"/>
+      <stop offset=".42" stop-color="#D4AF37"/>
+      <stop offset="1" stop-color="#8f6d12"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="1200" fill="#000"/>
+  <rect width="900" height="1200" fill="url(#glow)"/>
+  <path d="M120 970V330c0-105 85-190 190-190h280c105 0 190 85 190 190v640" fill="none" stroke="#D4AF37" stroke-width="3" opacity=".42"/>
+  <path d="M450 168c-75 0-136 61-136 136v104h272V304c0-75-61-136-136-136Z" fill="#080604" stroke="#D4AF37" stroke-width="4" opacity=".78"/>
+  <rect x="255" y="330" width="390" height="520" rx="46" fill="#070604" stroke="url(#gold)" stroke-width="5"/>
+  <rect x="322" y="455" width="256" height="210" fill="#0b0907" stroke="#D4AF37" stroke-width="3"/>
+  <path d="M350 558h200M382 508h136M382 616h136" stroke="#D4AF37" stroke-width="3" opacity=".7"/>
+  <text x="450" y="925" text-anchor="middle" fill="#D4AF37" font-family="Georgia, serif" font-size="54" letter-spacing="3">MAISON</text>
+  <text x="450" y="988" text-anchor="middle" fill="#fff4be" font-family="Georgia, serif" font-size="72" letter-spacing="2">ALHAMBRA</text>
+  <text x="450" y="1050" text-anchor="middle" fill="#fff" opacity=".68" font-family="Arial, sans-serif" font-size="22" letter-spacing="7">PERFUMES ARABES</text>
+</svg>

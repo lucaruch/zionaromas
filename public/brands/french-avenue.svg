@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200">
+  <defs>
+    <linearGradient id="silver" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f8f7f1"/>
+      <stop offset=".45" stop-color="#D4AF37"/>
+      <stop offset="1" stop-color="#111"/>
+    </linearGradient>
+    <radialGradient id="bg" cx="52%" cy="32%" r="58%">
+      <stop offset="0" stop-color="#d4af37" stop-opacity=".34"/>
+      <stop offset=".5" stop-color="#151515"/>
+      <stop offset="1" stop-color="#000"/>
+    </radialGradient>
+  </defs>
+  <rect width="900" height="1200" fill="url(#bg)"/>
+  <rect x="285" y="230" width="330" height="610" rx="38" fill="#080808" stroke="url(#silver)" stroke-width="5"/>
+  <rect x="330" y="160" width="240" height="108" rx="18" fill="#070707" stroke="#D4AF37" stroke-width="4"/>
+  <path d="M330 390h240M330 468h240M330 546h240" stroke="#D4AF37" stroke-width="3" opacity=".35"/>
+  <text x="450" y="605" text-anchor="middle" fill="#D4AF37" font-family="Georgia, serif" font-size="52" letter-spacing="2">FRENCH</text>
+  <text x="450" y="665" text-anchor="middle" fill="#fff3bd" font-family="Georgia, serif" font-size="52" letter-spacing="2">AVENUE</text>
+  <text x="450" y="927" text-anchor="middle" fill="#fff3bd" font-family="Georgia, serif" font-size="70" letter-spacing="4">FRENCH AVENUE</text>
+  <text x="450" y="990" text-anchor="middle" fill="#D4AF37" font-family="Arial, sans-serif" font-size="23" letter-spacing="8">ARABIC PERFUME HOUSE</text>
+</svg>

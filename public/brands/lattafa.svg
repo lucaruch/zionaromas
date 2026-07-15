@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200">
+  <defs>
+    <linearGradient id="amber" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff0b2"/>
+      <stop offset=".35" stop-color="#D4AF37"/>
+      <stop offset="1" stop-color="#3b2107"/>
+    </linearGradient>
+    <radialGradient id="bg" cx="50%" cy="34%" r="54%">
+      <stop offset="0" stop-color="#8a4f18" stop-opacity=".55"/>
+      <stop offset=".52" stop-color="#140b04"/>
+      <stop offset="1" stop-color="#000"/>
+    </radialGradient>
+  </defs>
+  <rect width="900" height="1200" fill="url(#bg)"/>
+  <rect x="285" y="175" width="330" height="170" rx="26" fill="#080604" stroke="#D4AF37" stroke-width="5"/>
+  <rect x="230" y="332" width="440" height="505" rx="52" fill="#150b05" stroke="url(#amber)" stroke-width="6"/>
+  <path d="M310 400h280v180H310z" fill="#070604" stroke="#D4AF37" stroke-width="4"/>
+  <path d="M338 490h224M374 440h152M374 542h152" stroke="#D4AF37" stroke-width="4" opacity=".7"/>
+  <text x="450" y="922" text-anchor="middle" fill="#fff0b2" font-family="Georgia, serif" font-size="96" letter-spacing="5">LATTAFA</text>
+  <text x="450" y="986" text-anchor="middle" fill="#D4AF37" font-family="Arial, sans-serif" font-size="24" letter-spacing="8">ARABIC PERFUMES</text>
+</svg>

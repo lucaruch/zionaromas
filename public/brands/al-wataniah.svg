@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#03101f"/>
+      <stop offset=".45" stop-color="#071f36"/>
+      <stop offset="1" stop-color="#000"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff0a8"/>
+      <stop offset=".5" stop-color="#D4AF37"/>
+      <stop offset="1" stop-color="#765600"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="1200" fill="url(#bg)"/>
+  <circle cx="450" cy="410" r="265" fill="#D4AF37" opacity=".08"/>
+  <path d="M270 880V340c0-88 72-160 160-160h40c88 0 160 72 160 160v540" fill="#03101a" stroke="#D4AF37" stroke-width="5"/>
+  <rect x="334" y="225" width="232" height="115" rx="30" fill="#020812" stroke="url(#gold)" stroke-width="4"/>
+  <rect x="315" y="390" width="270" height="300" rx="22" fill="#061a2b" stroke="#D4AF37" stroke-width="4"/>
+  <path d="M345 463h210M365 530h170M390 594h120" stroke="#E7C76A" stroke-width="4" opacity=".65"/>
+  <text x="450" y="910" text-anchor="middle" fill="#fff4be" font-family="Georgia, serif" font-size="70" letter-spacing="2">AL WATANIAH</text>
+  <text x="450" y="970" text-anchor="middle" fill="#D4AF37" font-family="Arial, sans-serif" font-size="24" letter-spacing="8">ARABIAN PERFUMERY</text>
+  <text x="450" y="1032" text-anchor="middle" fill="#fff" opacity=".62" font-family="Arial, sans-serif" font-size="20" letter-spacing="5">EAU DE PARFUM</text>
+</svg>

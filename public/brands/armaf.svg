@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200">
+  <defs>
+    <radialGradient id="rose" cx="48%" cy="32%" r="60%">
+      <stop offset="0" stop-color="#ffd9c6" stop-opacity=".5"/>
+      <stop offset=".5" stop-color="#2a1612" stop-opacity=".55"/>
+      <stop offset="1" stop-color="#000"/>
+    </radialGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff1dc"/>
+      <stop offset=".45" stop-color="#D4AF37"/>
+      <stop offset="1" stop-color="#8f5a28"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="1200" fill="#000"/>
+  <rect width="900" height="1200" fill="url(#rose)"/>
+  <rect x="286" y="255" width="328" height="115" rx="18" fill="url(#metal)"/>
+  <rect x="250" y="360" width="400" height="490" rx="36" fill="#120b09" stroke="#d4af37" stroke-width="5"/>
+  <rect x="296" y="402" width="308" height="385" rx="22" fill="#2c1510" opacity=".72"/>
+  <circle cx="450" cy="570" r="92" fill="#0a0706" stroke="#D4AF37" stroke-width="4"/>
+  <text x="450" y="588" text-anchor="middle" fill="#D4AF37" font-family="Georgia, serif" font-size="46" letter-spacing="4">ARMAF</text>
+  <text x="450" y="925" text-anchor="middle" fill="#fff3bd" font-family="Georgia, serif" font-size="86" letter-spacing="4">ARMAF</text>
+  <text x="450" y="986" text-anchor="middle" fill="#D4AF37" font-family="Arial, sans-serif" font-size="24" letter-spacing="8">MODERN ARABIC SCENTS</text>
+</svg>
