@@ -22,13 +22,13 @@ export default function AboutPage() {
         </div>
         <div className="gold-frame relative aspect-[4/5] overflow-hidden border border-gold/25 bg-black">
           <Image
-            src="https://images.unsplash.com/photo-1587017539504-67cfbddac569?auto=format&fit=crop&w=1200&q=85"
+            src="/brands/lattafa-real.png"
             alt="Perfumes árabes selecionados ZION AROMAS"
             fill
             sizes="(max-width: 768px) 100vw, 50vw"
-            className="object-cover opacity-60 grayscale"
+            className="object-cover opacity-90"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-black/20" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/74 via-black/5 to-black/16" />
         </div>
       </div>
     </section>

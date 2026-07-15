@@ -17,7 +17,7 @@ const securityHeaders = [
       "object-src 'none'",
       "frame-ancestors 'self'",
       "form-action 'self'",
-      "img-src 'self' data: blob: https://images.unsplash.com",
+      "img-src 'self' data: blob:",
       "font-src 'self' data:",
       "style-src 'self' 'unsafe-inline'",
       process.env.NODE_ENV === "production"
@@ -34,14 +34,6 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   output: "standalone",
   outputFileTracingRoot: process.cwd(),
-  images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "images.unsplash.com"
-      }
-    ]
-  },
   experimental: {
     optimizePackageImports: ["lucide-react", "framer-motion"]
   },

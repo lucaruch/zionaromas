@@ -29,49 +29,49 @@ export const categories = [
   {
     name: "Maison Alhambra",
     slug: "maison-alhambra",
-    image: "/brands/maison-alhambra.svg",
+    image: "/brands/maison-alhambra-real.png",
     description: "Perfumes árabes com presença sofisticada, ótimos para quem busca impacto e elegância."
   },
   {
     name: "Al Wataniah",
     slug: "al-wataniah",
-    image: "/brands/al-wataniah.svg",
+    image: "/brands/al-wataniah-real.png",
     description: "Perfumes envolventes, versáteis e marcantes para usar com personalidade."
   },
   {
     name: "Armaf",
     slug: "armaf",
-    image: "/brands/armaf.svg",
+    image: "/brands/armaf-real.png",
     description: "Perfumes árabes modernos, com alto desempenho e perfis fáceis de amar."
   },
   {
     name: "Lattafa",
     slug: "lattafa",
-    image: "/brands/lattafa.svg",
+    image: "/brands/lattafa-real.png",
     description: "Assinaturas árabes envolventes, com notas quentes, especiadas e memoráveis."
   },
   {
     name: "Orientica",
     slug: "orientica",
-    image: "/brands/orientica.svg",
+    image: "/brands/orientica-real.png",
     description: "Perfumes árabes com apresentação refinada e presença de alto padrão."
   },
   {
     name: "French Avenue",
     slug: "french-avenue",
-    image: "/brands/french-avenue.svg",
+    image: "/brands/french-avenue-real.png",
     description: "Fragrâncias com inspiração contemporânea, bom desempenho e acabamento elegante."
   },
   {
     name: "Afnan",
     slug: "afnan",
-    image: "/brands/afnan.svg",
+    image: "/brands/afnan-real.png",
     description: "Perfumes árabes conhecidos por projeção, fixação e assinatura marcante."
   },
   {
     name: "Zakat",
     slug: "zakat",
-    image: "/brands/zakat.svg",
+    image: "/brands/zakat-real.png",
     description: "Perfumes árabes escolhidos para quem procura intensidade, estilo e bom valor."
   }
 ];
@@ -90,11 +90,11 @@ export const products: Product[] = [
     volume: "100 ml",
     weight: "0,42 kg",
     status: "active",
-    image: "https://images.unsplash.com/photo-1619994403073-2cec844b8e63?auto=format&fit=crop&w=1200&q=85",
+    image: "/brands/maison-alhambra-real.png",
     gallery: [
-      "https://images.unsplash.com/photo-1619994403073-2cec844b8e63?auto=format&fit=crop&w=1200&q=85",
-      "https://images.unsplash.com/photo-1600612253971-422e7f7faeb6?auto=format&fit=crop&w=1200&q=85",
-      "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=1200&q=85"
+      "/brands/maison-alhambra-real.png",
+      "/brands/lattafa-real.png",
+      "/brands/afnan-real.png"
     ],
     shortDescription: "Oud nobre, açafrão e âmbar quente em uma assinatura imponente.",
     description: "Uma fragrância intensa para quem gosta de presença marcante, acabamento sofisticado e alta fixação.",
@@ -119,10 +119,10 @@ export const products: Product[] = [
     volume: "100 ml",
     weight: "0,45 kg",
     status: "active",
-    image: "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=1200&q=85",
+    image: "/brands/lattafa-real.png",
     gallery: [
-      "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=1200&q=85",
-      "https://images.unsplash.com/photo-1615634260167-c8cdede054de?auto=format&fit=crop&w=1200&q=85"
+      "/brands/lattafa-real.png",
+      "/brands/maison-alhambra-real.png"
     ],
     shortDescription: "Madeiras escuras, incenso e baunilha seca para ocasiões especiais.",
     description: "Um perfume árabe amadeirado e elegante, ideal para momentos em que a fragrância precisa acompanhar a presença.",
@@ -146,10 +146,10 @@ export const products: Product[] = [
     volume: "100 ml",
     weight: "0,40 kg",
     status: "active",
-    image: "https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&w=1200&q=85",
+    image: "/brands/armaf-real.png",
     gallery: [
-      "https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&w=1200&q=85",
-      "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&w=1200&q=85"
+      "/brands/armaf-real.png",
+      "/brands/french-avenue-real.png"
     ],
     shortDescription: "Rosa damascena, praline e almíscar branco em assinatura sofisticada.",
     description: "Um perfume árabe floral, elegante e levemente adocicado, com projeção equilibrada e toque feminino refinado.",
@@ -174,10 +174,10 @@ export const products: Product[] = [
     volume: "100 ml",
     weight: "0,40 kg",
     status: "active",
-    image: "https://images.unsplash.com/photo-1600612253971-422e7f7faeb6?auto=format&fit=crop&w=1200&q=85",
+    image: "/brands/afnan-real.png",
     gallery: [
-      "https://images.unsplash.com/photo-1600612253971-422e7f7faeb6?auto=format&fit=crop&w=1200&q=85",
-      "https://images.unsplash.com/photo-1602874801007-bd458bb1b8b6?auto=format&fit=crop&w=1200&q=85"
+      "/brands/afnan-real.png",
+      "/brands/orientica-real.png"
     ],
     shortDescription: "Almíscar dourado, flores brancas e âmbar macio.",
     description: "Uma fragrância limpa, elegante e envolvente para quem busca sofisticação discreta no dia a dia.",
@@ -200,10 +200,10 @@ export const products: Product[] = [
     volume: "Kit",
     weight: "1,1 kg",
     status: "active",
-    image: "https://images.unsplash.com/photo-1513201099705-a9746e1e201f?auto=format&fit=crop&w=1200&q=85",
+    image: "/brands/french-avenue-real.png",
     gallery: [
-      "https://images.unsplash.com/photo-1513201099705-a9746e1e201f?auto=format&fit=crop&w=1200&q=85",
-      "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=1200&q=85"
+      "/brands/french-avenue-real.png",
+      "/brands/zakat-real.png"
     ],
     shortDescription: "Seleção de perfumes árabes com perfis complementares.",
     description: "Uma composição elegante de perfumes árabes marcantes, bem apresentados e fáceis de encantar.",
@@ -226,10 +226,10 @@ export const products: Product[] = [
     volume: "100 ml",
     weight: "0,39 kg",
     status: "active",
-    image: "https://images.unsplash.com/photo-1629198688000-71f23e745b6e?auto=format&fit=crop&w=1200&q=85",
+    image: "/brands/al-wataniah-real.png",
     gallery: [
-      "https://images.unsplash.com/photo-1629198688000-71f23e745b6e?auto=format&fit=crop&w=1200&q=85",
-      "https://images.unsplash.com/photo-1556228578-8c89e6adf883?auto=format&fit=crop&w=1200&q=85"
+      "/brands/al-wataniah-real.png",
+      "/brands/orientica-real.png"
     ],
     shortDescription: "Baunilha árabe, tâmaras e madeiras doces em uma assinatura quente.",
     description: "Um perfume árabe gourmand, confortável, sofisticado e envolvente, sem perder elegância.",
