@@ -25,15 +25,19 @@ async function main() {
 
   const categories = await Promise.all(
     [
-      ["Perfumes Árabes", "perfumes-arabes"],
+      ["Perfumes Arabes", "perfumes-arabes"],
       ["Oud & Amadeirados", "oud-amadeirados"],
       ["Florais Orientais", "florais-orientais"],
       ["Kits Presente", "kits-presente"]
     ].map(([name, slug]) =>
       prisma.category.upsert({
         where: { slug },
-        update: {},
-        create: { name, slug, description: "Curadoria ZION de perfumes árabes e fragrâncias orientais." }
+        update: { name },
+        create: {
+          name,
+          slug,
+          description: "Curadoria ZION de perfumes arabes e fragrancias orientais."
+        }
       })
     )
   );
@@ -96,29 +100,48 @@ async function main() {
   for (const product of products) {
     await prisma.product.upsert({
       where: { slug: product.slug },
-      update: {},
+      update: {
+        ...product,
+        brandId: brand.id,
+        status: ProductStatus.ACTIVE,
+        stock: 24,
+        shortDescription: "Perfume arabe premium com alta fixacao e presenca sofisticada.",
+        description: "Fragrancia oriental selecionada pela ZION AROMAS para quem busca rastro marcante e elegancia.",
+        richDescription: "<p>Notas orientais, acabamento premium, excelente projecao e embalagem cuidadosamente preparada.</p>",
+        gallery: [product.mainImage, product.mainImage],
+        seoTitle: `${product.name} | ZION AROMAS`,
+        seoDescription: "Perfume arabe premium ZION AROMAS com oud, ambar, musk e especiarias."
+      },
       create: {
         ...product,
         brandId: brand.id,
         status: ProductStatus.ACTIVE,
         stock: 24,
-        shortDescription: "Perfume árabe premium com alta fixação e presença sofisticada.",
-        description: "Fragrância oriental selecionada pela ZION AROMAS para quem busca rastro marcante e elegância.",
-        richDescription: "<p>Notas orientais, acabamento premium, excelente projeção e embalagem cuidadosamente preparada.</p>",
+        shortDescription: "Perfume arabe premium com alta fixacao e presenca sofisticada.",
+        description: "Fragrancia oriental selecionada pela ZION AROMAS para quem busca rastro marcante e elegancia.",
+        richDescription: "<p>Notas orientais, acabamento premium, excelente projecao e embalagem cuidadosamente preparada.</p>",
         gallery: [product.mainImage, product.mainImage],
         seoTitle: `${product.name} | ZION AROMAS`,
-        seoDescription: "Perfume árabe premium ZION AROMAS com oud, âmbar, musk e especiarias."
+        seoDescription: "Perfume arabe premium ZION AROMAS com oud, ambar, musk e especiarias."
       }
     });
   }
 
   await prisma.banner.upsert({
     where: { id: "home-hero" },
-    update: {},
+    update: {
+      title: "Perfumes arabes para quem deixa presenca",
+      subtitle: "Curadoria oriental com oud, ambar, musk, especiarias e fragrancias de alta fixacao.",
+      image: "https://images.unsplash.com/photo-1600612253971-422e7f7faeb6?auto=format&fit=crop&w=1800&q=85",
+      ctaLabel: "Explorar perfumes",
+      ctaHref: "/produtos",
+      location: "home",
+      active: true
+    },
     create: {
       id: "home-hero",
-      title: "Perfumes árabes para quem deixa presença",
-      subtitle: "Curadoria oriental com oud, âmbar, musk, especiarias e fragrâncias de alta fixação.",
+      title: "Perfumes arabes para quem deixa presenca",
+      subtitle: "Curadoria oriental com oud, ambar, musk, especiarias e fragrancias de alta fixacao.",
       image: "https://images.unsplash.com/photo-1600612253971-422e7f7faeb6?auto=format&fit=crop&w=1800&q=85",
       ctaLabel: "Explorar perfumes",
       ctaHref: "/produtos",
