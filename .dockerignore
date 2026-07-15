@@ -1,0 +1,14 @@
+.git
+.next
+node_modules
+npm-debug.log*
+next-dev-*.log
+*.log
+.env
+.env.*
+!.env.example
+Dockerfile
+README.md
+COOLIFY.md
+.DS_Store
+Thumbs.db
