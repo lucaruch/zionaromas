@@ -67,7 +67,7 @@ export default function HomePage() {
               <Badge className="border-gold/40 bg-gold/10 text-gold">Marcas</Badge>
               <h2 className="mt-4 font-display text-4xl sm:text-5xl">Marcas árabes selecionadas</h2>
               <p className="mt-4 max-w-2xl leading-7 text-white/58">
-                Encontre fragrâncias de casas orientais reconhecidas por desempenho, elegância e excelente valor percebido.
+                Encontre perfumes árabes das marcas selecionadas pela ZION AROMAS, com desempenho, elegância e excelente valor percebido.
               </p>
             </div>
             <Link href="/categorias" className="inline-flex items-center gap-2 text-sm font-semibold text-gold">

@@ -17,30 +17,56 @@ async function main() {
     }
   });
 
-  const brand = await prisma.brand.upsert({
-    where: { slug: "zion-aromas" },
-    update: {},
-    create: { name: "ZION AROMAS", slug: "zion-aromas" }
-  });
+  const brandSeeds = [
+    ["Maison Alhambra", "maison-alhambra"],
+    ["Al Wataniah", "al-wataniah"],
+    ["Armaf", "armaf"],
+    ["Lattafa", "lattafa"],
+    ["Orientica", "orientica"],
+    ["French Avenue", "french-avenue"],
+    ["Afnan", "afnan"],
+    ["Zakat", "zakat"]
+  ] as const;
+
+  const brands = await Promise.all(
+    brandSeeds.map(([name, slug]) =>
+      prisma.brand.upsert({
+        where: { slug },
+        update: { name },
+        create: { name, slug }
+      })
+    )
+  );
+
+  const brandBySlug = new Map(brands.map((brand) => [brand.slug, brand]));
 
   const categories = await Promise.all(
-    [
-      ["Perfumes Arabes", "perfumes-arabes"],
-      ["Oud & Amadeirados", "oud-amadeirados"],
-      ["Florais Orientais", "florais-orientais"],
-      ["Kits Presente", "kits-presente"]
-    ].map(([name, slug]) =>
+    brandSeeds.map(([name, slug]) =>
       prisma.category.upsert({
         where: { slug },
         update: { name },
         create: {
           name,
           slug,
-          description: "Curadoria ZION de perfumes arabes e fragrancias orientais."
+          description: "Marca de perfume arabe disponivel na ZION AROMAS."
         }
       })
     )
   );
+
+  const categoryBySlug = new Map(categories.map((category) => [category.slug, category]));
+  const oldCategorySlugs = ["perfumes-arabes", "oud-amadeirados", "florais-orientais", "kits-presente"];
+  const fallbackCategory = categoryBySlug.get("maison-alhambra")!;
+
+  for (const slug of oldCategorySlugs) {
+    const oldCategory = await prisma.category.findUnique({ where: { slug } });
+    if (oldCategory) {
+      await prisma.product.updateMany({
+        where: { categoryId: oldCategory.id },
+        data: { categoryId: fallbackCategory.id }
+      });
+    }
+  }
 
   const products = [
     {
@@ -51,7 +77,8 @@ async function main() {
       sku: "ZION-OUD-100",
       volume: "100 ml",
       mainImage: "https://images.unsplash.com/photo-1619994403073-2cec844b8e63?auto=format&fit=crop&w=1200&q=85",
-      categoryId: categories[0].id,
+      categoryId: categoryBySlug.get("maison-alhambra")!.id,
+      brandId: brandBySlug.get("maison-alhambra")!.id,
       featured: true,
       bestSeller: true,
       isNew: false
@@ -64,7 +91,8 @@ async function main() {
       sku: "ZION-AMEER-100",
       volume: "100 ml",
       mainImage: "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=1200&q=85",
-      categoryId: categories[1].id,
+      categoryId: categoryBySlug.get("lattafa")!.id,
+      brandId: brandBySlug.get("lattafa")!.id,
       featured: true,
       bestSeller: false,
       isNew: true
@@ -77,7 +105,8 @@ async function main() {
       sku: "ZION-ROSE-100",
       volume: "100 ml",
       mainImage: "https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&w=1200&q=85",
-      categoryId: categories[2].id,
+      categoryId: categoryBySlug.get("armaf")!.id,
+      brandId: brandBySlug.get("armaf")!.id,
       featured: false,
       bestSeller: true,
       isNew: true
@@ -90,7 +119,8 @@ async function main() {
       sku: "ZION-MUSK-100",
       volume: "100 ml",
       mainImage: "https://images.unsplash.com/photo-1600612253971-422e7f7faeb6?auto=format&fit=crop&w=1200&q=85",
-      categoryId: categories[2].id,
+      categoryId: categoryBySlug.get("afnan")!.id,
+      brandId: brandBySlug.get("afnan")!.id,
       featured: true,
       bestSeller: false,
       isNew: false
@@ -102,30 +132,32 @@ async function main() {
       where: { slug: product.slug },
       update: {
         ...product,
-        brandId: brand.id,
         status: ProductStatus.ACTIVE,
         stock: 24,
-        shortDescription: "Perfume arabe premium com alta fixacao e presenca sofisticada.",
-        description: "Fragrancia oriental selecionada pela ZION AROMAS para quem busca rastro marcante e elegancia.",
-        richDescription: "<p>Notas orientais, acabamento premium, excelente projecao e embalagem cuidadosamente preparada.</p>",
+        shortDescription: "Perfume arabe com alta fixacao e presenca sofisticada.",
+        description: "Perfume arabe selecionado pela ZION AROMAS para quem busca rastro marcante e elegancia.",
+        richDescription: "<p>Perfume arabe com excelente projecao e embalagem cuidadosamente preparada.</p>",
         gallery: [product.mainImage, product.mainImage],
         seoTitle: `${product.name} | ZION AROMAS`,
-        seoDescription: "Perfume arabe premium ZION AROMAS com oud, ambar, musk e especiarias."
+        seoDescription: "Perfume arabe ZION AROMAS com oud, ambar, musk e especiarias."
       },
       create: {
         ...product,
-        brandId: brand.id,
         status: ProductStatus.ACTIVE,
         stock: 24,
-        shortDescription: "Perfume arabe premium com alta fixacao e presenca sofisticada.",
-        description: "Fragrancia oriental selecionada pela ZION AROMAS para quem busca rastro marcante e elegancia.",
-        richDescription: "<p>Notas orientais, acabamento premium, excelente projecao e embalagem cuidadosamente preparada.</p>",
+        shortDescription: "Perfume arabe com alta fixacao e presenca sofisticada.",
+        description: "Perfume arabe selecionado pela ZION AROMAS para quem busca rastro marcante e elegancia.",
+        richDescription: "<p>Perfume arabe com excelente projecao e embalagem cuidadosamente preparada.</p>",
         gallery: [product.mainImage, product.mainImage],
         seoTitle: `${product.name} | ZION AROMAS`,
-        seoDescription: "Perfume arabe premium ZION AROMAS com oud, ambar, musk e especiarias."
+        seoDescription: "Perfume arabe ZION AROMAS com oud, ambar, musk e especiarias."
       }
     });
   }
+
+  await prisma.category.deleteMany({
+    where: { slug: { in: oldCategorySlugs } }
+  });
 
   await prisma.banner.upsert({
     where: { id: "home-hero" },
