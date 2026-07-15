@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Eye, Pencil, Package, Search, SlidersHorizontal, ShoppingBag, Trash2, MessageSquare, Ticket, Plus, X, Check, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/admin/stat-card";
-import { products } from "@/lib/data";
+import { categories, products } from "@/lib/data";
 import { formatCurrency } from "@/lib/utils";
 
 export default function AdminProductsPage() {
@@ -60,7 +60,7 @@ export default function AdminProductsPage() {
             <thead>
               <tr className="border-b border-gold/15 text-[10px] font-black uppercase tracking-[0.22em] text-gold/70">
                 <th className="px-5 py-4">Produto</th>
-                <th className="px-5 py-4">Categoria</th>
+                <th className="px-5 py-4">Marca</th>
                 <th className="px-5 py-4">Preço</th>
                 <th className="px-5 py-4">Estoque</th>
                 <th className="px-5 py-4">Status</th>
@@ -134,7 +134,7 @@ function ProductModal({ onClose }: { onClose: () => void }) {
           <Fieldset title="Informações principais">
             <InputLike placeholder="Ex.: Sultan Oud Premium" className="md:col-span-2" />
             <InputLike placeholder="Marca" />
-            <SelectLike options={["Perfumes Árabes", "Oud & Amadeirados", "Florais Orientais", "Kits Presente"]} />
+            <SelectLike options={categories.map((category) => category.name)} />
             <textarea placeholder="Descrição curta" className="min-h-24 rounded-md border border-gold/18 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-gold md:col-span-2" />
           </Fieldset>
           <Fieldset title="Peso e dimensões para frete">

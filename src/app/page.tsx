@@ -44,7 +44,7 @@ export default function HomePage() {
               </Link>
               <Link href="/categorias" className="w-full sm:w-auto">
                 <Button size="lg" variant="glass" className="w-full sm:w-auto">
-                  Ver famílias olfativas
+                  Ver marcas
                 </Button>
               </Link>
             </div>
@@ -64,14 +64,14 @@ export default function HomePage() {
         <div className="container">
           <div className="mb-10 flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <div>
-              <Badge className="border-gold/40 bg-gold/10 text-gold">Categorias</Badge>
-              <h2 className="mt-4 font-display text-4xl sm:text-5xl">Famílias olfativas</h2>
+              <Badge className="border-gold/40 bg-gold/10 text-gold">Marcas</Badge>
+              <h2 className="mt-4 font-display text-4xl sm:text-5xl">Marcas árabes selecionadas</h2>
               <p className="mt-4 max-w-2xl leading-7 text-white/58">
-                Escolha pelo estilo que combina com a sua presença: oud intenso, florais orientais, musk elegante ou kits presenteáveis.
+                Escolha por Maison Alhambra, Lattafa, Armaf, Afnan, Al Wataniah e outras casas orientais de alto desejo.
               </p>
             </div>
             <Link href="/categorias" className="inline-flex items-center gap-2 text-sm font-semibold text-gold">
-              Ver categorias <ArrowRight className="h-4 w-4" />
+              Ver marcas <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

@@ -33,7 +33,7 @@ export function SearchOverlay({
             autoFocus
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Buscar por perfume, categoria ou SKU"
+            placeholder="Buscar por perfume, marca ou SKU"
             className="border-gold/20 bg-white/[0.04]"
           />
           <button onClick={() => onOpenChange(false)} className="rounded-full p-2 text-white/70 hover:bg-white/10 hover:text-gold">

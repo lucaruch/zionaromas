@@ -6,22 +6,19 @@ import { Menu, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CartDrawer } from "@/components/commerce/cart-drawer";
 import { SearchOverlay } from "@/components/layout/search-overlay";
+import { categories } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
 const nav = [
   { href: "/produtos", label: "Produtos" },
-  { href: "/categorias", label: "Categorias" },
+  { href: "/categorias", label: "Marcas" },
   { href: "/promocoes", label: "Promoções" },
   { href: "/novidades", label: "Novidades" },
   { href: "/mais-vendidos", label: "Mais vendidos" },
   { href: "/sobre", label: "Sobre" }
 ];
 
-const collections = [
-  ["Perfumes Árabes", "/produtos?categoria=perfumes-arabes"],
-  ["Oud & Amadeirados", "/produtos?categoria=oud-amadeirados"],
-  ["Florais Orientais", "/produtos?categoria=florais-orientais"]
-];
+const collections = categories.map((category) => [category.name, `/produtos?categoria=${category.slug}`]);
 
 export function SiteHeader() {
   const [solid, setSolid] = useState(false);
@@ -71,12 +68,12 @@ export function SiteHeader() {
               </Link>
             ))}
             <div className="group relative py-7">
-              <button className="text-sm font-medium transition hover:text-gold">Coleções</button>
-              <div className="pointer-events-none absolute left-1/2 top-full grid w-[620px] -translate-x-1/2 translate-y-3 grid-cols-3 gap-4 border border-gold/20 bg-black/95 p-5 text-white opacity-0 shadow-[0_28px_90px_rgba(0,0,0,.55)] backdrop-blur-xl transition group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
+              <button className="text-sm font-medium transition hover:text-gold">Marcas</button>
+              <div className="pointer-events-none absolute left-1/2 top-full grid w-[720px] -translate-x-1/2 translate-y-3 grid-cols-4 gap-3 border border-gold/20 bg-black/95 p-5 text-white opacity-0 shadow-[0_28px_90px_rgba(0,0,0,.55)] backdrop-blur-xl transition group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
                 {collections.map(([label, href]) => (
                   <Link key={href} href={href} className="border border-transparent p-4 transition hover:border-gold/30 hover:bg-white/[0.04]">
-                    <p className="font-display text-xl text-gold">{label}</p>
-                    <p className="mt-2 text-sm leading-6 text-white/55">Curadoria árabe com oud, âmbar e especiarias.</p>
+                    <p className="font-display text-lg text-gold">{label}</p>
+                    <p className="mt-2 text-sm leading-6 text-white/55">Ver perfumes da marca.</p>
                   </Link>
                 ))}
               </div>

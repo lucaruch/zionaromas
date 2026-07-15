@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Instagram, Mail, MapPin, Phone } from "lucide-react";
+import { categories } from "@/lib/data";
 
 const address =
   "Avenida Presidente Costa e Silva, 501 - Galeria PG - Ljs 70/75 - Boqueirão - Praia Grande - SP - CEP: 11700-007";
@@ -8,12 +9,7 @@ const address =
 const columns = [
   {
     title: "Loja",
-    links: [
-      ["Perfumes Árabes", "/produtos?categoria=perfumes-arabes"],
-      ["Oud & Amadeirados", "/produtos?categoria=oud-amadeirados"],
-      ["Florais Orientais", "/produtos?categoria=florais-orientais"],
-      ["Kits Presente", "/produtos?categoria=kits-presente"]
-    ]
+    links: categories.slice(0, 4).map((category) => [category.name, `/produtos?categoria=${category.slug}`])
   },
   {
     title: "Atendimento",

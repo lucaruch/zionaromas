@@ -51,7 +51,7 @@ export default async function ProductsPage({
             <div className="luxury-divider my-5" />
             <div className="grid gap-7">
               <div>
-                <p className="mb-3 text-xs uppercase tracking-[0.16em] text-gold/70">Categoria</p>
+                <p className="mb-3 text-xs uppercase tracking-[0.16em] text-gold/70">Marca</p>
                 <div className="grid gap-2">
                   {categories.map((category) => (
                     <a key={category.slug} href={`/produtos?categoria=${category.slug}`} className="rounded-full px-3 py-2 text-sm text-white/70 transition hover:bg-gold hover:text-black">

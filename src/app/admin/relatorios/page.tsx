@@ -1,5 +1,6 @@
 import { DollarSign, Package, ShoppingCart, Users } from "lucide-react";
 import { StatCard } from "@/components/admin/stat-card";
+import { categories } from "@/lib/data";
 
 export default function AdminReportsPage() {
   return (
@@ -12,12 +13,12 @@ export default function AdminReportsPage() {
         <StatCard label="Recorrência" value="31%" icon={Users} />
       </div>
       <div className="mt-5 rounded-lg border border-black/10 bg-white p-6 shadow-sm">
-        <h2 className="text-2xl font-black">Performance por categoria</h2>
+        <h2 className="text-2xl font-black">Performance por marca</h2>
         <div className="mt-8 grid gap-4">
-          {["Perfumes Árabes", "Oud & Amadeirados", "Florais Orientais", "Kits Presente"].map((category, index) => (
-            <div key={category}>
+          {categories.slice(0, 4).map((category, index) => (
+            <div key={category.slug}>
               <div className="mb-2 flex justify-between text-sm">
-                <span>{category}</span>
+                <span>{category.name}</span>
                 <strong>{62 + index * 9}%</strong>
               </div>
               <div className="h-3 rounded-full bg-[#f1f1f3]">
