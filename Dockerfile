@@ -12,7 +12,7 @@ RUN npm ci
 
 FROM base AS builder
 
-COPY --from=deps /app/node_modules ./node_modules
+COPY --from=builder /app/node_modules ./node_modules
 COPY . .
 
 ENV DATABASE_URL=postgresql://postgres:postgres@localhost:5432/zion_aromas?schema=public
