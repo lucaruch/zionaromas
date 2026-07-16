@@ -2,17 +2,13 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
+import sharp from "sharp";
 import { isAdminUnlocked } from "@/lib/admin-auth";
 import { isRateLimited } from "@/lib/security";
 
 const MAX_FILES = 8;
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
-const allowedTypes = new Map([
-  ["image/jpeg", ".jpg"],
-  ["image/png", ".png"],
-  ["image/webp", ".webp"],
-  ["image/gif", ".gif"]
-]);
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 
 export async function POST(request: Request) {
   if (!(await isAdminUnlocked())) {
@@ -40,13 +36,22 @@ export async function POST(request: Request) {
 
     const uploaded = await Promise.all(
       files.map(async (file) => {
-        const extension = allowedTypes.get(file.type);
-        if (!extension || file.size > MAX_FILE_SIZE) {
+        if (!allowedTypes.has(file.type) || file.size > MAX_FILE_SIZE) {
           throw new Error("invalid-file");
         }
 
-        const filename = `${randomUUID()}${extension}`;
-        const bytes = Buffer.from(await file.arrayBuffer());
+        const filename = `${randomUUID()}.webp`;
+        const input = Buffer.from(await file.arrayBuffer());
+        const bytes = await sharp(input, { animated: false })
+          .rotate()
+          .resize({
+            width: 1400,
+            height: 1400,
+            fit: "inside",
+            withoutEnlargement: true
+          })
+          .webp({ quality: 82, effort: 5 })
+          .toBuffer();
         await writeFile(path.join(uploadDir, filename), bytes);
         return `/uploads/${filename}`;
       })
@@ -54,6 +59,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ files: uploaded });
   } catch {
-    return NextResponse.json({ error: "Arquivo invalido." }, { status: 400 });
+    return NextResponse.json({ error: "Envie apenas imagens JPG, PNG, WEBP ou GIF validas." }, { status: 400 });
   }
 }

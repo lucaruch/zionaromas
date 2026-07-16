@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, type FormEvent } from "react";
-import { Check, Eye, Loader2, Pencil, Plus, Search, SlidersHorizontal, Trash2, Upload, X } from "lucide-react";
+import { Check, Eye, ImagePlus, Loader2, Pencil, Plus, Search, SlidersHorizontal, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { AdminBrand, AdminCategory, AdminProduct, AdminStats } from "@/lib/admin-data";
@@ -15,7 +15,6 @@ type ProductForm = {
   slug: string;
   shortDescription: string;
   description: string;
-  richDescription: string;
   price: string;
   salePrice: string;
   stock: string;
@@ -25,8 +24,6 @@ type ProductForm = {
   status: "DRAFT" | "ACTIVE" | "ARCHIVED";
   mainImage: string;
   gallery: string[];
-  seoTitle: string;
-  seoDescription: string;
   featured: boolean;
   bestSeller: boolean;
   isNew: boolean;
@@ -34,29 +31,29 @@ type ProductForm = {
   brandId: string;
 };
 
-const emptyForm = (brands: AdminBrand[], categories: AdminCategory[]): ProductForm => ({
-  name: "",
-  slug: "",
-  shortDescription: "",
-  description: "",
-  richDescription: "",
-  price: "",
-  salePrice: "",
-  stock: "0",
-  sku: "",
-  weight: "",
-  volume: "100 ml",
-  status: "ACTIVE",
-  mainImage: "/products/sultan-oud.png",
-  gallery: [],
-  seoTitle: "",
-  seoDescription: "",
-  featured: false,
-  bestSeller: false,
-  isNew: false,
-  categoryId: categories[0]?.id ?? "",
-  brandId: brands[0]?.id ?? ""
-});
+const emptyForm = (brands: AdminBrand[], categories: AdminCategory[]): ProductForm => {
+  const firstBrand = brands[0];
+  return {
+    name: "",
+    slug: "",
+    shortDescription: "",
+    description: "",
+    price: "",
+    salePrice: "",
+    stock: "0",
+    sku: "",
+    weight: "0.40",
+    volume: "100 ml",
+    status: "ACTIVE",
+    mainImage: "",
+    gallery: [],
+    featured: false,
+    bestSeller: false,
+    isNew: false,
+    brandId: firstBrand?.id ?? "",
+    categoryId: findCategoryForBrand(firstBrand?.slug, categories) ?? categories[0]?.id ?? ""
+  };
+};
 
 function slugify(value: string) {
   return value
@@ -67,6 +64,16 @@ function slugify(value: string) {
     .replace(/(^-|-$)/g, "");
 }
 
+function findCategoryForBrand(brandSlug: string | undefined, categories: AdminCategory[]) {
+  if (!brandSlug) return undefined;
+  return categories.find((category) => category.slug === brandSlug)?.id;
+}
+
+function makeSku(name: string) {
+  const base = slugify(name).replace(/-/g, "").slice(0, 12).toUpperCase() || "PERFUME";
+  return `ZION-${base}-${Date.now().toString().slice(-4)}`;
+}
+
 function toForm(product: AdminProduct): ProductForm {
   return {
     id: product.id,
@@ -74,18 +81,15 @@ function toForm(product: AdminProduct): ProductForm {
     slug: product.slug,
     shortDescription: product.shortDescription,
     description: product.description,
-    richDescription: product.richDescription,
     price: product.price,
     salePrice: product.salePrice,
     stock: String(product.stock),
     sku: product.sku,
-    weight: product.weight,
-    volume: product.volume,
+    weight: product.weight || "0.40",
+    volume: product.volume || "100 ml",
     status: product.status,
     mainImage: product.mainImage,
     gallery: product.gallery,
-    seoTitle: product.seoTitle,
-    seoDescription: product.seoDescription,
     featured: product.featured,
     bestSeller: product.bestSeller,
     isNew: product.isNew,
@@ -111,6 +115,7 @@ export function AdminProductsManager({
   const [statusFilter, setStatusFilter] = useState("all");
   const [form, setForm] = useState<ProductForm | null>(null);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
 
   const filteredProducts = useMemo(() => {
@@ -129,16 +134,35 @@ export function AdminProductsManager({
     setForm((current) => (current ? { ...current, [key]: value } : current));
   }
 
+  function changeBrand(brandId: string) {
+    const brand = brands.find((item) => item.id === brandId);
+    setForm((current) =>
+      current
+        ? {
+            ...current,
+            brandId,
+            categoryId: findCategoryForBrand(brand?.slug, categories) ?? current.categoryId
+          }
+        : current
+    );
+  }
+
   async function uploadImages(files: FileList | null) {
     if (!files?.length || !form) return;
+    setUploading(true);
+    setMessage("");
+
     const body = new FormData();
     Array.from(files).forEach((file) => body.append("files", file));
     const response = await fetch("/api/upload", { method: "POST", body });
-    const data = await response.json();
+    const data = await response.json().catch(() => ({}));
+    setUploading(false);
+
     if (!response.ok) {
       setMessage(data.error || "Não foi possível enviar as imagens.");
       return;
     }
+
     const uploaded = data.files as string[];
     setForm({
       ...form,
@@ -151,15 +175,30 @@ export function AdminProductsManager({
     event.preventDefault();
     if (!form) return;
 
+    if (!form.mainImage) {
+      setMessage("Envie uma imagem do produto antes de salvar.");
+      return;
+    }
+
     setSaving(true);
     setMessage("");
 
+    const slug = form.slug || slugify(form.name);
+    const shortDescription =
+      form.shortDescription || `Perfume árabe ${form.name} com presença sofisticada e excelente apresentação.`;
+    const description = form.description || shortDescription;
     const payload = {
       ...form,
-      slug: form.slug || slugify(form.name),
+      slug,
+      sku: form.sku || makeSku(form.name),
       stock: Number(form.stock || 0),
+      weight: form.weight || "0.40",
       gallery: form.gallery.length ? form.gallery : [form.mainImage],
-      richDescription: form.richDescription || form.description
+      shortDescription,
+      description,
+      richDescription: description,
+      seoTitle: `${form.name} | ZION AROMAS`,
+      seoDescription: shortDescription
     };
 
     const response = await fetch("/api/admin/produtos", {
@@ -225,7 +264,7 @@ export function AdminProductsManager({
         <div className="grid gap-2 border-b border-gold/15 bg-black/35 p-4 md:grid-cols-[1fr_180px_152px]">
           <label className="flex h-10 items-center gap-3 rounded-md border border-gold/18 bg-black px-3 text-sm text-white/45">
             <Search className="h-4 w-4" />
-            <input value={query} onChange={(event) => setQuery(event.target.value)} className="w-full bg-transparent outline-none placeholder:text-white/40" placeholder="Buscar nome, marca ou SKU" />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} className="w-full bg-transparent outline-none placeholder:text-white/40" placeholder="Buscar nome ou marca" />
           </label>
           <label className="flex h-10 items-center gap-3 rounded-md border border-gold/18 bg-black px-3 text-sm text-white">
             <SlidersHorizontal className="h-4 w-4 text-gold" />
@@ -268,7 +307,7 @@ export function AdminProductsManager({
                       </div>
                       <div>
                         <p className="font-black">{product.name}</p>
-                        <p className="mt-1 text-[10px] uppercase tracking-[0.08em] text-white/42">{product.sku}</p>
+                        <p className="mt-1 text-xs text-white/42">{product.volume || "Perfume árabe"}</p>
                       </div>
                     </div>
                   </td>
@@ -311,7 +350,7 @@ export function AdminProductsManager({
           <form onSubmit={saveProduct} className="max-h-[92vh] w-full max-w-2xl overflow-y-auto border border-gold/25 bg-[#070604] text-white shadow-[0_28px_90px_rgba(0,0,0,.75)]">
             <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gold/15 bg-black px-5 py-5">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gold/70">Gestão de catálogo</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gold/70">Cadastro de produto</p>
                 <h2 className="mt-1 text-2xl font-black">{form.id ? "Editar produto" : "Novo produto"}</h2>
               </div>
               <button type="button" onClick={() => setForm(null)} className="grid h-10 w-10 place-items-center rounded-full border border-gold/25 text-white hover:border-gold hover:text-gold">
@@ -320,51 +359,50 @@ export function AdminProductsManager({
             </div>
 
             <div className="grid gap-5 p-5">
+              <div className="rounded-md border border-gold/15 bg-black/35 p-4">
+                <p className="text-xs font-semibold leading-6 text-white/60">
+                  Preencha o essencial. O sistema organiza automaticamente os códigos, links e informações da vitrine.
+                </p>
+              </div>
+
               <div className="grid gap-3 md:grid-cols-2">
-                <Input placeholder="Nome do produto" value={form.name} onChange={(event) => {
-                  update("name", event.target.value);
-                  if (!form.id) update("slug", slugify(event.target.value));
-                }} />
-                <Input placeholder="Link amigável" value={form.slug} onChange={(event) => update("slug", slugify(event.target.value))} />
-                <select value={form.brandId} onChange={(event) => update("brandId", event.target.value)} className="h-11 rounded-md border border-gold/18 bg-black px-4 text-sm font-semibold text-white outline-none focus:border-gold">
+                <Input placeholder="Nome do perfume" value={form.name} onChange={(event) => update("name", event.target.value)} />
+                <select value={form.brandId} onChange={(event) => changeBrand(event.target.value)} className="h-11 rounded-md border border-gold/18 bg-black px-4 text-sm font-semibold text-white outline-none focus:border-gold">
                   {brands.map((brand) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}
                 </select>
-                <select value={form.categoryId} onChange={(event) => update("categoryId", event.target.value)} className="h-11 rounded-md border border-gold/18 bg-black px-4 text-sm font-semibold text-white outline-none focus:border-gold">
-                  {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
-                </select>
-              </div>
-
-              <textarea placeholder="Descrição curta" value={form.shortDescription} onChange={(event) => update("shortDescription", event.target.value)} className="min-h-20 rounded-md border border-gold/18 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-gold" />
-              <textarea placeholder="Descrição principal" value={form.description} onChange={(event) => update("description", event.target.value)} className="min-h-24 rounded-md border border-gold/18 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-gold" />
-              <textarea placeholder="Descrição detalhada" value={form.richDescription} onChange={(event) => update("richDescription", event.target.value)} className="min-h-28 rounded-md border border-gold/18 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-gold" />
-
-              <div className="grid gap-3 md:grid-cols-4">
-                <Input placeholder="Preço" value={form.price} onChange={(event) => update("price", event.target.value)} />
-                <Input placeholder="Preço promocional" value={form.salePrice} onChange={(event) => update("salePrice", event.target.value)} />
+                <Input placeholder="Preço de venda" value={form.price} onChange={(event) => update("price", event.target.value)} />
+                <Input placeholder="Preço promocional, se houver" value={form.salePrice} onChange={(event) => update("salePrice", event.target.value)} />
                 <Input placeholder="Estoque" type="number" value={form.stock} onChange={(event) => update("stock", event.target.value)} />
-                <Input placeholder="SKU" value={form.sku} onChange={(event) => update("sku", event.target.value)} />
-                <Input placeholder="Peso em kg" value={form.weight} onChange={(event) => update("weight", event.target.value)} />
                 <Input placeholder="Volume" value={form.volume} onChange={(event) => update("volume", event.target.value)} />
-                <select value={form.status} onChange={(event) => update("status", event.target.value as ProductForm["status"])} className="h-11 rounded-md border border-gold/18 bg-black px-4 text-sm font-semibold text-white outline-none focus:border-gold md:col-span-2">
-                  <option value="ACTIVE">Ativo</option>
-                  <option value="DRAFT">Rascunho</option>
-                  <option value="ARCHIVED">Arquivado</option>
-                </select>
               </div>
 
-              <div className="grid gap-3 md:grid-cols-2">
-                <Input placeholder="Título para busca" value={form.seoTitle} onChange={(event) => update("seoTitle", event.target.value)} />
-                <Input placeholder="Resumo para busca" value={form.seoDescription} onChange={(event) => update("seoDescription", event.target.value)} />
-              </div>
-
-              <label className="grid cursor-pointer place-items-center border border-dashed border-gold/30 p-8 text-center text-sm text-white/55 transition hover:border-gold">
-                <Upload className="mb-3 h-6 w-6 text-gold" />
-                Enviar imagens do produto
+              <label className="grid cursor-pointer place-items-center border border-dashed border-gold/30 p-6 text-center text-sm text-white/65 transition hover:border-gold">
+                {uploading ? <Loader2 className="mb-3 h-6 w-6 animate-spin text-gold" /> : <ImagePlus className="mb-3 h-6 w-6 text-gold" />}
+                {uploading ? "Convertendo para WEBP..." : "Enviar imagens do produto"}
+                <span className="mt-2 text-xs text-white/42">JPG, PNG, WEBP ou GIF. O site salva tudo leve em WEBP.</span>
                 <input type="file" multiple accept="image/*" className="hidden" onChange={(event) => uploadImages(event.target.files)} />
               </label>
-              <Input placeholder="Imagem principal" value={form.mainImage} onChange={(event) => update("mainImage", event.target.value)} />
 
-              <div className="grid gap-3 md:grid-cols-3">
+              {form.mainImage ? (
+                <div className="grid gap-3 md:grid-cols-[120px_minmax(0,1fr)] md:items-center">
+                  <div className="relative h-28 w-28 overflow-hidden border border-gold/18 bg-black">
+                    <Image src={form.mainImage} alt="Imagem principal" fill sizes="112px" className="object-cover" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-white">Imagem principal selecionada</p>
+                    <p className="mt-1 break-all text-xs text-white/45">{form.mainImage}</p>
+                  </div>
+                </div>
+              ) : null}
+
+              <textarea placeholder="Resumo para aparecer no catálogo" value={form.shortDescription} onChange={(event) => update("shortDescription", event.target.value)} className="min-h-20 rounded-md border border-gold/18 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-gold" />
+              <textarea placeholder="Descrição do produto" value={form.description} onChange={(event) => update("description", event.target.value)} className="min-h-28 rounded-md border border-gold/18 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-gold" />
+
+              <div className="grid gap-3 md:grid-cols-4">
+                <label className="flex items-center justify-between border border-gold/18 bg-black p-4 text-sm md:col-span-1">
+                  Visível
+                  <input type="checkbox" checked={form.status === "ACTIVE"} onChange={(event) => update("status", event.target.checked ? "ACTIVE" : "DRAFT")} className="accent-gold" />
+                </label>
                 {(["featured", "bestSeller", "isNew"] as const).map((key) => (
                   <label key={key} className="flex items-center justify-between border border-gold/18 bg-black p-4 text-sm">
                     <span>{key === "featured" ? "Destaque" : key === "bestSeller" ? "Mais vendido" : "Novidade"}</span>
@@ -378,7 +416,7 @@ export function AdminProductsManager({
               <button type="button" onClick={() => setForm(null)} className="h-11 rounded-full border border-gold/25 px-6 text-[10px] font-black uppercase tracking-[0.14em] text-white hover:border-gold">
                 Cancelar
               </button>
-              <Button type="submit" disabled={saving}>
+              <Button type="submit" disabled={saving || uploading}>
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                 Salvar produto
               </Button>
