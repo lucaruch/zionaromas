@@ -5,6 +5,8 @@ import { categories } from "@/lib/data";
 
 const address =
   "Avenida Presidente Costa e Silva, 501 - Galeria PG - Ljs 70/75 - Boqueirão - Praia Grande - SP - CEP: 11700-007";
+const companyName = "ZION AROMAS PERFUMARIA LTDA";
+const companyDocument = "CNPJ: 66.976.436/0001-29";
 
 const columns = [
   {
@@ -48,6 +50,10 @@ export function SiteFooter() {
             Perfumes árabes selecionados para quem busca presença, elegância e uma assinatura olfativa memorável.
           </p>
           <div className="mt-6 grid gap-3 text-sm text-white/65">
+            <div className="grid gap-1 border-l border-gold/35 pl-3 text-white/62">
+              <span className="font-medium text-white/78">{companyName}</span>
+              <span>{companyDocument}</span>
+            </div>
             <a
               href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`}
               target="_blank"
@@ -89,7 +95,8 @@ export function SiteFooter() {
             @zion_aromas
           </a>
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
-            <span>© 2026 ZION AROMAS</span>
+            <span>© 2026 {companyName}</span>
+            <span>{companyDocument}</span>
             <span>
               Feito por{" "}
               <a href="https://bksly.com.br" target="_blank" rel="noreferrer" className="text-gold transition hover:text-gold-light">
