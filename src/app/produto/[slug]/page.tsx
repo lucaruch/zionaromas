@@ -9,9 +9,10 @@ import { getCatalogProduct, getCatalogProducts } from "@/lib/catalog";
 import { productJsonLd } from "@/lib/seo";
 import { formatCurrency } from "@/lib/utils";
 
-export async function generateStaticParams() {
-  const products = await getCatalogProducts();
-  return products.map((product) => ({ slug: product.slug }));
+export const dynamic = "force-dynamic";
+
+export function generateStaticParams() {
+  return [];
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {

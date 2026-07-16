@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/commerce/product-card";
 import { getCatalogCategories, getCatalogProducts } from "@/lib/catalog";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const [categories, products] = await Promise.all([getCatalogCategories(), getCatalogProducts()]);
   const featured = products.filter((product) => product.featured);

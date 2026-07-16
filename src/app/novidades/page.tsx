@@ -4,6 +4,8 @@ import { getCatalogProducts } from "@/lib/catalog";
 
 export const metadata: Metadata = { title: "Novidades" };
 
+export const dynamic = "force-dynamic";
+
 export default async function NewProductsPage() {
   const products = await getCatalogProducts();
   return (

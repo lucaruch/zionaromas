@@ -8,6 +8,8 @@ export const metadata: Metadata = {
   description: "Perfumes árabes selecionados de marcas como Lattafa, Maison Alhambra, Armaf, Afnan, Al Wataniah e French Avenue."
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function ProductsPage({
   searchParams
 }: {

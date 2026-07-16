@@ -4,6 +4,8 @@ import { getCatalogProducts } from "@/lib/catalog";
 
 export const metadata: Metadata = { title: "Mais vendidos" };
 
+export const dynamic = "force-dynamic";
+
 export default async function BestSellersPage() {
   const products = await getCatalogProducts();
   return (
