@@ -3,6 +3,7 @@ import Link from "next/link";
 import { AdminPasswordGate } from "@/components/admin/admin-password-gate";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { isAdminUnlocked } from "@/lib/admin-auth";
+import { getAdminStats } from "@/lib/admin-data";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const unlocked = await isAdminUnlocked();
@@ -10,6 +11,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!unlocked) {
     return <AdminPasswordGate />;
   }
+
+  const stats = await getAdminStats();
 
   return (
     <section className="min-h-screen bg-[#070604] text-white">
@@ -25,7 +28,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </div>
       </header>
       <main className="mx-auto grid max-w-[1226px] gap-5 px-4 py-6 sm:py-9 lg:grid-cols-[216px_minmax(0,1fr)]">
-        <AdminSidebar />
+        <AdminSidebar stats={stats} />
         <div className="min-w-0">{children}</div>
       </main>
     </section>

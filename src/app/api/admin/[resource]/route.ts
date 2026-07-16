@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { isAdminUnlocked } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { isRateLimited } from "@/lib/security";
@@ -21,6 +22,86 @@ const modelMap = {
   configuracoes: "storeSetting"
 } as const;
 
+const nullableDecimal = z
+  .union([z.string(), z.number(), z.null(), z.undefined()])
+  .transform((value) => {
+    if (value === null || value === undefined || value === "") return null;
+    return String(value).replace(",", ".");
+  });
+
+const productSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  slug: z.string().trim().min(2).max(140),
+  shortDescription: z.string().trim().min(2).max(240),
+  description: z.string().trim().min(2).max(2_000),
+  richDescription: z.string().trim().min(2).max(8_000),
+  price: z.union([z.string(), z.number()]).transform((value) => String(value).replace(",", ".")),
+  salePrice: nullableDecimal,
+  stock: z.coerce.number().int().min(0).max(999_999),
+  sku: z.string().trim().min(2).max(80),
+  weight: nullableDecimal,
+  volume: z.string().trim().max(40).optional().default(""),
+  status: z.enum(["DRAFT", "ACTIVE", "ARCHIVED"]).default("ACTIVE"),
+  mainImage: z.string().trim().min(1).max(500),
+  gallery: z.array(z.string().trim().min(1).max(500)).max(12).default([]),
+  seoTitle: z.string().trim().max(160).optional().default(""),
+  seoDescription: z.string().trim().max(240).optional().default(""),
+  featured: z.coerce.boolean().default(false),
+  bestSeller: z.coerce.boolean().default(false),
+  isNew: z.coerce.boolean().default(false),
+  categoryId: z.string().trim().min(1),
+  brandId: z.string().trim().min(1)
+});
+
+const categorySchema = z.object({
+  name: z.string().trim().min(2).max(80),
+  slug: z.string().trim().min(2).max(100),
+  description: z.string().trim().max(500).optional().default(""),
+  image: z.string().trim().max(500).optional().nullable().default(null)
+});
+
+const brandSchema = z.object({
+  name: z.string().trim().min(2).max(80),
+  slug: z.string().trim().min(2).max(100),
+  image: z.string().trim().max(500).optional().nullable().default(null)
+});
+
+const couponSchema = z.object({
+  code: z.string().trim().min(2).max(40).transform((value) => value.toUpperCase()),
+  description: z.string().trim().max(240).optional().default(""),
+  discountRate: z.union([z.string(), z.number(), z.null(), z.undefined()]).transform((value) => {
+    if (value === null || value === undefined || value === "") return null;
+    return Number(value);
+  }),
+  discountValue: nullableDecimal,
+  expiresAt: z.string().trim().max(20).optional().default(""),
+  active: z.coerce.boolean().default(true)
+});
+
+const bannerSchema = z.object({
+  title: z.string().trim().min(2).max(120),
+  subtitle: z.string().trim().max(300).optional().default(""),
+  image: z.string().trim().min(1).max(500),
+  ctaLabel: z.string().trim().max(80).optional().default(""),
+  ctaHref: z.string().trim().max(200).optional().default(""),
+  location: z.string().trim().min(2).max(80).default("home"),
+  active: z.coerce.boolean().default(true),
+  sortOrder: z.coerce.number().int().min(0).max(999).default(0)
+});
+
+const orderSchema = z.object({
+  status: z.enum(["RECEBIDO", "PAGO", "SEPARACAO", "ENVIADO", "ENTREGUE", "CANCELADO"]),
+  paymentStatus: z.string().trim().max(40).optional(),
+  trackingCode: z.string().trim().max(80).optional().nullable()
+});
+
+const customerSchema = z.object({
+  name: z.string().trim().min(2).max(100),
+  email: z.string().trim().email().max(120),
+  phone: z.string().trim().max(30).optional().nullable(),
+  document: z.string().trim().max(30).optional().nullable()
+});
+
 function getModel(resource: string) {
   const modelName = modelMap[resource as keyof typeof modelMap];
   if (!modelName) return null;
@@ -35,6 +116,71 @@ async function readAdminPayload(request: Request) {
   const payload = await request.json().catch(() => null);
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
   return payload as Record<string, unknown>;
+}
+
+function prepareResourceData(resource: string, payload: Record<string, unknown>) {
+  if (resource === "produtos") {
+    const parsed = productSchema.safeParse(payload);
+    if (!parsed.success) return null;
+    const data = parsed.data;
+    return {
+      ...data,
+      salePrice: data.salePrice || null,
+      weight: data.weight || null,
+      volume: data.volume || null,
+      seoTitle: data.seoTitle || null,
+      seoDescription: data.seoDescription || null,
+      gallery: data.gallery.length ? data.gallery : [data.mainImage]
+    };
+  }
+
+  if (resource === "categorias") {
+    const parsed = categorySchema.safeParse(payload);
+    if (!parsed.success) return null;
+    return { ...parsed.data, image: parsed.data.image || null };
+  }
+
+  if (resource === "marcas") {
+    const parsed = brandSchema.safeParse(payload);
+    if (!parsed.success) return null;
+    return { ...parsed.data, image: parsed.data.image || null };
+  }
+
+  if (resource === "cupons") {
+    const parsed = couponSchema.safeParse(payload);
+    if (!parsed.success) return null;
+    return {
+      ...parsed.data,
+      discountRate: parsed.data.discountRate || null,
+      discountValue: parsed.data.discountValue || null,
+      expiresAt: parsed.data.expiresAt ? new Date(`${parsed.data.expiresAt}T23:59:59.000Z`) : null
+    };
+  }
+
+  if (resource === "banners") {
+    const parsed = bannerSchema.safeParse(payload);
+    if (!parsed.success) return null;
+    return {
+      ...parsed.data,
+      subtitle: parsed.data.subtitle || null,
+      ctaLabel: parsed.data.ctaLabel || null,
+      ctaHref: parsed.data.ctaHref || null
+    };
+  }
+
+  if (resource === "pedidos") {
+    const parsed = orderSchema.safeParse(payload);
+    if (!parsed.success) return null;
+    return parsed.data;
+  }
+
+  if (resource === "clientes") {
+    const parsed = customerSchema.safeParse(payload);
+    if (!parsed.success) return null;
+    return parsed.data;
+  }
+
+  return null;
 }
 
 type RouteContext = { params: Promise<{ resource: string }> };
@@ -62,8 +208,10 @@ export async function POST(request: Request, { params }: RouteContext) {
   const model = getModel(resource);
   if (!model) return NextResponse.json({ error: "Recurso nao encontrado." }, { status: 404 });
 
-  const data = await readAdminPayload(request);
-  if (!data) return NextResponse.json({ error: "Dados invalidos." }, { status: 400 });
+  const payload = await readAdminPayload(request);
+  if (!payload) return NextResponse.json({ error: "Dados invalidos." }, { status: 400 });
+  const data = prepareResourceData(resource, payload);
+  if (!data) return NextResponse.json({ error: "Revise os campos informados." }, { status: 400 });
 
   try {
     const created = await model.create({ data });
@@ -88,7 +236,9 @@ export async function PUT(request: Request, { params }: RouteContext) {
     return NextResponse.json({ error: "Dados invalidos." }, { status: 400 });
   }
 
-  const { id, ...data } = payload;
+  const { id, ...rawData } = payload;
+  const data = prepareResourceData(resource, rawData);
+  if (!data) return NextResponse.json({ error: "Revise os campos informados." }, { status: 400 });
 
   try {
     const updated = await model.update({ where: { id }, data });

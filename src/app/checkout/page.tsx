@@ -164,7 +164,8 @@ export default function CheckoutPage() {
           },
           items: items.map((item) => ({ productId: item.slug, quantity: item.quantity })),
           paymentMethod,
-          coupon
+          coupon,
+          shipping
         })
       });
 

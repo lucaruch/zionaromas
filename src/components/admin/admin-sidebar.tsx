@@ -3,18 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Boxes, MessageSquare, Package, Settings, Ticket } from "lucide-react";
-import { products } from "@/lib/data";
+import type { AdminStats } from "@/lib/admin-data";
 
-const links = [
-  { href: "/admin/produtos", label: "Produtos", count: products.length, icon: Package },
-  { href: "/admin/pedidos", label: "Pedidos", count: 3, icon: Boxes },
-  { href: "/admin/clientes", label: "Mensagens", count: 3, icon: MessageSquare },
-  { href: "/admin/cupons", label: "Cupons", count: 2, icon: Ticket },
-  { href: "/admin/configuracoes", label: "Pagamentos", count: 1, icon: Settings }
-];
-
-export function AdminSidebar() {
+export function AdminSidebar({ stats }: { stats: AdminStats }) {
   const pathname = usePathname();
+  const links = [
+    { href: "/admin/produtos", label: "Produtos", count: stats.products, icon: Package },
+    { href: "/admin/pedidos", label: "Pedidos", count: stats.openOrders, icon: Boxes },
+    { href: "/admin/clientes", label: "Clientes", count: stats.customers, icon: MessageSquare },
+    { href: "/admin/cupons", label: "Cupons", count: stats.activeCoupons, icon: Ticket },
+    { href: "/admin/configuracoes", label: "Pagamentos", count: 1, icon: Settings }
+  ];
 
   return (
     <aside className="grid h-max min-w-0 gap-4">
@@ -43,10 +42,10 @@ export function AdminSidebar() {
       <div className="hidden border border-gold/18 bg-[#0d0b08] p-5 shadow-[0_18px_50px_rgba(0,0,0,.28)] lg:block">
         <p className="mb-6 text-[10px] font-black uppercase tracking-[0.22em] text-gold/70">Resumo operacional</p>
         {[
-          ["Produtos ativos", products.length],
-          ["Pedidos abertos", 3],
-          ["Mensagens pendentes", 3],
-          ["Cupons ativos", 2]
+          ["Produtos cadastrados", stats.products],
+          ["Pedidos em aberto", stats.openOrders],
+          ["Clientes", stats.customers],
+          ["Cupons ativos", stats.activeCoupons]
         ].map(([label, value]) => (
           <div key={label} className="flex items-center justify-between border-b border-gold/12 py-3 text-sm last:border-0">
             <span className="text-white/58">{label}</span>
