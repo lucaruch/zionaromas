@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { CartProvider } from "@/components/commerce/cart-provider";
 import { PwaRegister } from "@/components/layout/pwa-register";
 import { SiteChrome } from "@/components/layout/site-chrome";
+import { getCatalogCategories } from "@/lib/catalog";
 import { defaultMetadata } from "@/lib/seo";
 import "./globals.css";
 
@@ -13,13 +14,15 @@ export const viewport: Viewport = {
   initialScale: 1
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const categories = await getCatalogCategories();
+
   return (
     <html lang="pt-BR">
       <body>
         <CartProvider>
           <PwaRegister />
-          <SiteChrome>{children}</SiteChrome>
+          <SiteChrome categories={categories}>{children}</SiteChrome>
         </CartProvider>
       </body>
     </html>

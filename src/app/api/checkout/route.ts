@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getPaymentSettings } from "@/lib/payment-store";
 import { getCheckoutPaymentCopy, providerLabels } from "@/lib/payments";
 import { prisma } from "@/lib/prisma";
+import { MOCK_PRODUCT_SLUGS } from "@/lib/mock-products";
 import { isRateLimited, parseJson } from "@/lib/security";
 
 const schema = z.object({
@@ -55,7 +56,8 @@ export async function POST(request: Request) {
   const products = await prisma.product.findMany({
     where: {
       OR: [{ id: { in: productKeys } }, { slug: { in: productKeys } }],
-      status: "ACTIVE"
+      status: "ACTIVE",
+      slug: { notIn: MOCK_PRODUCT_SLUGS }
     }
   });
   const productMap = new Map(products.flatMap((product) => [[product.id, product], [product.slug, product]]));

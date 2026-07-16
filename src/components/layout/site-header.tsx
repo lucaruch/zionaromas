@@ -6,7 +6,7 @@ import { Menu, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CartDrawer } from "@/components/commerce/cart-drawer";
 import { SearchOverlay } from "@/components/layout/search-overlay";
-import { categories } from "@/lib/data";
+import type { CatalogCategory } from "@/lib/catalog";
 import { cn } from "@/lib/utils";
 
 const nav = [
@@ -18,9 +18,8 @@ const nav = [
   { href: "/sobre", label: "Sobre" }
 ];
 
-const collections = categories.map((category) => [category.name, `/produtos?categoria=${category.slug}`]);
-
-export function SiteHeader() {
+export function SiteHeader({ categories }: { categories: CatalogCategory[] }) {
+  const collections = categories.map((category) => [category.name, `/produtos?categoria=${category.slug}`]);
   const [solid, setSolid] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);

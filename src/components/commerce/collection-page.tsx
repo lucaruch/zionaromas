@@ -28,6 +28,7 @@ export function CollectionPage({
             <ProductCard key={product.slug} product={product} dark />
           ))}
         </div>
+        {!products.length ? <p className="py-12 text-center text-sm text-white/50">Nenhum produto cadastrado nesta seção.</p> : null}
       </div>
     </section>
   );

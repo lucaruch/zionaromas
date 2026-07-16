@@ -2,9 +2,15 @@
 
 import Link from "next/link";
 import { Search, X } from "lucide-react";
-import { useMemo, useState } from "react";
-import { products } from "@/lib/data";
+import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
+
+type SearchResult = {
+  slug: string;
+  name: string;
+  category: string;
+  volume: string;
+};
 
 export function SearchOverlay({
   open,
@@ -14,13 +20,29 @@ export function SearchOverlay({
   onOpenChange: (open: boolean) => void;
 }) {
   const [query, setQuery] = useState("");
-  const results = useMemo(() => {
-    const value = query.toLowerCase().trim();
-    if (!value) return products.slice(0, 4);
-    return products.filter((product) =>
-      [product.name, product.category, product.shortDescription, product.sku].join(" ").toLowerCase().includes(value)
-    );
-  }, [query]);
+  const [results, setResults] = useState<SearchResult[]>([]);
+
+  useEffect(() => {
+    if (!open) return;
+    const value = query.trim();
+    if (value.length < 2) {
+      setResults([]);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeout = window.setTimeout(async () => {
+      const response = await fetch(`/api/search?q=${encodeURIComponent(value)}`, { signal: controller.signal }).catch(() => null);
+      if (!response?.ok) return;
+      const data = await response.json();
+      setResults(data.results || []);
+    }, 220);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeout);
+    };
+  }, [open, query]);
 
   if (!open) return null;
 
@@ -55,6 +77,9 @@ export function SearchOverlay({
               <span className="text-xs uppercase tracking-[0.16em] text-gold-deep">{product.volume}</span>
             </Link>
           ))}
+          {query.trim().length >= 2 && !results.length ? (
+            <p className="px-4 py-6 text-center text-sm text-white/45">Nenhum perfume encontrado.</p>
+          ) : null}
         </div>
       </div>
     </div>

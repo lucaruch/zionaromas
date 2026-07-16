@@ -5,17 +5,18 @@ import { AddToCart } from "@/components/commerce/add-to-cart";
 import { ProductCard } from "@/components/commerce/product-card";
 import { ProductGallery } from "@/components/commerce/product-gallery";
 import { Badge } from "@/components/ui/badge";
-import { findProduct, products } from "@/lib/data";
+import { getCatalogProduct, getCatalogProducts } from "@/lib/catalog";
 import { productJsonLd } from "@/lib/seo";
 import { formatCurrency } from "@/lib/utils";
 
-export function generateStaticParams() {
+export async function generateStaticParams() {
+  const products = await getCatalogProducts();
   return products.map((product) => ({ slug: product.slug }));
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const product = findProduct(slug);
+  const product = await getCatalogProduct(slug);
   if (!product) return {};
   return {
     title: product.name,
@@ -30,8 +31,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const product = findProduct(slug);
+  const product = await getCatalogProduct(slug);
   if (!product) notFound();
+  const products = await getCatalogProducts();
   const related = products.filter((item) => item.categorySlug === product.categorySlug && item.slug !== product.slug).slice(0, 3);
 
   return (

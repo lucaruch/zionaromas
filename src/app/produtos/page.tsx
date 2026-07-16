@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { ProductCard } from "@/components/commerce/product-card";
 import { Badge } from "@/components/ui/badge";
-import { categories, products } from "@/lib/data";
+import { getCatalogCategories, getCatalogProducts } from "@/lib/catalog";
 
 export const metadata: Metadata = {
   title: "Produtos",
@@ -14,6 +14,7 @@ export default async function ProductsPage({
   searchParams?: Promise<{ categoria?: string; busca?: string; preco?: string; marca?: string; disponibilidade?: string }>;
 }) {
   const filters = await searchParams;
+  const [categories, products] = await Promise.all([getCatalogCategories(), getCatalogProducts()]);
   const filtered = products.filter((product) => {
     const byCategory = !filters?.categoria || product.categorySlug === filters.categoria;
     const bySearch =
@@ -91,6 +92,7 @@ export default async function ProductsPage({
                 <ProductCard key={product.slug} product={product} dark />
               ))}
             </div>
+            {!filtered.length ? <p className="py-12 text-center text-sm text-white/50">Nenhum produto cadastrado para esta seleção.</p> : null}
           </div>
         </div>
       </div>

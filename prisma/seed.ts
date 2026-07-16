@@ -1,5 +1,6 @@
-import { PrismaClient, ProductStatus } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { MOCK_PRODUCT_SLUGS } from "../src/lib/mock-products";
 
 const prisma = new PrismaClient();
 
@@ -68,94 +69,13 @@ async function main() {
     }
   }
 
-  const products = [
-    {
-      name: "Sultan Oud",
-      slug: "sultan-oud",
-      price: "389.90",
-      salePrice: null,
-      sku: "ZION-OUD-100",
-      volume: "100 ml",
-      mainImage: "/products/sultan-oud.png",
-      categoryId: categoryBySlug.get("maison-alhambra")!.id,
-      brandId: brandBySlug.get("maison-alhambra")!.id,
-      featured: true,
-      bestSeller: true,
-      isNew: false
-    },
-    {
-      name: "Ameer Al Layl",
-      slug: "ameer-al-layl",
-      price: "459.90",
-      salePrice: "419.90",
-      sku: "ZION-AMEER-100",
-      volume: "100 ml",
-      mainImage: "/products/ameer-al-layl.png",
-      categoryId: categoryBySlug.get("lattafa")!.id,
-      brandId: brandBySlug.get("lattafa")!.id,
-      featured: true,
-      bestSeller: false,
-      isNew: true
-    },
-    {
-      name: "Rose Dubai",
-      slug: "rose-dubai",
-      price: "329.90",
-      salePrice: null,
-      sku: "ZION-ROSE-100",
-      volume: "100 ml",
-      mainImage: "/products/rose-dubai.png",
-      categoryId: categoryBySlug.get("armaf")!.id,
-      brandId: brandBySlug.get("armaf")!.id,
-      featured: false,
-      bestSeller: true,
-      isNew: true
-    },
-    {
-      name: "Golden Musk",
-      slug: "golden-musk",
-      price: "289.90",
-      salePrice: "259.90",
-      sku: "ZION-MUSK-100",
-      volume: "100 ml",
-      mainImage: "/products/golden-musk.png",
-      categoryId: categoryBySlug.get("afnan")!.id,
-      brandId: brandBySlug.get("afnan")!.id,
-      featured: true,
-      bestSeller: false,
-      isNew: false
-    }
-  ];
-
-  for (const product of products) {
-    await prisma.product.upsert({
-      where: { slug: product.slug },
-      update: {
-        ...product,
-        status: ProductStatus.ACTIVE,
-        stock: 24,
-        weight: "1.00",
-        shortDescription: "Perfume arabe com alta fixacao e presenca sofisticada.",
-        description: "Perfume arabe selecionado pela ZION AROMAS para quem busca rastro marcante e elegancia.",
-        richDescription: "<p>Perfume arabe com excelente projecao e embalagem cuidadosamente preparada.</p>",
-        gallery: [product.mainImage, product.mainImage],
-        seoTitle: `${product.name} | ZION AROMAS`,
-        seoDescription: "Perfume arabe ZION AROMAS com oud, ambar, musk e especiarias."
-      },
-      create: {
-        ...product,
-        status: ProductStatus.ACTIVE,
-        stock: 24,
-        weight: "1.00",
-        shortDescription: "Perfume arabe com alta fixacao e presenca sofisticada.",
-        description: "Perfume arabe selecionado pela ZION AROMAS para quem busca rastro marcante e elegancia.",
-        richDescription: "<p>Perfume arabe com excelente projecao e embalagem cuidadosamente preparada.</p>",
-        gallery: [product.mainImage, product.mainImage],
-        seoTitle: `${product.name} | ZION AROMAS`,
-        seoDescription: "Perfume arabe ZION AROMAS com oud, ambar, musk e especiarias."
+  await prisma.product.deleteMany({
+    where: {
+      slug: {
+        in: MOCK_PRODUCT_SLUGS
       }
-    });
-  }
+    }
+  });
 
   await prisma.category.deleteMany({
     where: { slug: { in: oldCategorySlugs } }

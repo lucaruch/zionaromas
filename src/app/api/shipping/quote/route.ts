@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { products } from "@/lib/data";
+import { MOCK_PRODUCT_SLUGS } from "@/lib/mock-products";
 import { prisma } from "@/lib/prisma";
 import { isRateLimited, parseJson } from "@/lib/security";
 
@@ -100,7 +100,8 @@ export async function POST(request: Request) {
   const dbProducts = await prisma.product
     .findMany({
       where: {
-        OR: [{ id: { in: productKeys } }, { slug: { in: productKeys } }]
+        OR: [{ id: { in: productKeys } }, { slug: { in: productKeys } }],
+        slug: { notIn: MOCK_PRODUCT_SLUGS }
       }
     })
     .catch(() => []);
@@ -110,16 +111,15 @@ export async function POST(request: Request) {
   const selectedProducts = parsed.data.items
     .map((item) => {
       const dbProduct = dbProductMap.get(item.slug);
-      const fallbackProduct = products.find((candidate) => candidate.slug === item.slug || candidate.id === item.slug);
-      if (!dbProduct && !fallbackProduct) return null;
+      if (!dbProduct) return null;
 
       return {
-        id: dbProduct?.sku ?? fallbackProduct!.sku,
+        id: dbProduct.sku,
         width: 12,
         height: 18,
         length: 12,
-        weight: parseWeight(dbProduct?.weight?.toString() ?? fallbackProduct?.weight),
-        insurance_value: Number(dbProduct?.salePrice ?? dbProduct?.price ?? fallbackProduct!.salePrice ?? fallbackProduct!.price),
+        weight: parseWeight(dbProduct.weight?.toString()),
+        insurance_value: Number(dbProduct.salePrice ?? dbProduct.price),
         quantity: item.quantity
       };
     })

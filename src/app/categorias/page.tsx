@@ -3,11 +3,13 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { categories } from "@/lib/data";
+import { getCatalogCategories } from "@/lib/catalog";
 
 export const metadata: Metadata = { title: "Marcas" };
 
-export default function CategoriesPage() {
+export default async function CategoriesPage() {
+  const categories = await getCatalogCategories();
+
   return (
     <section className="arabic-pattern bg-black pb-20 pt-32 text-white">
       <div className="container">
@@ -40,6 +42,7 @@ export default function CategoriesPage() {
               </div>
             </Link>
           ))}
+          {!categories.length ? <p className="text-sm text-white/50">Nenhuma marca com produto cadastrado no momento.</p> : null}
         </div>
       </div>
     </section>

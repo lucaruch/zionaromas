@@ -1,19 +1,20 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Instagram, Mail, MapPin, Phone } from "lucide-react";
-import { categories } from "@/lib/data";
+import type { CatalogCategory } from "@/lib/catalog";
 
 const address =
   "Avenida Presidente Costa e Silva, 501 - Galeria PG - Ljs 70/75 - Boqueirão - Praia Grande - SP - CEP: 11700-007";
 const companyName = "ZION AROMAS PERFUMARIA LTDA";
 const companyDocument = "CNPJ: 66.976.436/0001-29";
 
-const columns = [
-  {
-    title: "Loja",
-    links: categories.slice(0, 4).map((category) => [category.name, `/produtos?categoria=${category.slug}`])
-  },
-  {
+export function SiteFooter({ categories }: { categories: CatalogCategory[] }) {
+  const columns = [
+    {
+      title: "Loja",
+      links: categories.slice(0, 4).map((category) => [category.name, `/produtos?categoria=${category.slug}`])
+    },
+    {
     title: "Atendimento",
     links: [
       ["Contato", "/contato"],
@@ -30,10 +31,9 @@ const columns = [
       ["Promoções", "/promocoes"],
       ["Novidades", "/novidades"]
     ]
-  }
-];
+    }
+  ];
 
-export function SiteFooter() {
   return (
     <footer className="arabic-pattern border-t border-gold/20 bg-black text-white">
       <div className="container grid gap-10 py-12 sm:py-16 lg:grid-cols-[1.1fr_1.2fr]">

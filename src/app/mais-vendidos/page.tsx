@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { CollectionPage } from "@/components/commerce/collection-page";
-import { products } from "@/lib/data";
+import { getCatalogProducts } from "@/lib/catalog";
 
 export const metadata: Metadata = { title: "Mais vendidos" };
 
-export default function BestSellersPage() {
+export default async function BestSellersPage() {
+  const products = await getCatalogProducts();
   return (
     <CollectionPage
       eyebrow="Mais vendidos"

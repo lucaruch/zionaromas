@@ -4,9 +4,10 @@ import { ArrowRight, Check, Gem, Truck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/commerce/product-card";
-import { categories, products } from "@/lib/data";
+import { getCatalogCategories, getCatalogProducts } from "@/lib/catalog";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const [categories, products] = await Promise.all([getCatalogCategories(), getCatalogProducts()]);
   const featured = products.filter((product) => product.featured);
   const bestSellers = products.filter((product) => product.bestSeller);
 
@@ -114,6 +115,7 @@ export default function HomePage() {
               <ProductCard key={product.slug} product={product} dark />
             ))}
           </div>
+          {!featured.length ? <p className="text-center text-sm text-white/50">Cadastre produtos em destaque no painel administrativo.</p> : null}
         </div>
       </section>
 

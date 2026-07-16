@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { CollectionPage } from "@/components/commerce/collection-page";
-import { products } from "@/lib/data";
+import { getCatalogProducts } from "@/lib/catalog";
 
 export const metadata: Metadata = { title: "Promoções" };
 
-export default function PromotionsPage() {
+export default async function PromotionsPage() {
+  const products = await getCatalogProducts();
   return (
     <CollectionPage
       eyebrow="Promoções"

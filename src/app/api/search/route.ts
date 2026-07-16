@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { products } from "@/lib/data";
+import { getCatalogProducts } from "@/lib/catalog";
 import { isRateLimited } from "@/lib/security";
 
 export async function GET(request: Request) {
@@ -14,6 +14,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ results: [] });
   }
 
+  const products = await getCatalogProducts();
   const results = products
     .filter((product) =>
       [product.name, product.category, product.shortDescription, product.sku]
