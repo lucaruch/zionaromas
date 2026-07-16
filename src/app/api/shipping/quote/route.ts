@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { products } from "@/lib/data";
+import { prisma } from "@/lib/prisma";
 import { isRateLimited, parseJson } from "@/lib/security";
 
 const quoteSchema = z.object({
@@ -31,9 +32,12 @@ function cleanPostalCode(value: string) {
   return value.replace(/\D/g, "");
 }
 
-function parseWeight(value: string) {
-  const numeric = Number(value.replace(/[^\d,.]/g, "").replace(",", "."));
-  return Number.isFinite(numeric) && numeric > 0 ? numeric : 0.4;
+function parseWeight(value: string | number | null | undefined) {
+  const numeric =
+    typeof value === "number"
+      ? value
+      : Number(String(value || "").replace(/[^\d,.]/g, "").replace(",", "."));
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : 1;
 }
 
 function fallbackCorreiosQuote() {
@@ -92,18 +96,30 @@ export async function POST(request: Request) {
     });
   }
 
+  const productKeys = parsed.data.items.map((item) => item.slug);
+  const dbProducts = await prisma.product
+    .findMany({
+      where: {
+        OR: [{ id: { in: productKeys } }, { slug: { in: productKeys } }]
+      }
+    })
+    .catch(() => []);
+
+  const dbProductMap = new Map(dbProducts.flatMap((product) => [[product.id, product], [product.slug, product]]));
+
   const selectedProducts = parsed.data.items
     .map((item) => {
-      const product = products.find((candidate) => candidate.slug === item.slug || candidate.id === item.slug);
-      if (!product) return null;
+      const dbProduct = dbProductMap.get(item.slug);
+      const fallbackProduct = products.find((candidate) => candidate.slug === item.slug || candidate.id === item.slug);
+      if (!dbProduct && !fallbackProduct) return null;
 
       return {
-        id: product.sku,
+        id: dbProduct?.sku ?? fallbackProduct!.sku,
         width: 12,
         height: 18,
         length: 12,
-        weight: parseWeight(product.weight),
-        insurance_value: Number((product.salePrice ?? product.price).toFixed(2)),
+        weight: parseWeight(dbProduct?.weight?.toString() ?? fallbackProduct?.weight),
+        insurance_value: Number(dbProduct?.salePrice ?? dbProduct?.price ?? fallbackProduct!.salePrice ?? fallbackProduct!.price),
         quantity: item.quantity
       };
     })
