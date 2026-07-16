@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { products } from "@/lib/data";
+import { getPaymentSettings } from "@/lib/payment-store";
+import { getCheckoutPaymentCopy, providerLabels } from "@/lib/payments";
 import { isRateLimited, parseJson } from "@/lib/security";
 
 const schema = z.object({
@@ -37,19 +39,31 @@ export async function POST(request: Request) {
   const parsed = await parseJson(request, schema, 64_000);
 
   if (!parsed.ok) {
-    return NextResponse.json({ error: "Dados de checkout invalidos." }, { status: 400 });
+    return NextResponse.json({ error: "Dados de checkout inválidos." }, { status: 400 });
   }
 
   const knownIds = new Set(products.flatMap((product) => [product.id, product.slug]));
   const hasUnknownProduct = parsed.data.items.some((item) => !knownIds.has(item.productId));
   if (hasUnknownProduct) {
-    return NextResponse.json({ error: "Dados de checkout invalidos." }, { status: 400 });
+    return NextResponse.json({ error: "Dados de checkout inválidos." }, { status: 400 });
   }
+
+  const paymentSettings = await getPaymentSettings();
+  if (!paymentSettings.enabledMethods.includes(parsed.data.paymentMethod)) {
+    return NextResponse.json({ error: "Forma de pagamento indisponível no momento." }, { status: 400 });
+  }
+
+  const providerName = providerLabels[paymentSettings.activeProvider];
+  const paymentCopy = getCheckoutPaymentCopy(paymentSettings, parsed.data.paymentMethod);
 
   return NextResponse.json({
     ok: true,
     orderCode: `ZA-${Math.floor(1000 + Math.random() * 9000)}`,
     status: "RECEBIDO",
-    nextStep: parsed.data.paymentMethod === "PIX" ? "Gerar QR Code PIX" : "Processar pagamento"
+    paymentProvider: providerName,
+    nextStep:
+      parsed.data.paymentMethod === "PIX"
+        ? `${paymentCopy} Em instantes você receberá a confirmação.`
+        : `${paymentCopy} Em instantes você receberá a confirmação do pedido.`
   });
 }

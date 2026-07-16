@@ -1,10 +1,11 @@
 "use client";
 
 import { CreditCard, Landmark, Loader2, QrCode, Truck, type LucideIcon } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/components/commerce/cart-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { type PaymentMethod } from "@/lib/payments";
 import { formatCurrency } from "@/lib/utils";
 
 type ShippingOption = {
@@ -16,18 +17,75 @@ type ShippingOption = {
   source: string;
 };
 
+type PaymentOption = {
+  id: PaymentMethod;
+  label: string;
+  description: string;
+};
+
+type CheckoutPaymentSettings = {
+  providerName: string;
+  methods: PaymentOption[];
+};
+
+const paymentIcons: Record<PaymentMethod, LucideIcon> = {
+  PIX: QrCode,
+  CARTAO: CreditCard,
+  BOLETO: Landmark
+};
+
 export default function CheckoutPage() {
   const { items, subtotal, clear } = useCart();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [document, setDocument] = useState("");
   const [cep, setCep] = useState("");
   const [address, setAddress] = useState("");
+  const [number, setNumber] = useState("");
+  const [complement, setComplement] = useState("");
+  const [coupon, setCoupon] = useState("");
   const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
   const [selectedShippingId, setSelectedShippingId] = useState<number | null>(null);
   const [shippingLoading, setShippingLoading] = useState(false);
   const [shippingMessage, setShippingMessage] = useState("");
+  const [paymentSettings, setPaymentSettings] = useState<CheckoutPaymentSettings | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("PIX");
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutMessage, setCheckoutMessage] = useState("");
   const discount = useMemo(() => (subtotal > 400 ? 35 : 0), [subtotal]);
   const selectedShipping = shippingOptions.find((option) => option.id === selectedShippingId);
   const shipping = selectedShipping?.price ?? 0;
   const total = subtotal + shipping - discount;
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadPaymentSettings() {
+      try {
+        const response = await fetch("/api/payment-settings", { cache: "no-store" });
+        const data = (await response.json()) as CheckoutPaymentSettings;
+        if (!mounted) return;
+
+        setPaymentSettings(data);
+        if (data.methods[0]?.id) {
+          setPaymentMethod(data.methods[0].id);
+        }
+      } catch {
+        if (mounted) {
+          setPaymentSettings({
+            providerName: "ZION AROMAS",
+            methods: [{ id: "PIX", label: "PIX", description: "Pagamento seguro via PIX." }]
+          });
+        }
+      }
+    }
+
+    loadPaymentSettings();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   async function quoteShipping(postalCode: string) {
     setShippingLoading(true);
@@ -77,6 +135,54 @@ export default function CheckoutPage() {
     }
   }
 
+  async function finishOrder() {
+    setCheckoutMessage("");
+
+    if (!items.length) {
+      setCheckoutMessage("Seu carrinho está vazio.");
+      return;
+    }
+
+    if (!name || !email || cep.replace(/\D/g, "").length !== 8 || !address || !number) {
+      setCheckoutMessage("Preencha seus dados e confirme o endereço de entrega.");
+      return;
+    }
+
+    setCheckoutLoading(true);
+
+    try {
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customer: { name, email, phone, document },
+          address: {
+            postalCode: cep,
+            street: address,
+            number,
+            complement
+          },
+          items: items.map((item) => ({ productId: item.slug, quantity: item.quantity })),
+          paymentMethod,
+          coupon
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        setCheckoutMessage(data.error || "Não foi possível finalizar o pedido agora.");
+        return;
+      }
+
+      clear();
+      setCheckoutMessage(`Pedido ${data.orderCode} recebido. ${data.nextStep}`);
+    } catch {
+      setCheckoutMessage("Não foi possível finalizar o pedido agora.");
+    } finally {
+      setCheckoutLoading(false);
+    }
+  }
+
   return (
     <section className="arabic-pattern bg-black pb-20 pt-28 text-white sm:pt-32">
       <div className="container">
@@ -87,10 +193,10 @@ export default function CheckoutPage() {
             <div className="border border-gold/18 bg-white/[0.03] p-4 sm:p-6">
               <h2 className="font-display text-3xl">Seus dados</h2>
               <div className="mt-5 grid gap-4 md:grid-cols-2">
-                <Input placeholder="Nome completo" />
-                <Input placeholder="E-mail" type="email" />
-                <Input placeholder="Telefone" />
-                <Input placeholder="CPF ou CNPJ" />
+                <Input placeholder="Nome completo" value={name} onChange={(event) => setName(event.target.value)} />
+                <Input placeholder="E-mail" type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+                <Input placeholder="Telefone" value={phone} onChange={(event) => setPhone(event.target.value)} />
+                <Input placeholder="CPF ou CNPJ" value={document} onChange={(event) => setDocument(event.target.value)} />
               </div>
             </div>
 
@@ -99,8 +205,8 @@ export default function CheckoutPage() {
               <div className="mt-5 grid gap-4 md:grid-cols-[180px_1fr]">
                 <Input placeholder="CEP" value={cep} onChange={(event) => lookupCep(event.target.value)} />
                 <Input placeholder="Endereço localizado pelo CEP" value={address} onChange={(event) => setAddress(event.target.value)} />
-                <Input placeholder="Número" />
-                <Input placeholder="Complemento" />
+                <Input placeholder="Número" value={number} onChange={(event) => setNumber(event.target.value)} />
+                <Input placeholder="Complemento" value={complement} onChange={(event) => setComplement(event.target.value)} />
               </div>
               <div className="mt-5 border border-gold/20 bg-black/45 p-4 sm:p-5">
                 <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-gold">
@@ -130,7 +236,7 @@ export default function CheckoutPage() {
                           <span className="min-w-0">
                             <strong>{option.name}</strong>
                             <span className="block text-xs text-white/50">
-                              {option.company} · {option.deliveryTime} dias úteis
+                              {option.company} - {option.deliveryTime} dias úteis
                             </span>
                           </span>
                         </span>
@@ -146,19 +252,32 @@ export default function CheckoutPage() {
             </div>
 
             <div className="border border-gold/18 bg-white/[0.03] p-4 sm:p-6">
-              <h2 className="font-display text-3xl">Pagamento</h2>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <h2 className="font-display text-3xl">Pagamento</h2>
+                  <p className="mt-2 text-sm text-white/55">
+                    {paymentSettings ? `Processamento seguro por ${paymentSettings.providerName}.` : "Carregando formas de pagamento..."}
+                  </p>
+                </div>
+              </div>
               <div className="mt-5 grid gap-3 md:grid-cols-3">
-                {([
-                  ["PIX", QrCode],
-                  ["Cartão", CreditCard],
-                  ["Boleto", Landmark]
-                ] as [string, LucideIcon][]).map(([label, Icon]) => (
-                  <label key={label} className="flex cursor-pointer items-center gap-3 border border-gold/18 bg-black/35 p-4 transition hover:border-gold">
-                    <input name="payment" type="radio" defaultChecked={label === "PIX"} className="accent-gold" />
-                    <Icon className="h-5 w-5 text-gold" />
-                    <span>{label}</span>
-                  </label>
-                ))}
+                {(paymentSettings?.methods || []).map((option) => {
+                  const Icon = paymentIcons[option.id];
+
+                  return (
+                    <label key={option.id} className="flex cursor-pointer items-center gap-3 border border-gold/18 bg-black/35 p-4 transition hover:border-gold">
+                      <input
+                        name="payment"
+                        type="radio"
+                        checked={paymentMethod === option.id}
+                        onChange={() => setPaymentMethod(option.id)}
+                        className="accent-gold"
+                      />
+                      <Icon className="h-5 w-5 text-gold" />
+                      <span>{option.label}</span>
+                    </label>
+                  );
+                })}
               </div>
             </div>
           </form>
@@ -175,7 +294,7 @@ export default function CheckoutPage() {
                 </div>
               ))}
             </div>
-            <Input placeholder="Cupom de desconto" className="mt-6" />
+            <Input placeholder="Cupom de desconto" className="mt-6" value={coupon} onChange={(event) => setCoupon(event.target.value)} />
             <div className="mt-6 grid gap-3 border-t border-gold/15 pt-6 text-sm text-white/70">
               <div className="flex justify-between gap-4">
                 <span>Subtotal</span>
@@ -194,8 +313,9 @@ export default function CheckoutPage() {
                 <strong>{formatCurrency(total)}</strong>
               </div>
             </div>
-            <Button className="mt-6 w-full" disabled={!items.length || !selectedShippingId} onClick={clear}>
-              Finalizar pedido
+            {checkoutMessage ? <p className="mt-4 text-sm leading-6 text-gold">{checkoutMessage}</p> : null}
+            <Button className="mt-6 w-full" type="button" disabled={!items.length || !selectedShippingId || checkoutLoading} onClick={finishOrder}>
+              {checkoutLoading ? "Finalizando..." : "Finalizar pedido"}
             </Button>
           </aside>
         </div>

@@ -181,6 +181,29 @@ async function main() {
       active: true
     }
   });
+
+  await prisma.storeSetting.upsert({
+    where: { key: "payments" },
+    update: {
+      label: "Pagamentos da loja",
+      group: "checkout",
+      value: {
+        activeProvider: "CIELO",
+        environment: "HOMOLOGACAO",
+        enabledMethods: ["PIX", "CARTAO", "BOLETO"]
+      }
+    },
+    create: {
+      key: "payments",
+      label: "Pagamentos da loja",
+      group: "checkout",
+      value: {
+        activeProvider: "CIELO",
+        environment: "HOMOLOGACAO",
+        enabledMethods: ["PIX", "CARTAO", "BOLETO"]
+      }
+    }
+  });
 }
 
 main()

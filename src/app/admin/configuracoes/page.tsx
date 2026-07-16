@@ -1,25 +1,23 @@
-import { CrudPage } from "@/components/admin/crud-page";
+import { PaymentSettingsForm } from "@/components/admin/payment-settings-form";
+import { getPaymentSettings } from "@/lib/payment-store";
 
-export default function AdminSettingsPage() {
+export default async function AdminSettingsPage() {
+  const settings = await getPaymentSettings();
+
   return (
-    <CrudPage
-      title="Configurações"
-      description="Mantenha dados institucionais, contatos, formas de entrega e informações gerais sempre atualizados."
-      columns={["Seção", "Item", "Informação"]}
-      rows={[
-        ["Frete", "Valor mínimo para frete especial", "R$ 499"],
-        ["Pagamento", "PIX habilitado", "Sim"],
-        ["Social", "Instagram", "https://www.instagram.com/zion_aromas/"],
-        ["Contato", "WhatsApp", "(13) 99756-6750"],
-        ["Contato", "E-mail", "zionaromasp@gmail.com"],
-        [
-          "Contato",
-          "Endereço",
-          "Avenida Presidente Costa e Silva, 501 - Galeria PG - Ljs 70/75 - Boqueirão - Praia Grande - SP - CEP: 11700-007"
-        ],
-        ["Créditos", "Desenvolvimento", "Black Sites - https://bksly.com.br"]
-      ]}
-      fields={["Seção", "Nome do item", "Informação exibida", "Observação interna"]}
-    />
+    <div className="grid gap-6">
+      <PaymentSettingsForm initialSettings={settings} />
+
+      <section className="grid gap-4 border border-gold/18 bg-[#0d0b08] p-5 text-white shadow-[0_24px_70px_rgba(0,0,0,.24)] sm:p-7">
+        <p className="text-[10px] font-black uppercase tracking-[0.28em] text-gold/75">Informações da boutique</p>
+        <h2 className="font-display text-3xl">Dados exibidos no site</h2>
+        <div className="grid gap-3 text-sm text-white/62">
+          <p>WhatsApp: (13) 99756-6750</p>
+          <p>E-mail: zionaromasp@gmail.com</p>
+          <p>Avenida Presidente Costa e Silva, 501 - Galeria PG - Ljs 70/75 - Boqueirão - Praia Grande - SP</p>
+          <p>CNPJ: 66.976.436/0001-29 | ZION AROMAS PERFUMARIA LTDA</p>
+        </div>
+      </section>
+    </div>
   );
 }

@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Boxes, MessageSquare, Package, Ticket } from "lucide-react";
+import { Boxes, MessageSquare, Package, Settings, Ticket } from "lucide-react";
 import { products } from "@/lib/data";
 
 const links = [
   { href: "/admin/produtos", label: "Produtos", count: products.length, icon: Package },
   { href: "/admin/pedidos", label: "Pedidos", count: 3, icon: Boxes },
   { href: "/admin/clientes", label: "Mensagens", count: 3, icon: MessageSquare },
-  { href: "/admin/cupons", label: "Cupons", count: 2, icon: Ticket }
+  { href: "/admin/cupons", label: "Cupons", count: 2, icon: Ticket },
+  { href: "/admin/configuracoes", label: "Pagamentos", count: 1, icon: Settings }
 ];
 
 export function AdminSidebar() {
