@@ -1,6 +1,3 @@
-import { existsSync } from "node:fs";
-import path from "node:path";
-
 const brandFallbacks: Record<string, string> = {
   "maison-alhambra": "/brands/maison-alhambra-real.png",
   "al-wataniah": "/brands/al-wataniah-real.png",
@@ -24,15 +21,9 @@ export function fallbackProductImage(brandSlug?: string | null, categorySlug?: s
   return defaultFallback;
 }
 
-function legacyUploadExists(source: string) {
-  if (!source.startsWith("/uploads/")) return true;
-  const relativePath = source.replace(/^\/+/, "");
-  return existsSync(path.join(process.cwd(), "public", relativePath));
-}
-
 export function resolveProductImage(source: string | null | undefined, brandSlug?: string | null, categorySlug?: string | null) {
   const cleanSource = sanitizeImageSource(source);
   if (!cleanSource) return fallbackProductImage(brandSlug, categorySlug);
-  if (!legacyUploadExists(cleanSource)) return fallbackProductImage(brandSlug, categorySlug);
+  if (cleanSource.startsWith("/uploads/")) return fallbackProductImage(brandSlug, categorySlug);
   return cleanSource;
 }

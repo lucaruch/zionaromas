@@ -91,7 +91,7 @@ export default async function HomePage() {
                     alt={`Perfumes árabes ${category.name}`}
                     fill
                     sizes="(max-width: 640px) 80vw, (max-width: 1024px) 40vw, 22vw"
-                    className="object-contain p-4 transition duration-700 group-hover:scale-[1.03]"
+                    className="object-cover transition duration-700 group-hover:scale-[1.03]"
                   />
                 </div>
                 <div className="relative p-5 text-white">
@@ -137,7 +137,7 @@ export default async function HomePage() {
             {bestSellers.map((product) => (
               <Link key={product.slug} href={`/produto/${product.slug}`} className="group min-w-0 border border-gold/20 bg-white/[0.025] p-4 transition hover:border-gold/60 hover:bg-white/[0.045]">
                 <div className="relative aspect-[4/3] overflow-hidden bg-[#f6f2e8]">
-                  <Image src={product.image} alt={product.name} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 30vw" className="object-contain p-4 transition duration-700 group-hover:scale-[1.03]" />
+                  <Image src={product.image} alt={product.name} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 30vw" className="object-cover transition duration-700 group-hover:scale-[1.03]" />
                 </div>
                 <h3 className="mt-4 font-display text-2xl text-gold">{product.name}</h3>
                 <p className="mt-2 text-sm leading-6 text-white/55">{product.shortDescription}</p>

@@ -1,8 +1,8 @@
-import Image from "next/image";
 import Link from "next/link";
 import { Star } from "lucide-react";
 import { AddToCart } from "@/components/commerce/add-to-cart";
 import { FavoriteButton } from "@/components/commerce/favorite-button";
+import { ProductImage } from "@/components/commerce/product-image";
 import { Badge } from "@/components/ui/badge";
 import type { Product } from "@/lib/data";
 import { cn, formatCurrency } from "@/lib/utils";
@@ -19,13 +19,14 @@ export function ProductCard({ product, dark = false }: { product: Product; dark?
     >
       <div className={cn("relative aspect-[4/5] overflow-hidden bg-pearl", dark ? "rounded-sm bg-[#f6f2e8]" : "rounded-lg")}>
         <Link href={`/produto/${product.slug}`} aria-label={product.name} className="absolute inset-0 block">
-          <Image
+          <ProductImage
             src={product.image}
             alt={product.name}
-            fill
+            brandSlug={product.brand.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}
+            categorySlug={product.categorySlug}
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             className={cn(
-              "object-contain p-4 transition duration-700 group-hover:scale-[1.03]",
+              "object-cover transition duration-700 group-hover:scale-[1.03]",
               dark ? "opacity-100" : ""
             )}
           />

@@ -30,7 +30,7 @@ export default async function CategoriesPage() {
                     alt={`Perfumes árabes ${category.name}`}
                     fill
                     sizes="(max-width: 768px) 100vw, 40vw"
-                    className="object-contain p-5 transition duration-700 group-hover:scale-[1.03]"
+                    className="object-cover transition duration-700 group-hover:scale-[1.03]"
                   />
                 </div>
               </div>
