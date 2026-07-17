@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import type { Product } from "@/lib/data";
 import type { Brand, Category, Product as PrismaProduct } from "@prisma/client";
 import { MOCK_PRODUCT_SLUGS } from "@/lib/mock-products";
+import { resolveProductImage } from "@/lib/media";
 
 export type CatalogCategory = {
   name: string;
@@ -32,7 +33,10 @@ type CatalogProductRecord = PrismaProduct & {
 };
 
 function mapProduct(product: CatalogProductRecord): Product {
-  const gallery = Array.isArray(product.gallery) ? (product.gallery as string[]) : [product.mainImage];
+  const mainImage = resolveProductImage(product.mainImage, product.brand.slug, product.category.slug);
+  const rawGallery = Array.isArray(product.gallery) ? (product.gallery as string[]) : [product.mainImage];
+  const gallery = [...new Set(rawGallery.map((image) => resolveProductImage(image, product.brand.slug, product.category.slug)))];
+
   return {
     id: product.id,
     name: product.name,
@@ -47,8 +51,8 @@ function mapProduct(product: CatalogProductRecord): Product {
     volume: product.volume || "100 ml",
     weight: `${product.weight?.toString() || "1.00"} kg`,
     status: product.status === "ACTIVE" ? "active" : "draft",
-    image: product.mainImage,
-    gallery: gallery.length ? gallery : [product.mainImage],
+    image: mainImage,
+    gallery: gallery.length ? gallery : [mainImage],
     shortDescription: product.shortDescription,
     description: product.description,
     richDescription: product.richDescription,

@@ -1,9 +1,8 @@
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import sharp from "sharp";
 import { isAdminUnlocked } from "@/lib/admin-auth";
+import { prisma } from "@/lib/prisma";
 import { isRateLimited } from "@/lib/security";
 
 const MAX_FILES = 8;
@@ -31,9 +30,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Envie no maximo 8 imagens por vez." }, { status: 400 });
     }
 
-    const uploadDir = path.join(process.cwd(), "public", "uploads");
-    await mkdir(uploadDir, { recursive: true });
-
     const uploaded = await Promise.all(
       files.map(async (file) => {
         if (!allowedTypes.has(file.type) || file.size > MAX_FILE_SIZE) {
@@ -52,8 +48,16 @@ export async function POST(request: Request) {
           })
           .webp({ quality: 82, effort: 5 })
           .toBuffer();
-        await writeFile(path.join(uploadDir, filename), bytes);
-        return `/uploads/${filename}`;
+        const asset = await prisma.mediaAsset.create({
+          data: {
+            filename,
+            mimeType: "image/webp",
+            size: bytes.length,
+            data: bytes
+          },
+          select: { id: true }
+        });
+        return `/api/media/${asset.id}.webp`;
       })
     );
 

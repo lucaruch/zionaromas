@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { resolveProductImage } from "@/lib/media";
 
 export type AdminStats = {
   products: number;
@@ -172,8 +173,10 @@ export async function getAdminProducts(): Promise<AdminProduct[]> {
       weight: product.weight?.toString() ?? "",
       volume: product.volume ?? "",
       status: product.status,
-      mainImage: product.mainImage,
-      gallery: Array.isArray(product.gallery) ? (product.gallery as string[]) : [],
+      mainImage: resolveProductImage(product.mainImage, product.brand.slug, product.category.slug),
+      gallery: Array.isArray(product.gallery)
+        ? (product.gallery as string[]).map((image) => resolveProductImage(image, product.brand.slug, product.category.slug))
+        : [],
       seoTitle: product.seoTitle ?? "",
       seoDescription: product.seoDescription ?? "",
       featured: product.featured,
