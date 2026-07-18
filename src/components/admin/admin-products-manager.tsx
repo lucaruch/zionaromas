@@ -74,6 +74,10 @@ function makeSku(name: string) {
   return `ZION-${base}-${Date.now().toString().slice(-4)}`;
 }
 
+function limitText(value: string, max: number) {
+  return value.length > max ? value.slice(0, max).trim() : value;
+}
+
 function toForm(product: AdminProduct): ProductForm {
   return {
     id: product.id,
@@ -184,9 +188,11 @@ export function AdminProductsManager({
     setMessage("");
 
     const slug = form.slug || slugify(form.name);
-    const shortDescription =
-      form.shortDescription || `Perfume árabe ${form.name} com presença sofisticada e excelente apresentação.`;
-    const description = form.description || shortDescription;
+    const description =
+      form.description.trim() ||
+      form.shortDescription.trim() ||
+      `Perfume árabe ${form.name} com presença sofisticada e excelente apresentação.`;
+    const shortDescription = limitText(form.shortDescription.trim() || description, 500);
     const payload = {
       ...form,
       slug,
@@ -198,7 +204,7 @@ export function AdminProductsManager({
       description,
       richDescription: description,
       seoTitle: `${form.name} | ZION AROMAS`,
-      seoDescription: shortDescription
+      seoDescription: limitText(shortDescription, 240)
     };
 
     const response = await fetch("/api/admin/produtos", {
@@ -396,7 +402,7 @@ export function AdminProductsManager({
               ) : null}
 
               <textarea placeholder="Resumo para aparecer no catálogo" value={form.shortDescription} onChange={(event) => update("shortDescription", event.target.value)} className="min-h-20 rounded-md border border-gold/18 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-gold" />
-              <textarea placeholder="Descrição do produto" value={form.description} onChange={(event) => update("description", event.target.value)} className="min-h-28 rounded-md border border-gold/18 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-gold" />
+              <textarea placeholder="Descrição completa do produto" value={form.description} onChange={(event) => update("description", event.target.value)} className="min-h-40 rounded-md border border-gold/18 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-gold" />
 
               <div className="grid gap-3 md:grid-cols-4">
                 <label className="flex items-center justify-between border border-gold/18 bg-black p-4 text-sm md:col-span-1">

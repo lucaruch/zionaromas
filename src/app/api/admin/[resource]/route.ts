@@ -32,9 +32,9 @@ const nullableDecimal = z
 const productSchema = z.object({
   name: z.string().trim().min(2).max(120),
   slug: z.string().trim().min(2).max(140),
-  shortDescription: z.string().trim().min(2).max(240),
-  description: z.string().trim().min(2).max(2_000),
-  richDescription: z.string().trim().min(2).max(8_000),
+  shortDescription: z.string().trim().min(2).max(500),
+  description: z.string().trim().min(2).max(20_000),
+  richDescription: z.string().trim().min(2).max(20_000),
   price: z.union([z.string(), z.number()]).transform((value) => String(value).replace(",", ".")),
   salePrice: nullableDecimal,
   stock: z.coerce.number().int().min(0).max(999_999),
@@ -56,7 +56,7 @@ const productSchema = z.object({
 const categorySchema = z.object({
   name: z.string().trim().min(2).max(80),
   slug: z.string().trim().min(2).max(100),
-  description: z.string().trim().max(500).optional().default(""),
+  description: z.string().trim().max(5_000).optional().default(""),
   image: z.string().trim().max(500).optional().nullable().default(null)
 });
 
@@ -68,7 +68,7 @@ const brandSchema = z.object({
 
 const couponSchema = z.object({
   code: z.string().trim().min(2).max(40).transform((value) => value.toUpperCase()),
-  description: z.string().trim().max(240).optional().default(""),
+  description: z.string().trim().max(2_000).optional().default(""),
   discountRate: z.union([z.string(), z.number(), z.null(), z.undefined()]).transform((value) => {
     if (value === null || value === undefined || value === "") return null;
     return Number(value);
@@ -80,7 +80,7 @@ const couponSchema = z.object({
 
 const bannerSchema = z.object({
   title: z.string().trim().min(2).max(120),
-  subtitle: z.string().trim().max(300).optional().default(""),
+  subtitle: z.string().trim().max(2_000).optional().default(""),
   image: z.string().trim().min(1).max(500),
   ctaLabel: z.string().trim().max(80).optional().default(""),
   ctaHref: z.string().trim().max(200).optional().default(""),
@@ -111,7 +111,7 @@ function getModel(resource: string) {
 async function readAdminPayload(request: Request) {
   const contentType = request.headers.get("content-type") || "";
   const contentLength = Number(request.headers.get("content-length") || 0);
-  if (!contentType.includes("application/json") || contentLength > 128_000) return null;
+  if (!contentType.includes("application/json") || contentLength > 512_000) return null;
 
   const payload = await request.json().catch(() => null);
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
