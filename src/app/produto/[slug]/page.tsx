@@ -59,7 +59,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             <p className="mt-4 flex flex-wrap items-center gap-2 text-sm text-white/55">
               <Star className="h-4 w-4 fill-gold text-gold" /> {product.rating} · {product.reviews} avaliações · SKU {product.sku}
             </p>
-            <p className="mt-6 text-base leading-8 text-white/65 sm:text-lg">{product.description}</p>
+            <p className="mt-6 text-base leading-8 text-white/65 sm:text-lg">{product.shortDescription}</p>
             <div className="mt-7 flex flex-wrap items-end gap-4">
               {product.salePrice ? (
                 <span className="text-xl text-white/35 line-through">{formatCurrency(product.price)}</span>
