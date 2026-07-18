@@ -16,6 +16,18 @@ function toNumber(value: unknown) {
   return Number.isFinite(numeric) ? numeric : 0;
 }
 
+function normalizePortugueseCopy(value: string | null | undefined) {
+  return (value || "")
+    .replace(/\barabes\b/gi, (match) => (match === match.toUpperCase() ? "ÁRABES" : "árabes"))
+    .replace(/\barabe\b/gi, (match) => (match === match.toUpperCase() ? "ÁRABE" : "árabe"))
+    .replace(/\bdisponivel\b/gi, "disponível")
+    .replace(/\bpresenca\b/gi, "presença")
+    .replace(/\bfixacao\b/gi, "fixação")
+    .replace(/\bfragrancias\b/gi, "fragrâncias")
+    .replace(/\bfragrancia\b/gi, "fragrância")
+    .replace(/\bambar\b/gi, "âmbar");
+}
+
 function productNotes(description: string) {
   const source = description.toLowerCase();
   const notes = [
@@ -53,9 +65,9 @@ function mapProduct(product: CatalogProductRecord): Product {
     status: product.status === "ACTIVE" ? "active" : "draft",
     image: mainImage,
     gallery: gallery.length ? gallery : [mainImage],
-    shortDescription: product.shortDescription,
-    description: product.description,
-    richDescription: product.richDescription,
+    shortDescription: normalizePortugueseCopy(product.shortDescription),
+    description: normalizePortugueseCopy(product.description),
+    richDescription: normalizePortugueseCopy(product.richDescription),
     featured: product.featured,
     bestSeller: product.bestSeller,
     isNew: product.isNew,
@@ -102,7 +114,7 @@ export async function getCatalogCategories(): Promise<CatalogCategory[]> {
         name: category.name,
         slug: category.slug,
         image: category.image || `/brands/${category.slug}-real.png`,
-        description: category.description || "Marca de perfume árabe disponível na ZION AROMAS."
+        description: normalizePortugueseCopy(category.description || "Marca de perfume árabe disponível na ZION AROMAS.")
       }));
   } catch {
     return [];

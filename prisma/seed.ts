@@ -49,7 +49,7 @@ async function main() {
         create: {
           name,
           slug,
-          description: "Marca de perfume arabe disponivel na ZION AROMAS."
+          description: "Marca de perfume árabe disponível na ZION AROMAS."
         }
       })
     )
@@ -84,8 +84,8 @@ async function main() {
   await prisma.banner.upsert({
     where: { id: "home-hero" },
     update: {
-      title: "Perfumes arabes para quem deixa presenca",
-      subtitle: "Curadoria oriental com oud, ambar, musk, especiarias e fragrancias de alta fixacao.",
+      title: "Perfumes árabes para quem deixa presença",
+      subtitle: "Curadoria oriental com oud, âmbar, musk, especiarias e fragrâncias de alta fixação.",
       image: "/brands/lattafa-real.png",
       ctaLabel: "Explorar perfumes",
       ctaHref: "/produtos",
@@ -94,8 +94,8 @@ async function main() {
     },
     create: {
       id: "home-hero",
-      title: "Perfumes arabes para quem deixa presenca",
-      subtitle: "Curadoria oriental com oud, ambar, musk, especiarias e fragrancias de alta fixacao.",
+      title: "Perfumes árabes para quem deixa presença",
+      subtitle: "Curadoria oriental com oud, âmbar, musk, especiarias e fragrâncias de alta fixação.",
       image: "/brands/lattafa-real.png",
       ctaLabel: "Explorar perfumes",
       ctaHref: "/produtos",
