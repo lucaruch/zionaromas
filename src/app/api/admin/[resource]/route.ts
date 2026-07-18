@@ -186,30 +186,30 @@ function prepareResourceData(resource: string, payload: Record<string, unknown>)
 type RouteContext = { params: Promise<{ resource: string }> };
 
 export async function GET(_: Request, { params }: RouteContext) {
-  if (!(await isAdminUnlocked())) return NextResponse.json({ error: "Nao autorizado." }, { status: 401 });
+  if (!(await isAdminUnlocked())) return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
   const { resource } = await params;
   const model = getModel(resource);
-  if (!model) return NextResponse.json({ error: "Recurso nao encontrado." }, { status: 404 });
+  if (!model) return NextResponse.json({ error: "Recurso não encontrado." }, { status: 404 });
   try {
     const data = await model.findMany({ take: 100 });
     return NextResponse.json({ data });
   } catch {
-    return NextResponse.json({ data: [], warning: "Banco de dados indisponivel." }, { status: 200 });
+    return NextResponse.json({ data: [], warning: "Banco de dados indisponível." }, { status: 200 });
   }
 }
 
 export async function POST(request: Request, { params }: RouteContext) {
-  if (!(await isAdminUnlocked())) return NextResponse.json({ error: "Nao autorizado." }, { status: 401 });
+  if (!(await isAdminUnlocked())) return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
   if (isRateLimited(request, "admin-crud", 80, 60_000)) {
     return NextResponse.json({ error: "Muitas tentativas." }, { status: 429 });
   }
 
   const { resource } = await params;
   const model = getModel(resource);
-  if (!model) return NextResponse.json({ error: "Recurso nao encontrado." }, { status: 404 });
+  if (!model) return NextResponse.json({ error: "Recurso não encontrado." }, { status: 404 });
 
   const payload = await readAdminPayload(request);
-  if (!payload) return NextResponse.json({ error: "Dados invalidos." }, { status: 400 });
+  if (!payload) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
   const data = prepareResourceData(resource, payload);
   if (!data) return NextResponse.json({ error: "Revise os campos informados." }, { status: 400 });
 
@@ -217,23 +217,23 @@ export async function POST(request: Request, { params }: RouteContext) {
     const created = await model.create({ data });
     return NextResponse.json({ data: created }, { status: 201 });
   } catch {
-    return NextResponse.json({ error: "Banco de dados indisponivel." }, { status: 503 });
+    return NextResponse.json({ error: "Banco de dados indisponível." }, { status: 503 });
   }
 }
 
 export async function PUT(request: Request, { params }: RouteContext) {
-  if (!(await isAdminUnlocked())) return NextResponse.json({ error: "Nao autorizado." }, { status: 401 });
+  if (!(await isAdminUnlocked())) return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
   if (isRateLimited(request, "admin-crud", 80, 60_000)) {
     return NextResponse.json({ error: "Muitas tentativas." }, { status: 429 });
   }
 
   const { resource } = await params;
   const model = getModel(resource);
-  if (!model) return NextResponse.json({ error: "Recurso nao encontrado." }, { status: 404 });
+  if (!model) return NextResponse.json({ error: "Recurso não encontrado." }, { status: 404 });
 
   const payload = await readAdminPayload(request);
   if (!payload || typeof payload.id !== "string" || !payload.id) {
-    return NextResponse.json({ error: "Dados invalidos." }, { status: 400 });
+    return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
   }
 
   const { id, ...rawData } = payload;
@@ -244,19 +244,19 @@ export async function PUT(request: Request, { params }: RouteContext) {
     const updated = await model.update({ where: { id }, data });
     return NextResponse.json({ data: updated });
   } catch {
-    return NextResponse.json({ error: "Banco de dados indisponivel." }, { status: 503 });
+    return NextResponse.json({ error: "Banco de dados indisponível." }, { status: 503 });
   }
 }
 
 export async function DELETE(request: Request, { params }: RouteContext) {
-  if (!(await isAdminUnlocked())) return NextResponse.json({ error: "Nao autorizado." }, { status: 401 });
+  if (!(await isAdminUnlocked())) return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
   if (isRateLimited(request, "admin-crud", 80, 60_000)) {
     return NextResponse.json({ error: "Muitas tentativas." }, { status: 429 });
   }
 
   const { resource } = await params;
   const model = getModel(resource);
-  if (!model) return NextResponse.json({ error: "Recurso nao encontrado." }, { status: 404 });
+  if (!model) return NextResponse.json({ error: "Recurso não encontrado." }, { status: 404 });
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "ID obrigatorio." }, { status: 400 });
@@ -264,6 +264,6 @@ export async function DELETE(request: Request, { params }: RouteContext) {
     await model.delete({ where: { id } });
     return NextResponse.json({ ok: true });
   } catch {
-    return NextResponse.json({ error: "Banco de dados indisponivel." }, { status: 503 });
+    return NextResponse.json({ error: "Banco de dados indisponível." }, { status: 503 });
   }
 }

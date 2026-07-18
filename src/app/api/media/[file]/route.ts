@@ -10,7 +10,7 @@ export async function GET(_: Request, { params }: RouteContext) {
   const id = file.replace(/\.[^.]+$/, "");
 
   if (!/^[a-z0-9]+$/i.test(id)) {
-    return NextResponse.json({ error: "Imagem nao encontrada." }, { status: 404 });
+    return NextResponse.json({ error: "Imagem não encontrada." }, { status: 404 });
   }
 
   const asset = await prisma.mediaAsset.findUnique({
@@ -19,7 +19,7 @@ export async function GET(_: Request, { params }: RouteContext) {
   });
 
   if (!asset) {
-    return NextResponse.json({ error: "Imagem nao encontrada." }, { status: 404 });
+    return NextResponse.json({ error: "Imagem não encontrada." }, { status: 404 });
   }
 
   return new Response(Buffer.from(asset.data), {

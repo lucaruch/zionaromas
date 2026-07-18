@@ -13,7 +13,7 @@ const schema = z.object({
 
 export async function GET() {
   if (!(await isAdminUnlocked())) {
-    return NextResponse.json({ error: "Nao autorizado." }, { status: 401 });
+    return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
   }
 
   const settings = await getPaymentSettings();
@@ -22,7 +22,7 @@ export async function GET() {
 
 export async function PUT(request: Request) {
   if (!(await isAdminUnlocked())) {
-    return NextResponse.json({ error: "Nao autorizado." }, { status: 401 });
+    return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
   }
 
   if (isRateLimited(request, "admin-payment-settings", 40, 60_000)) {
@@ -31,7 +31,7 @@ export async function PUT(request: Request) {
 
   const parsed = await parseJson(request, schema, 8_000);
   if (!parsed.ok) {
-    return NextResponse.json({ error: "Revise as opcoes selecionadas." }, { status: 400 });
+    return NextResponse.json({ error: "Revise as opções selecionadas." }, { status: 400 });
   }
 
   const uniqueMethods = [...new Set(parsed.data.enabledMethods)];

@@ -83,7 +83,7 @@ export async function POST(request: Request) {
   const parsed = await parseJson(request, quoteSchema, 32_000);
 
   if (!parsed.ok) {
-    return NextResponse.json({ error: "Dados invalidos para cotacao." }, { status: 400 });
+    return NextResponse.json({ error: "Dados inválidos para cotação." }, { status: 400 });
   }
 
   const destinationPostalCode = cleanPostalCode(parsed.data.postalCode);
@@ -92,7 +92,7 @@ export async function POST(request: Request) {
   if (!token) {
     return NextResponse.json({
       options: fallbackCorreiosQuote(),
-      warning: "Configure MELHOR_ENVIO_TOKEN para usar a cotacao real do Melhor Envio."
+      warning: "Configure MELHOR_ENVIO_TOKEN para usar a cotação real do Melhor Envio."
     });
   }
 
@@ -126,7 +126,7 @@ export async function POST(request: Request) {
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
 
   if (!selectedProducts.length) {
-    return NextResponse.json({ error: "Nenhum produto valido para cotacao." }, { status: 400 });
+    return NextResponse.json({ error: "Nenhum produto válido para cotação." }, { status: 400 });
   }
 
   const services = process.env.MELHOR_ENVIO_CORREIOS_SERVICES || "1,2";
@@ -159,7 +159,7 @@ export async function POST(request: Request) {
     if (!response.ok) {
       return NextResponse.json(
         {
-          error: "Nao foi possivel consultar o frete agora.",
+          error: "Não foi possível consultar o frete agora.",
           options: fallbackCorreiosQuote()
         },
         { status: 502 }
@@ -181,7 +181,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ options: options.length ? options : fallbackCorreiosQuote() });
   } catch {
     return NextResponse.json({
-      error: "Nao foi possivel consultar o frete agora.",
+      error: "Não foi possível consultar o frete agora.",
       options: fallbackCorreiosQuote()
     });
   }

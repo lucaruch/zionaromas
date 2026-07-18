@@ -11,7 +11,7 @@ const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/gi
 
 export async function POST(request: Request) {
   if (!(await isAdminUnlocked())) {
-    return NextResponse.json({ error: "Nao autorizado." }, { status: 401 });
+    return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
   }
 
   if (isRateLimited(request, "upload", 20, 60_000)) {
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     }
 
     if (files.length > MAX_FILES) {
-      return NextResponse.json({ error: "Envie no maximo 8 imagens por vez." }, { status: 400 });
+      return NextResponse.json({ error: "Envie no máximo 8 imagens por vez." }, { status: 400 });
     }
 
     const uploaded = await Promise.all(
@@ -63,6 +63,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ files: uploaded });
   } catch {
-    return NextResponse.json({ error: "Envie apenas imagens JPG, PNG, WEBP ou GIF validas." }, { status: 400 });
+    return NextResponse.json({ error: "Envie apenas imagens JPG, PNG, WEBP ou GIF válidas." }, { status: 400 });
   }
 }

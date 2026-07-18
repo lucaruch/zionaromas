@@ -2,5 +2,5 @@ import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   await request.body?.cancel();
-  return NextResponse.json({ error: "Cadastro publico indisponivel." }, { status: 410 });
+  return NextResponse.json({ error: "Cadastro público indisponível." }, { status: 410 });
 }

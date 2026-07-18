@@ -22,7 +22,7 @@ export async function POST(request: Request) {
   const parsed = await parseJson(request, schema, 2_000);
 
   if (!parsed.ok || !secureCompare(parsed.data.password, getAdminPassword())) {
-    return NextResponse.json({ error: "Credenciais invalidas." }, { status: 401 });
+    return NextResponse.json({ error: "Credenciais inválidas." }, { status: 401 });
   }
 
   const response = NextResponse.json({ ok: true });
