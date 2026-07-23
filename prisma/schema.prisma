@@ -177,6 +177,7 @@ model Coupon {
   description   String?
   discountRate  Int?
   discountValue Decimal? @db.Decimal(10, 2)
+  maxUses       Int?
   startsAt      DateTime?
   expiresAt     DateTime?
   active        Boolean  @default(true)

@@ -16,6 +16,8 @@ const emptyCoupon: CouponForm = {
   description: "",
   discountRate: "10",
   discountValue: "",
+  maxUses: "",
+  usedCount: 0,
   expiresAt: "",
   active: true
 };
@@ -53,7 +55,8 @@ export function AdminCouponsManager({ coupons }: { coupons: AdminCoupon[] }) {
       body: JSON.stringify({
         ...form,
         discountRate: form.discountValue ? "" : form.discountRate,
-        discountValue: form.discountValue || ""
+        discountValue: form.discountValue || "",
+        maxUses: form.maxUses || ""
       })
     });
     const data = await response.json().catch(() => ({}));
@@ -117,7 +120,7 @@ export function AdminCouponsManager({ coupons }: { coupons: AdminCoupon[] }) {
         <div className="grid border-b border-gold/15 px-5 py-4 text-[10px] font-black uppercase tracking-[0.22em] text-gold/70 md:grid-cols-[1fr_1fr_1fr_1fr_120px]">
           <span>Código</span>
           <span>Desconto</span>
-          <span>Validade</span>
+          <span>Uso</span>
           <span>Status</span>
           <span className="text-right">Ações</span>
         </div>
@@ -125,7 +128,10 @@ export function AdminCouponsManager({ coupons }: { coupons: AdminCoupon[] }) {
           <div key={coupon.id} className="grid gap-3 border-b border-gold/10 px-5 py-5 text-sm text-white last:border-0 md:grid-cols-[1fr_1fr_1fr_1fr_120px] md:items-center">
             <strong>{coupon.code}</strong>
             <span className="text-gold">{discountLabel(coupon)}</span>
-            <span className="text-white/70">{coupon.expiresAt ? new Date(`${coupon.expiresAt}T12:00:00`).toLocaleDateString("pt-BR") : "Sem validade"}</span>
+            <span className="text-white/70">
+              {coupon.usedCount}/{coupon.maxUses || "sem limite"}
+              {coupon.expiresAt ? ` até ${new Date(`${coupon.expiresAt}T12:00:00`).toLocaleDateString("pt-BR")}` : ""}
+            </span>
             <span>
               <span className={coupon.active ? "rounded-full border border-emerald-400/20 bg-emerald-400/10 px-4 py-1 text-[10px] font-black uppercase text-emerald-300" : "rounded-full border border-white/15 bg-white/[0.04] px-4 py-1 text-[10px] font-black uppercase text-white/50"}>
                 {coupon.active ? "Ativo" : "Inativo"}
@@ -163,6 +169,7 @@ export function AdminCouponsManager({ coupons }: { coupons: AdminCoupon[] }) {
                 <Input placeholder="Desconto em %" value={form.discountRate} onChange={(event) => update("discountRate", event.target.value)} />
                 <Input placeholder="Ou valor fixo" value={form.discountValue} onChange={(event) => update("discountValue", event.target.value)} />
                 <Input type="date" placeholder="Validade" value={form.expiresAt} onChange={(event) => update("expiresAt", event.target.value)} />
+                <Input inputMode="numeric" placeholder="Limite de uso (opcional)" value={form.maxUses} onChange={(event) => update("maxUses", event.target.value.replace(/\D/g, ""))} />
                 <label className="flex h-11 items-center justify-between rounded-md border border-gold/18 bg-black px-4 text-sm">
                   Cupom ativo
                   <input type="checkbox" checked={form.active} onChange={(event) => update("active", event.target.checked)} className="accent-gold" />

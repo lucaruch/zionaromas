@@ -39,6 +39,13 @@ const nextConfig: NextConfig = {
   },
   headers: async () => [
     {
+      source: "/admin/:path*",
+      headers: [
+        ...securityHeaders,
+        { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" }
+      ]
+    },
+    {
       source: "/sw.js",
       headers: [
         ...securityHeaders,

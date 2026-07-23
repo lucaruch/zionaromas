@@ -81,12 +81,22 @@ export async function POST(request: Request) {
           code: couponCode,
           active: true,
           OR: [{ expiresAt: null }, { expiresAt: { gte: new Date() } }]
-        }
+        },
+        include: { _count: { select: { orders: true } } }
       })
     : null;
-  const couponDiscount = coupon?.discountValue
+  if (couponCode && !coupon) {
+    return NextResponse.json({ error: "Cupom inválido ou expirado." }, { status: 400 });
+  }
+
+  const couponAvailable = coupon ? !coupon.maxUses || coupon._count.orders < coupon.maxUses : false;
+  if (couponCode && coupon && !couponAvailable) {
+    return NextResponse.json({ error: "Cupom esgotado." }, { status: 400 });
+  }
+
+  const couponDiscount = couponAvailable && coupon?.discountValue
     ? Number(coupon.discountValue)
-    : coupon?.discountRate
+    : couponAvailable && coupon?.discountRate
       ? subtotal * (coupon.discountRate / 100)
       : 0;
   const discount = Math.min(subtotal, automaticDiscount + couponDiscount);
@@ -128,7 +138,7 @@ export async function POST(request: Request) {
         code: orderCode,
         customerId: customer.id,
         addressId: address.id,
-        couponId: coupon?.id,
+        couponId: couponAvailable ? coupon?.id : null,
         status: "RECEBIDO",
         paymentMethod: parsed.data.paymentMethod,
         paymentStatus: "pendente",

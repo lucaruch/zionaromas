@@ -74,6 +74,11 @@ const couponSchema = z.object({
     return Number(value);
   }),
   discountValue: nullableDecimal,
+  maxUses: z.union([z.string(), z.number(), z.null(), z.undefined()]).transform((value) => {
+    if (value === null || value === undefined || value === "") return null;
+    const parsed = Number(value);
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+  }),
   expiresAt: z.string().trim().max(20).optional().default(""),
   active: z.coerce.boolean().default(true)
 });
@@ -153,6 +158,7 @@ function prepareResourceData(resource: string, payload: Record<string, unknown>)
       ...parsed.data,
       discountRate: parsed.data.discountRate || null,
       discountValue: parsed.data.discountValue || null,
+      maxUses: parsed.data.maxUses || null,
       expiresAt: parsed.data.expiresAt ? new Date(`${parsed.data.expiresAt}T23:59:59.000Z`) : null
     };
   }

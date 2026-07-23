@@ -58,6 +58,8 @@ export type AdminCoupon = {
   description: string;
   discountRate: string;
   discountValue: string;
+  maxUses: string;
+  usedCount: number;
   expiresAt: string;
   active: boolean;
 };
@@ -194,7 +196,10 @@ export async function getAdminProducts(): Promise<AdminProduct[]> {
 
 export async function getAdminCoupons(): Promise<AdminCoupon[]> {
   try {
-    const coupons = await prisma.coupon.findMany({ orderBy: { updatedAt: "desc" } });
+    const coupons = await prisma.coupon.findMany({
+      orderBy: { updatedAt: "desc" },
+      include: { _count: { select: { orders: true } } }
+    });
 
     return coupons.map((coupon) => ({
       id: coupon.id,
@@ -202,6 +207,8 @@ export async function getAdminCoupons(): Promise<AdminCoupon[]> {
       description: coupon.description ?? "",
       discountRate: coupon.discountRate?.toString() ?? "",
       discountValue: coupon.discountValue?.toString() ?? "",
+      maxUses: coupon.maxUses?.toString() ?? "",
+      usedCount: coupon._count.orders,
       expiresAt: coupon.expiresAt?.toISOString().slice(0, 10) ?? "",
       active: coupon.active
     }));
