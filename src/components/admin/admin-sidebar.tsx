@@ -10,6 +10,7 @@ export function AdminSidebar({ stats }: { stats: AdminStats }) {
   const links = [
     { href: "/admin/produtos", label: "Produtos", count: stats.products, icon: Package },
     { href: "/admin/pedidos", label: "Pedidos", count: stats.openOrders, icon: Boxes },
+    { href: "/admin/mensagens", label: "Mensagens", count: stats.newMessages, icon: MessageSquare },
     { href: "/admin/clientes", label: "Clientes", count: stats.customers, icon: MessageSquare },
     { href: "/admin/cupons", label: "Cupons", count: stats.activeCoupons, icon: Ticket },
     { href: "/admin/configuracoes", label: "Pagamentos", count: 1, icon: Settings }
@@ -44,6 +45,7 @@ export function AdminSidebar({ stats }: { stats: AdminStats }) {
         {[
           ["Produtos cadastrados", stats.products],
           ["Pedidos em aberto", stats.openOrders],
+          ["Mensagens novas", stats.newMessages],
           ["Clientes", stats.customers],
           ["Cupons ativos", stats.activeCoupons]
         ].map(([label, value]) => (

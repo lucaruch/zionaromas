@@ -6,6 +6,7 @@ export type AdminStats = {
   openOrders: number;
   customers: number;
   activeCoupons: number;
+  newMessages: number;
 };
 
 export type AdminBrand = {
@@ -70,11 +71,33 @@ export type AdminOrder = {
   customerName: string;
   customerEmail: string;
   customerPhone: string;
+  customerDocument: string;
   items: number;
+  itemLines: Array<{
+    productName: string;
+    sku: string;
+    quantity: number;
+    price: string;
+  }>;
+  postalCode: string;
+  addressLine: string;
   total: string;
   paymentMethod: string;
+  paymentStatus: string;
   status: string;
   trackingCode: string;
+  stockReducedAt: string;
+  createdAt: string;
+};
+
+export type AdminContactMessage = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  subject: string;
+  message: string;
+  status: "NOVO" | "RESPONDIDO" | "ARQUIVADO";
   createdAt: string;
 };
 
@@ -102,16 +125,17 @@ export type AdminBanner = {
 
 export async function getAdminStats(): Promise<AdminStats> {
   try {
-    const [products, openOrders, customers, activeCoupons] = await Promise.all([
+    const [products, openOrders, customers, activeCoupons, newMessages] = await Promise.all([
       prisma.product.count(),
       prisma.order.count({ where: { status: { in: ["RECEBIDO", "PAGO", "SEPARACAO", "ENVIADO"] } } }),
       prisma.customer.count(),
-      prisma.coupon.count({ where: { active: true } })
+      prisma.coupon.count({ where: { active: true } }),
+      prisma.contactMessage.count({ where: { status: "NOVO" } })
     ]);
 
-    return { products, openOrders, customers, activeCoupons };
+    return { products, openOrders, customers, activeCoupons, newMessages };
   } catch {
-    return { products: 0, openOrders: 0, customers: 0, activeCoupons: 0 };
+    return { products: 0, openOrders: 0, customers: 0, activeCoupons: 0, newMessages: 0 };
   }
 }
 
@@ -223,7 +247,8 @@ export async function getAdminOrders(): Promise<AdminOrder[]> {
       orderBy: { createdAt: "desc" },
       include: {
         customer: true,
-        items: true
+        address: true,
+        items: { include: { product: true } }
       }
     });
 
@@ -233,12 +258,44 @@ export async function getAdminOrders(): Promise<AdminOrder[]> {
       customerName: order.customer.name,
       customerEmail: order.customer.email,
       customerPhone: order.customer.phone ?? "",
+      customerDocument: order.customer.document ?? "",
       items: order.items.reduce((total, item) => total + item.quantity, 0),
+      itemLines: order.items.map((item) => ({
+        productName: item.product.name,
+        sku: item.product.sku,
+        quantity: item.quantity,
+        price: item.price.toString()
+      })),
+      postalCode: order.address?.postalCode ?? "",
+      addressLine: order.address
+        ? `${order.address.street}, ${order.address.number}${order.address.complement ? ` - ${order.address.complement}` : ""} - ${order.address.neighborhood} - ${order.address.city}/${order.address.state}`
+        : "Endereço não informado",
       total: order.total.toString(),
       paymentMethod: order.paymentMethod,
+      paymentStatus: order.paymentStatus,
       status: order.status,
       trackingCode: order.trackingCode ?? "",
+      stockReducedAt: order.stockReducedAt?.toISOString() ?? "",
       createdAt: order.createdAt.toISOString()
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export async function getAdminContactMessages(): Promise<AdminContactMessage[]> {
+  try {
+    const messages = await prisma.contactMessage.findMany({ orderBy: { createdAt: "desc" } });
+
+    return messages.map((message) => ({
+      id: message.id,
+      name: message.name,
+      email: message.email,
+      phone: message.phone ?? "",
+      subject: message.subject,
+      message: message.message,
+      status: message.status,
+      createdAt: message.createdAt.toISOString()
     }));
   } catch {
     return [];

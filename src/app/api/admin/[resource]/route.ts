@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isAdminUnlocked } from "@/lib/admin-auth";
+import { updateOrderWorkflow } from "@/lib/order-workflow";
 import { prisma } from "@/lib/prisma";
 import { isRateLimited } from "@/lib/security";
 
@@ -17,6 +18,7 @@ const modelMap = {
   marcas: "brand",
   cupons: "coupon",
   banners: "banner",
+  mensagens: "contactMessage",
   pedidos: "order",
   clientes: "customer",
   configuracoes: "storeSetting"
@@ -100,6 +102,10 @@ const orderSchema = z.object({
   trackingCode: z.string().trim().max(80).optional().nullable()
 });
 
+const messageSchema = z.object({
+  status: z.enum(["NOVO", "RESPONDIDO", "ARQUIVADO"])
+});
+
 const customerSchema = z.object({
   name: z.string().trim().min(2).max(100),
   email: z.string().trim().email().max(120),
@@ -180,6 +186,12 @@ function prepareResourceData(resource: string, payload: Record<string, unknown>)
     return parsed.data;
   }
 
+  if (resource === "mensagens") {
+    const parsed = messageSchema.safeParse(payload);
+    if (!parsed.success) return null;
+    return parsed.data;
+  }
+
   if (resource === "clientes") {
     const parsed = customerSchema.safeParse(payload);
     if (!parsed.success) return null;
@@ -247,10 +259,19 @@ export async function PUT(request: Request, { params }: RouteContext) {
   if (!data) return NextResponse.json({ error: "Revise os campos informados." }, { status: 400 });
 
   try {
+    if (resource === "pedidos") {
+      const updated = await updateOrderWorkflow(id, data as Parameters<typeof updateOrderWorkflow>[1]);
+      return NextResponse.json({ data: updated });
+    }
+
     const updated = await model.update({ where: { id }, data });
     return NextResponse.json({ data: updated });
-  } catch {
-    return NextResponse.json({ error: "Banco de dados indisponível." }, { status: 503 });
+  } catch (error) {
+    if (error instanceof Error && error.message === "insufficient-stock") {
+      return NextResponse.json({ error: "Estoque insuficiente para confirmar este pedido." }, { status: 409 });
+    }
+
+    return NextResponse.json({ error: "Não foi possível concluir a atualização." }, { status: 503 });
   }
 }
 
@@ -265,7 +286,7 @@ export async function DELETE(request: Request, { params }: RouteContext) {
   if (!model) return NextResponse.json({ error: "Recurso não encontrado." }, { status: 404 });
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
-  if (!id) return NextResponse.json({ error: "ID obrigatorio." }, { status: 400 });
+  if (!id) return NextResponse.json({ error: "ID obrigatório." }, { status: 400 });
   try {
     await model.delete({ where: { id } });
     return NextResponse.json({ ok: true });

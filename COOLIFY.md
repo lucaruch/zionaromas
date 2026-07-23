@@ -22,7 +22,16 @@ AUTH_SECRET="gere-um-segredo-grande-e-unico"
 AUTH_URL="https://seu-dominio.com"
 NEXT_PUBLIC_SITE_URL="https://seu-dominio.com"
 ADMIN_PASSWORD="senha-forte-do-painel"
+PAYMENT_WEBHOOK_SECRET="segredo-forte-para-webhooks-de-pagamento"
 ```
+
+Webhook publica para configurar no gateway:
+
+```txt
+https://seu-dominio.com/api/webhooks/payment
+```
+
+Configure o gateway para enviar o segredo no header `Authorization: Bearer ...` ou `x-zion-webhook-secret`.
 
 ## Variaveis do Melhor Envio
 

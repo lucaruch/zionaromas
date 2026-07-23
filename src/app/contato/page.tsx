@@ -1,6 +1,5 @@
 import { Instagram, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { ContactForm } from "@/components/commerce/contact-form";
 
 const address =
   "Avenida Presidente Costa e Silva, 501 - Galeria PG - Ljs 70/75 - Boqueirão - Praia Grande - SP - CEP: 11700-007";
@@ -38,18 +37,7 @@ export default function ContactPage() {
             </span>
           </div>
         </div>
-        <form className="border border-gold/20 bg-white/[0.035] p-6 shadow-[0_24px_80px_rgba(0,0,0,.35)]">
-          <div className="grid gap-4">
-            <Input placeholder="Seu nome" />
-            <Input placeholder="Seu e-mail" type="email" />
-            <Input placeholder="Assunto do atendimento" />
-            <textarea
-              placeholder="Conte o que você procura: perfume para uso próprio, presente, ocasião ou pedido já realizado."
-              className="min-h-36 rounded-3xl border border-gold/20 bg-black p-4 text-sm text-white outline-none placeholder:text-white/40 focus:border-gold"
-            />
-            <Button type="submit">Enviar mensagem</Button>
-          </div>
-        </form>
+        <ContactForm />
       </div>
     </section>
   );

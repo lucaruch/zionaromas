@@ -28,6 +28,12 @@ enum PaymentMethod {
   BOLETO
 }
 
+enum ContactMessageStatus {
+  NOVO
+  RESPONDIDO
+  ARQUIVADO
+}
+
 enum Role {
   CUSTOMER
   ADMIN
@@ -111,6 +117,7 @@ model Address {
   city         String
   state        String
   customer     Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  orders       Order[]
   createdAt    DateTime @default(now())
 }
 
@@ -200,7 +207,9 @@ model Order {
   discount        Decimal       @default(0) @db.Decimal(10, 2)
   total           Decimal       @db.Decimal(10, 2)
   trackingCode    String?
+  stockReducedAt  DateTime?
   customer        Customer      @relation(fields: [customerId], references: [id])
+  address         Address?      @relation(fields: [addressId], references: [id], onDelete: SetNull)
   coupon          Coupon?       @relation(fields: [couponId], references: [id])
   items           OrderItem[]
   createdAt       DateTime      @default(now())
@@ -276,6 +285,18 @@ model StoreSetting {
   group           String   @default("general")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+model ContactMessage {
+  id        String               @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String
+  message   String               @db.Text
+  status    ContactMessageStatus @default(NOVO)
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
 }
 
 model MediaAsset {
