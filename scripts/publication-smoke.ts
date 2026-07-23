@@ -1,8 +1,12 @@
 type SmokeCheck = {
   name: string;
   path: string;
+  method?: "GET" | "POST";
+  body?: unknown;
+  headers?: Record<string, string>;
   expectStatus?: number[];
   expectText?: string[];
+  expectAnyText?: string[];
   expectHeaders?: string[];
 };
 
@@ -77,6 +81,27 @@ const checks: SmokeCheck[] = [
     expectText: ["Banco de dados"]
   },
   {
+    name: "Admin nao indexavel",
+    path: "/admin",
+    expectText: ["senha"],
+    expectHeaders: ["x-robots-tag", "content-security-policy", "x-content-type-options"]
+  },
+  {
+    name: "API admin protegida",
+    path: "/api/admin/produtos",
+    expectStatus: [401],
+    expectText: ["autorizado"]
+  },
+  {
+    name: "Webhook rejeita POST sem segredo",
+    path: "/api/webhooks/payment",
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: { orderCode: "ZA-TESTE", status: "approved" },
+    expectStatus: [401, 503],
+    expectAnyText: ["autorizado", "configurado"]
+  },
+  {
     name: "Webhook publica",
     path: "/api/webhooks/payment",
     expectStatus: [200, 503],
@@ -102,10 +127,13 @@ function normalizeText(value: string) {
 async function runCheck(check: SmokeCheck): Promise<SmokeResult> {
   const url = `${baseUrl}${check.path}`;
   const response = await fetch(url, {
+    method: check.method || "GET",
     redirect: "follow",
     headers: {
-      "User-Agent": "ZION AROMAS publication smoke test"
+      "User-Agent": "ZION AROMAS publication smoke test",
+      ...(check.headers || {})
     },
+    body: check.body === undefined ? undefined : JSON.stringify(check.body),
     signal: AbortSignal.timeout(15_000)
   });
   const body = await response.text();
@@ -125,6 +153,11 @@ async function runCheck(check: SmokeCheck): Promise<SmokeResult> {
     if (!normalizedBody.includes(normalizeText(expected))) {
       details.push(`texto ausente: ${expected}`);
     }
+  }
+
+  const expectedAnyTexts = check.expectAnyText || [];
+  if (expectedAnyTexts.length && !expectedAnyTexts.some((expected) => normalizedBody.includes(normalizeText(expected)))) {
+    details.push(`texto ausente: ${expectedAnyTexts.join(" ou ")}`);
   }
 
   return {
