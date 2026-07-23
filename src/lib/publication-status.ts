@@ -3,6 +3,7 @@ import { getAdminStats } from "@/lib/admin-data";
 import { getPaymentSettings } from "@/lib/payment-store";
 import { prisma } from "@/lib/prisma";
 import { getShippingSettings } from "@/lib/shipping-settings";
+import { configuredPublicSiteUrl, getPublicSiteUrl, isValidPublicSiteUrl } from "@/lib/site-url";
 
 export type PublicationCheck = {
   label: string;
@@ -23,10 +24,11 @@ function hasEnv(name: string) {
 }
 
 function publicSiteUrl() {
-  const value = process.env.NEXT_PUBLIC_SITE_URL?.trim() || "";
+  const value = configuredPublicSiteUrl();
   return {
     value,
-    valid: /^https:\/\/[^/]+/i.test(value) && !/localhost|127\.0\.0\.1|0\.0\.0\.0/i.test(value)
+    resolved: getPublicSiteUrl(),
+    valid: isValidPublicSiteUrl(value)
   };
 }
 
@@ -85,7 +87,7 @@ export async function getPublicationStatus(): Promise<PublicationStatus> {
       check("Serviços dos Correios", shippingSettings.correiosServices.length > 0, `Serviços ativos: ${shippingSettings.correiosServices.join(", ")}.`),
       check("Peso e dimensões padrão", shippingSettings.defaultWeightKg > 0 && shippingSettings.defaultWidthCm > 0 && shippingSettings.defaultHeightCm > 0 && shippingSettings.defaultLengthCm > 0, `${shippingSettings.defaultWeightKg} kg, ${shippingSettings.defaultWidthCm}x${shippingSettings.defaultHeightCm}x${shippingSettings.defaultLengthCm} cm.`),
       check("Melhor Envio", hasEnv("MELHOR_ENVIO_TOKEN"), "Token necessário para cotações reais dos Correios.", true),
-      check("Site público", siteUrl.valid, siteUrl.value ? `URL configurada: ${siteUrl.value}.` : "URL pública ainda não configurada.", true),
+      check("Site público", siteUrl.valid, siteUrl.value ? `URL configurada: ${siteUrl.value}. URL usada: ${siteUrl.resolved}.` : `URL pública ainda não configurada. URL usada: ${siteUrl.resolved}.`, true),
       check("Admin protegido", hasEnv("ADMIN_PASSWORD") && hasEnv("AUTH_SECRET"), "Senha do admin e segredo de sessão configurados."),
       check("Contatos da loja", true, "WhatsApp, e-mail, Instagram, Maps, CNPJ e razão social estão no site."),
       check("Compra teste", false, "Precisa ser executada no ambiente publicado com gateway real.", true)
