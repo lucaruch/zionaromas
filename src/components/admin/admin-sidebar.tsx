@@ -13,7 +13,7 @@ export function AdminSidebar({ stats }: { stats: AdminStats }) {
     { href: "/admin/mensagens", label: "Mensagens", count: stats.newMessages, icon: MessageSquare },
     { href: "/admin/clientes", label: "Clientes", count: stats.customers, icon: MessageSquare },
     { href: "/admin/cupons", label: "Cupons", count: stats.activeCoupons, icon: Ticket },
-    { href: "/admin/configuracoes", label: "Pagamentos", count: 1, icon: Settings }
+    { href: "/admin/configuracoes", label: "Configurações", count: 2, icon: Settings }
   ];
 
   return (

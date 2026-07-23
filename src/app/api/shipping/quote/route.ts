@@ -3,6 +3,7 @@ import { z } from "zod";
 import { MOCK_PRODUCT_SLUGS } from "@/lib/mock-products";
 import { prisma } from "@/lib/prisma";
 import { isRateLimited, parseJson } from "@/lib/security";
+import { getShippingSettings, type ShippingSettings } from "@/lib/shipping-settings";
 
 const quoteSchema = z.object({
   postalCode: z.string().regex(/^\d{5}-?\d{3}$/),
@@ -32,12 +33,12 @@ function cleanPostalCode(value: string) {
   return value.replace(/\D/g, "");
 }
 
-function parseWeight(value: string | number | null | undefined) {
+function parseWeight(value: string | number | null | undefined, fallback: number) {
   const numeric =
     typeof value === "number"
       ? value
       : Number(String(value || "").replace(/[^\d,.]/g, "").replace(",", "."));
-  return Number.isFinite(numeric) && numeric > 0 ? numeric : 1;
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : fallback;
 }
 
 function fallbackCorreiosQuote() {
@@ -59,6 +60,34 @@ function fallbackCorreiosQuote() {
       source: "fallback"
     }
   ];
+}
+
+function extraShippingOptions(settings: ShippingSettings, subtotal: number) {
+  const options = [];
+
+  if (settings.pickupEnabled) {
+    options.push({
+      id: 900,
+      name: settings.pickupLabel,
+      company: "ZION AROMAS",
+      price: 0,
+      deliveryTime: 0,
+      source: "pickup"
+    });
+  }
+
+  if (settings.freeShippingEnabled && subtotal >= settings.freeShippingThreshold) {
+    options.push({
+      id: 901,
+      name: "Frete grátis",
+      company: "Correios",
+      price: 0,
+      deliveryTime: 7,
+      source: "free-shipping"
+    });
+  }
+
+  return options;
 }
 
 function melhorEnvioBaseUrl() {
@@ -86,16 +115,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Dados inválidos para cotação." }, { status: 400 });
   }
 
+  const settings = await getShippingSettings();
   const destinationPostalCode = cleanPostalCode(parsed.data.postalCode);
-  const token = process.env.MELHOR_ENVIO_TOKEN;
-
-  if (!token) {
-    return NextResponse.json({
-      options: fallbackCorreiosQuote(),
-      warning: "Configure MELHOR_ENVIO_TOKEN para usar a cotação real do Melhor Envio."
-    });
-  }
-
   const productKeys = parsed.data.items.map((item) => item.slug);
   const dbProducts = await prisma.product
     .findMany({
@@ -115,10 +136,10 @@ export async function POST(request: Request) {
 
       return {
         id: dbProduct.sku,
-        width: 12,
-        height: 18,
-        length: 12,
-        weight: parseWeight(dbProduct.weight?.toString()),
+        width: settings.defaultWidthCm,
+        height: settings.defaultHeightCm,
+        length: settings.defaultLengthCm,
+        weight: parseWeight(dbProduct.weight?.toString(), settings.defaultWeightKg),
         insurance_value: Number(dbProduct.salePrice ?? dbProduct.price),
         quantity: item.quantity
       };
@@ -129,8 +150,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Nenhum produto válido para cotação." }, { status: 400 });
   }
 
-  const services = process.env.MELHOR_ENVIO_CORREIOS_SERVICES || "1,2";
-  const originPostalCode = cleanPostalCode(process.env.MELHOR_ENVIO_ORIGIN_POSTAL_CODE || "11700007");
+  const subtotal = selectedProducts.reduce((total, item) => total + item.insurance_value * item.quantity, 0);
+  const extras = extraShippingOptions(settings, subtotal);
+  const token = process.env.MELHOR_ENVIO_TOKEN;
+
+  if (!token) {
+    return NextResponse.json({
+      options: [...extras, ...fallbackCorreiosQuote()],
+      warning: "Configure MELHOR_ENVIO_TOKEN para usar a cotação real do Melhor Envio."
+    });
+  }
 
   try {
     const response = await fetch(`${melhorEnvioBaseUrl()}/api/v2/me/shipment/calculate`, {
@@ -142,14 +171,14 @@ export async function POST(request: Request) {
         "User-Agent": process.env.MELHOR_ENVIO_USER_AGENT || "ZION AROMAS (zionaromasp@gmail.com)"
       },
       body: JSON.stringify({
-        from: { postal_code: originPostalCode },
+        from: { postal_code: cleanPostalCode(settings.originPostalCode) },
         to: { postal_code: destinationPostalCode },
         products: selectedProducts,
         options: {
           receipt: false,
           own_hand: false
         },
-        services
+        services: settings.correiosServices.join(",")
       }),
       signal: AbortSignal.timeout(8_000)
     });
@@ -160,7 +189,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error: "Não foi possível consultar o frete agora.",
-          options: fallbackCorreiosQuote()
+          options: [...extras, ...fallbackCorreiosQuote()]
         },
         { status: 502 }
       );
@@ -178,11 +207,11 @@ export async function POST(request: Request) {
       }))
       .filter((service) => service.price > 0);
 
-    return NextResponse.json({ options: options.length ? options : fallbackCorreiosQuote() });
+    return NextResponse.json({ options: [...extras, ...(options.length ? options : fallbackCorreiosQuote())] });
   } catch {
     return NextResponse.json({
       error: "Não foi possível consultar o frete agora.",
-      options: fallbackCorreiosQuote()
+      options: [...extras, ...fallbackCorreiosQuote()]
     });
   }
 }

@@ -1,12 +1,18 @@
 import { PaymentSettingsForm } from "@/components/admin/payment-settings-form";
+import { ShippingSettingsForm } from "@/components/admin/shipping-settings-form";
 import { getPaymentSettings } from "@/lib/payment-store";
+import { getShippingSettings } from "@/lib/shipping-settings";
 
 export default async function AdminSettingsPage() {
-  const settings = await getPaymentSettings();
+  const [paymentSettings, shippingSettings] = await Promise.all([
+    getPaymentSettings(),
+    getShippingSettings()
+  ]);
 
   return (
     <div className="grid gap-6">
-      <PaymentSettingsForm initialSettings={settings} />
+      <PaymentSettingsForm initialSettings={paymentSettings} />
+      <ShippingSettingsForm initialSettings={shippingSettings} />
 
       <section className="grid gap-4 border border-gold/18 bg-[#0d0b08] p-5 text-white shadow-[0_24px_70px_rgba(0,0,0,.24)] sm:p-7">
         <p className="text-[10px] font-black uppercase tracking-[0.28em] text-gold/75">Informações da boutique</p>

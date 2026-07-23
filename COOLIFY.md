@@ -41,10 +41,10 @@ Configure o gateway para enviar o segredo no header `Authorization: Bearer ...` 
 ```env
 MELHOR_ENVIO_TOKEN="token-do-melhor-envio"
 MELHOR_ENVIO_BASE_URL="https://www.melhorenvio.com.br"
-MELHOR_ENVIO_ORIGIN_POSTAL_CODE="11700007"
-MELHOR_ENVIO_CORREIOS_SERVICES="1,2"
 MELHOR_ENVIO_USER_AGENT="ZION AROMAS (zionaromasp@gmail.com)"
 ```
+
+CEP de origem, PAC/SEDEX, retirada na loja, dimensões padrão e frete grátis são configurados no painel `/admin/configuracoes`.
 
 ## Banco de dados
 

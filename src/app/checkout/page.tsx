@@ -251,7 +251,9 @@ export default function CheckoutPage() {
                           <span className="min-w-0">
                             <strong>{option.name}</strong>
                             <span className="block text-xs text-white/50">
-                              {option.company} - {option.deliveryTime} dias úteis
+                              {option.source === "pickup"
+                                ? "Retirada conforme atendimento da loja"
+                                : `${option.company} - ${option.deliveryTime} dias úteis`}
                             </span>
                           </span>
                         </span>
@@ -317,7 +319,7 @@ export default function CheckoutPage() {
               </div>
               <div className="flex justify-between gap-4">
                 <span>Frete</span>
-                <strong className="text-white">{shipping ? formatCurrency(shipping) : "Calcular"}</strong>
+                <strong className="text-white">{selectedShipping ? formatCurrency(shipping) : "Calcular"}</strong>
               </div>
               <div className="flex justify-between gap-4">
                 <span>Desconto aplicado</span>

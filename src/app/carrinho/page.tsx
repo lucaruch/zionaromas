@@ -55,7 +55,7 @@ export default function CartPage() {
             <div className="luxury-divider my-6" />
             <div className="grid gap-3 text-sm text-white/65">
               <div className="flex justify-between gap-4"><span>Subtotal</span><strong className="text-white">{formatCurrency(subtotal)}</strong></div>
-              <div className="flex justify-between gap-4"><span>Frete estimado</span><strong className="text-white">{subtotal > 0 ? formatCurrency(29.9) : formatCurrency(0)}</strong></div>
+              <div className="flex justify-between gap-4"><span>Frete</span><strong className="text-white">Calculado no checkout</strong></div>
             </div>
             <Link href="/checkout" className="mt-6 block"><Button className="w-full" disabled={!items.length}>Finalizar compra</Button></Link>
           </aside>
