@@ -47,6 +47,7 @@ Use este guia depois de cada publicação importante.
 ## Pós-publicação
 
 - Acesse `/admin/relatorios` e confira a conferência operacional.
+- Rode `npm run smoke:production -- https://zionaromas.com` antes de liberar a divulgação.
 - Faça uma compra teste com produto real e valor baixo.
 - Confirme se o pedido apareceu no admin.
 - Confirme se o status financeiro ficou correto.

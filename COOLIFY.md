@@ -51,6 +51,7 @@ CEP de origem, PAC/SEDEX, retirada na loja, dimensões padrão e frete grátis s
 
 - Acesse `/admin/relatorios` para ver versão, commit e checklist operacional.
 - Acesse `/api/health` para conferir saúde do app, banco e configurações principais sem expor segredos.
+- Rode `npm run smoke:production -- https://seu-dominio.com` para conferir páginas públicas, headers, sitemap, robots, healthcheck e webhook.
 
 ## Banco de dados
 
