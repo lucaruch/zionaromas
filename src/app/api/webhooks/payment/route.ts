@@ -1,7 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { confirmOrderPaymentByCode } from "@/lib/order-workflow";
+import { confirmOrderPayment } from "@/lib/order-workflow";
 import { isRateLimited, parseJson } from "@/lib/security";
 
 const schema = z.record(z.unknown());
@@ -36,12 +36,33 @@ function getWebhookSecret(request: Request) {
   return secureHeaderEquals(received, configured);
 }
 
-function stringValue(payload: Record<string, unknown>, keys: string[]) {
-  for (const key of keys) {
-    const value = payload[key];
-    if (typeof value === "string" && value.trim()) return value.trim();
-    if (typeof value === "number") return String(value);
+function stringValue(payload: unknown, keys: string[], depth = 0): string {
+  if (!payload || depth > 4) return "";
+
+  if (Array.isArray(payload)) {
+    for (const item of payload) {
+      const nested = stringValue(item, keys, depth + 1);
+      if (nested) return nested;
+    }
+    return "";
   }
+
+  if (typeof payload === "object") {
+    const acceptedKeys = new Set(keys.map((key) => key.toLowerCase()));
+
+    for (const [key, value] of Object.entries(payload as Record<string, unknown>)) {
+      if (acceptedKeys.has(key.toLowerCase())) {
+        if (typeof value === "string" && value.trim()) return value.trim();
+        if (typeof value === "number") return String(value);
+      }
+    }
+
+    for (const value of Object.values(payload as Record<string, unknown>)) {
+      const nested = stringValue(value, keys, depth + 1);
+      if (nested) return nested;
+    }
+  }
+
   return "";
 }
 
@@ -69,6 +90,22 @@ function normalizeOrderCode(payload: Record<string, unknown>) {
   ]).toUpperCase();
 }
 
+function normalizePaymentReference(payload: Record<string, unknown>) {
+  return stringValue(payload, [
+    "paymentReference",
+    "payment_reference",
+    "paymentId",
+    "PaymentId",
+    "payment_id",
+    "transactionId",
+    "transaction_id",
+    "tid",
+    "TID",
+    "nsu",
+    "NSU"
+  ]);
+}
+
 export async function POST(request: Request) {
   if (isRateLimited(request, "payment-webhook", 120, 60_000)) {
     return NextResponse.json({ error: "Muitas tentativas." }, { status: 429 });
@@ -88,9 +125,10 @@ export async function POST(request: Request) {
   }
 
   const orderCode = normalizeOrderCode(parsed.data);
+  const paymentReference = normalizePaymentReference(parsed.data);
   const signal = normalizePaymentSignal(parsed.data);
 
-  if (!orderCode) {
+  if (!orderCode && !paymentReference) {
     return NextResponse.json({ error: "Pedido não informado." }, { status: 400 });
   }
 
@@ -99,7 +137,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    await confirmOrderPaymentByCode(orderCode, "aprovado");
+    await confirmOrderPayment({ code: orderCode, paymentReference }, "aprovado");
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: "Pedido não localizado ou sem estoque disponível." }, { status: 409 });
@@ -107,5 +145,15 @@ export async function POST(request: Request) {
 }
 
 export async function GET() {
-  return NextResponse.json({ ok: true, endpoint: "/api/webhooks/payment" });
+  const configured = Boolean(process.env.PAYMENT_WEBHOOK_SECRET);
+  return NextResponse.json(
+    {
+      ok: configured,
+      endpoint: "/api/webhooks/payment",
+      method: "POST",
+      authentication: "Authorization: Bearer ... ou x-zion-webhook-secret",
+      configured
+    },
+    { status: configured ? 200 : 503 }
+  );
 }

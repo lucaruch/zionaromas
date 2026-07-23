@@ -66,3 +66,26 @@ export async function confirmOrderPaymentByCode(code: string, paymentStatus = "a
   if (!order) throw new Error("order-not-found");
   return updateOrderWorkflow(order.id, { status: "PAGO", paymentStatus });
 }
+
+export async function confirmOrderPayment(
+  lookup: { code?: string; paymentReference?: string },
+  paymentStatus = "aprovado"
+) {
+  const code = lookup.code?.trim().toUpperCase();
+  const paymentReference = lookup.paymentReference?.trim();
+
+  if (!code && !paymentReference) throw new Error("order-not-found");
+
+  const order = await prisma.order.findFirst({
+    where: {
+      OR: [
+        ...(code ? [{ code }] : []),
+        ...(paymentReference ? [{ paymentReference }] : [])
+      ]
+    },
+    select: { id: true }
+  });
+
+  if (!order) throw new Error("order-not-found");
+  return updateOrderWorkflow(order.id, { status: "PAGO", paymentStatus });
+}

@@ -35,6 +35,7 @@ https://seu-dominio.com/api/webhooks/payment
 ```
 
 Configure o gateway para enviar o segredo no header `Authorization: Bearer ...` ou `x-zion-webhook-secret`.
+O payload pode identificar o pedido por código (`orderCode`/`MerchantOrderId`) ou pela referência da transação (`PaymentId`/`transaction_id`) salva no pedido.
 
 ## Variaveis do Melhor Envio
 
@@ -62,13 +63,21 @@ npx tsx prisma/seed.ts
 
 Use o seed apenas na primeira instalacao, ou quando quiser recriar os dados iniciais.
 
-## Uploads
+## Uploads e imagens
 
-Para preservar imagens enviadas pelo painel depois de redeploys, crie um volume persistente:
+As imagens enviadas pelo painel são convertidas automaticamente para `.webp`, salvas no PostgreSQL e servidas por `/api/media/...`.
+Por isso, não é necessário criar volume para uploads. O ponto crítico é manter o mesmo PostgreSQL conectado ao app.
 
-```txt
-/app/public/uploads
-```
+Antes de publicar, cadastre um produto pelo painel, envie uma imagem e confirme que ela abre no catálogo e na página do produto.
+
+## Checklist rápido de produção
+
+- Em `/admin/configuracoes`, selecione Cielo ou Getnet e habilite apenas os métodos realmente contratados.
+- Configure `PAYMENT_WEBHOOK_SECRET` na Coolify e no gateway.
+- Cadastre a webhook pública `https://seu-dominio.com/api/webhooks/payment`.
+- Em `/admin/configuracoes`, confira CEP de origem, PAC/SEDEX, retirada e frete grátis.
+- Em `/admin/relatorios`, confira se banco, pagamento, frete e contatos estão sinalizados corretamente.
+- Depois do deploy, faça uma compra teste real e confira pedido, pagamento e estoque no admin.
 
 ## Admin
 
