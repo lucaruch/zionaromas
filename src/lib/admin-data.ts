@@ -84,6 +84,10 @@ export type AdminOrder = {
   total: string;
   paymentMethod: string;
   paymentStatus: string;
+  paymentProvider: string;
+  paymentReference: string;
+  pixQrCode: string;
+  boletoUrl: string;
   status: string;
   trackingCode: string;
   stockReducedAt: string;
@@ -273,6 +277,10 @@ export async function getAdminOrders(): Promise<AdminOrder[]> {
       total: order.total.toString(),
       paymentMethod: order.paymentMethod,
       paymentStatus: order.paymentStatus,
+      paymentProvider: order.paymentProvider ?? "",
+      paymentReference: order.paymentReference ?? "",
+      pixQrCode: order.pixQrCode ?? "",
+      boletoUrl: order.boletoUrl ?? "",
       status: order.status,
       trackingCode: order.trackingCode ?? "",
       stockReducedAt: order.stockReducedAt?.toISOString() ?? "",

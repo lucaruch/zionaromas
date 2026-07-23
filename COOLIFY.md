@@ -23,6 +23,9 @@ AUTH_URL="https://seu-dominio.com"
 NEXT_PUBLIC_SITE_URL="https://seu-dominio.com"
 ADMIN_PASSWORD="senha-forte-do-painel"
 PAYMENT_WEBHOOK_SECRET="segredo-forte-para-webhooks-de-pagamento"
+PIX_KEY="chave-pix-da-loja"
+PIX_MERCHANT_NAME="ZION AROMAS"
+PIX_MERCHANT_CITY="PRAIA GRANDE"
 ```
 
 Webhook publica para configurar no gateway:

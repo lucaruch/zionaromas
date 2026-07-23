@@ -28,6 +28,17 @@ type CheckoutPaymentSettings = {
   methods: PaymentOption[];
 };
 
+type CheckoutPaymentResult = {
+  method: PaymentMethod;
+  provider: string;
+  status: "pending" | "ready" | "manual";
+  message: string;
+  pixQrCode?: string;
+  pixQrCodeImage?: string;
+  boletoUrl?: string;
+  boletoBarcode?: string;
+};
+
 const paymentIcons: Record<PaymentMethod, LucideIcon> = {
   PIX: QrCode,
   CARTAO: CreditCard,
@@ -51,6 +62,7 @@ export default function CheckoutPage() {
   const [shippingMessage, setShippingMessage] = useState("");
   const [paymentSettings, setPaymentSettings] = useState<CheckoutPaymentSettings | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("PIX");
+  const [paymentResult, setPaymentResult] = useState<CheckoutPaymentResult | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutMessage, setCheckoutMessage] = useState("");
   const discount = useMemo(() => (subtotal > 400 ? 35 : 0), [subtotal]);
@@ -137,6 +149,7 @@ export default function CheckoutPage() {
 
   async function finishOrder() {
     setCheckoutMessage("");
+    setPaymentResult(null);
 
     if (!items.length) {
       setCheckoutMessage("Seu carrinho está vazio.");
@@ -176,6 +189,7 @@ export default function CheckoutPage() {
       }
 
       clear();
+      setPaymentResult(data.payment || null);
       setCheckoutMessage(`Pedido ${data.orderCode} recebido. ${data.nextStep}`);
     } catch {
       setCheckoutMessage("Não foi possível finalizar o pedido agora.");
@@ -315,6 +329,35 @@ export default function CheckoutPage() {
               </div>
             </div>
             {checkoutMessage ? <p className="mt-4 text-sm leading-6 text-gold">{checkoutMessage}</p> : null}
+            {paymentResult ? (
+              <div className="mt-5 border border-gold/18 bg-white/[0.035] p-4">
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-gold/70">
+                  {paymentResult.provider}
+                </p>
+                <p className="mt-2 text-sm leading-6 text-white/70">{paymentResult.message}</p>
+                {paymentResult.pixQrCodeImage ? (
+                  <img src={paymentResult.pixQrCodeImage} alt="QR Code PIX" className="mt-4 aspect-square w-full bg-white object-contain p-3" />
+                ) : null}
+                {paymentResult.pixQrCode ? (
+                  <div className="mt-4 grid gap-3">
+                    <textarea
+                      readOnly
+                      value={paymentResult.pixQrCode}
+                      className="min-h-28 resize-none rounded-md border border-gold/18 bg-black p-3 text-xs text-white outline-none"
+                      aria-label="PIX copia e cola"
+                    />
+                    <Button type="button" onClick={() => navigator.clipboard.writeText(paymentResult.pixQrCode || "")}>
+                      Copiar PIX copia e cola
+                    </Button>
+                  </div>
+                ) : null}
+                {paymentResult.boletoUrl ? (
+                  <a href={paymentResult.boletoUrl} target="_blank" rel="noreferrer" className="mt-4 inline-flex text-sm font-bold text-gold underline">
+                    Abrir boleto
+                  </a>
+                ) : null}
+              </div>
+            ) : null}
             <Button className="mt-6 w-full" type="button" disabled={!items.length || !selectedShippingId || checkoutLoading} onClick={finishOrder}>
               {checkoutLoading ? "Finalizando..." : "Finalizar pedido"}
             </Button>

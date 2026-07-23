@@ -1,17 +1,18 @@
 import { NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { z } from "zod";
-import { getPaymentSettings } from "@/lib/payment-store";
-import { getCheckoutPaymentCopy, providerLabels } from "@/lib/payments";
-import { prisma } from "@/lib/prisma";
 import { MOCK_PRODUCT_SLUGS } from "@/lib/mock-products";
+import { getPaymentSettings } from "@/lib/payment-store";
+import { createPaymentInstruction } from "@/lib/payment-processing";
+import { providerLabels } from "@/lib/payments";
+import { prisma } from "@/lib/prisma";
 import { isRateLimited, parseJson } from "@/lib/security";
 
 const schema = z.object({
   customer: z.object({
     name: z.string().trim().min(2).max(80),
     email: z.string().trim().email().max(120),
-    phone: z.string().trim().max(20).optional()
-      .or(z.literal("")),
+    phone: z.string().trim().max(20).optional().or(z.literal("")),
     document: z.string().trim().max(30).optional().or(z.literal(""))
   }),
   address: z.object({
@@ -67,7 +68,6 @@ export async function POST(request: Request) {
   }
 
   const providerName = providerLabels[paymentSettings.activeProvider];
-  const paymentCopy = getCheckoutPaymentCopy(paymentSettings, parsed.data.paymentMethod);
   const subtotal = parsed.data.items.reduce((total, item) => {
     const product = productMap.get(item.productId)!;
     return total + Number(product.salePrice ?? product.price) * item.quantity;
@@ -103,7 +103,7 @@ export async function POST(request: Request) {
   const total = Math.max(0, subtotal + shipping - discount);
   const orderCode = `ZA-${Date.now().toString().slice(-6)}`;
 
-  const order = await prisma.$transaction(async (tx) => {
+  const { order, customer } = await prisma.$transaction(async (tx) => {
     const customer = await tx.customer.upsert({
       where: { email: parsed.data.customer.email.toLowerCase() },
       update: {
@@ -133,7 +133,7 @@ export async function POST(request: Request) {
       }
     });
 
-    return tx.order.create({
+    const order = await tx.order.create({
       data: {
         code: orderCode,
         customerId: customer.id,
@@ -158,6 +158,32 @@ export async function POST(request: Request) {
         }
       }
     });
+
+    return { order, customer };
+  });
+
+  const paymentInstruction = await createPaymentInstruction({
+    order,
+    customer: { name: customer.name, email: customer.email },
+    settings: paymentSettings
+  });
+
+  const paymentData: Prisma.OrderUpdateInput = {
+    paymentProvider: paymentInstruction.provider,
+    paymentReference: paymentInstruction.reference || null,
+    pixQrCode: paymentInstruction.pixQrCode || null,
+    pixQrCodeImage: paymentInstruction.pixQrCodeImage || null,
+    boletoUrl: paymentInstruction.boletoUrl || null,
+    boletoBarcode: paymentInstruction.boletoBarcode || null
+  };
+
+  if (paymentInstruction.raw !== undefined && paymentInstruction.raw !== null) {
+    paymentData.paymentPayload = paymentInstruction.raw as Prisma.InputJsonValue;
+  }
+
+  await prisma.order.update({
+    where: { id: order.id },
+    data: paymentData
   });
 
   return NextResponse.json({
@@ -165,9 +191,16 @@ export async function POST(request: Request) {
     orderCode: order.code,
     status: order.status,
     paymentProvider: providerName,
-    nextStep:
-      parsed.data.paymentMethod === "PIX"
-        ? `${paymentCopy} Em instantes você receberá a confirmação.`
-        : `${paymentCopy} Em instantes você receberá a confirmação do pedido.`
+    nextStep: paymentInstruction.message,
+    payment: {
+      method: paymentInstruction.method,
+      provider: paymentInstruction.provider,
+      status: paymentInstruction.status,
+      message: paymentInstruction.message,
+      pixQrCode: paymentInstruction.pixQrCode,
+      pixQrCodeImage: paymentInstruction.pixQrCodeImage,
+      boletoUrl: paymentInstruction.boletoUrl,
+      boletoBarcode: paymentInstruction.boletoBarcode
+    }
   });
 }

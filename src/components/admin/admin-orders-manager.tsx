@@ -133,6 +133,8 @@ export function AdminOrdersManager({ orders }: { orders: AdminOrder[] }) {
                 <span className="flex justify-between gap-4"><span className="text-white/55">Total</span><strong className="text-gold">{formatCurrency(Number(order.total))}</strong></span>
                 <span className="flex justify-between gap-4"><span className="text-white/55">Pagamento</span><strong>{paymentLabels[order.paymentMethod] || order.paymentMethod}</strong></span>
                 <span className="flex justify-between gap-4"><span className="text-white/55">Status financeiro</span><strong>{order.paymentStatus}</strong></span>
+                {order.paymentProvider ? <span className="flex justify-between gap-4"><span className="text-white/55">Operadora</span><strong>{order.paymentProvider}</strong></span> : null}
+                {order.paymentReference ? <span className="flex justify-between gap-4"><span className="text-white/55">Referência</span><strong className="break-all text-right">{order.paymentReference}</strong></span> : null}
                 <span className="flex justify-between gap-4"><span className="text-white/55">Estoque</span><strong>{order.stockReducedAt ? "Baixado" : "Pendente"}</strong></span>
               </div>
             </div>
