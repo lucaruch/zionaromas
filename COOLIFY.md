@@ -28,6 +28,8 @@ PIX_MERCHANT_NAME="ZION AROMAS"
 PIX_MERCHANT_CITY="PRAIA GRANDE"
 ```
 
+`AUTH_URL` e `NEXT_PUBLIC_SITE_URL` nunca devem ficar como `localhost` em produção. Use sempre o domínio final com `https://`.
+
 Webhook publica para configurar no gateway:
 
 ```txt

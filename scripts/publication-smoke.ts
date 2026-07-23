@@ -7,6 +7,7 @@ type SmokeCheck = {
   expectStatus?: number[];
   expectText?: string[];
   expectAnyText?: string[];
+  rejectText?: string[];
   expectHeaders?: string[];
 };
 
@@ -72,13 +73,15 @@ const checks: SmokeCheck[] = [
   {
     name: "Sitemap",
     path: "/sitemap.xml",
-    expectText: ["urlset"]
+    expectText: ["urlset"],
+    rejectText: ["localhost", "127.0.0.1"]
   },
   {
     name: "Healthcheck",
     path: "/api/health",
     expectStatus: [200, 503],
-    expectText: ["Banco de dados"]
+    expectText: ["Banco de dados"],
+    rejectText: ["localhost", "127.0.0.1"]
   },
   {
     name: "Admin nao indexavel",
@@ -158,6 +161,12 @@ async function runCheck(check: SmokeCheck): Promise<SmokeResult> {
   const expectedAnyTexts = check.expectAnyText || [];
   if (expectedAnyTexts.length && !expectedAnyTexts.some((expected) => normalizedBody.includes(normalizeText(expected)))) {
     details.push(`texto ausente: ${expectedAnyTexts.join(" ou ")}`);
+  }
+
+  for (const rejected of check.rejectText || []) {
+    if (normalizedBody.includes(normalizeText(rejected))) {
+      details.push(`texto indevido encontrado: ${rejected}`);
+    }
   }
 
   return {
