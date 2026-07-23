@@ -11,7 +11,7 @@ Crie dois recursos na Coolify:
 
 - Build Pack: `Dockerfile`
 - Porta interna: `3000`
-- Healthcheck path: `/`
+- Healthcheck path: `/api/health`
 - Start command: deixe vazio, o Dockerfile ja usa `node server.js`
 
 ## Variaveis obrigatorias
@@ -45,6 +45,11 @@ MELHOR_ENVIO_USER_AGENT="ZION AROMAS (zionaromasp@gmail.com)"
 ```
 
 CEP de origem, PAC/SEDEX, retirada na loja, dimensões padrão e frete grátis são configurados no painel `/admin/configuracoes`.
+
+## Conferência pós-publicação
+
+- Acesse `/admin/relatorios` para ver versão, commit e checklist operacional.
+- Acesse `/api/health` para conferir saúde do app, banco e configurações principais sem expor segredos.
 
 ## Banco de dados
 
