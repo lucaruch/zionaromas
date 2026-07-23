@@ -338,6 +338,7 @@ export default function CheckoutPage() {
                 </p>
                 <p className="mt-2 text-sm leading-6 text-white/70">{paymentResult.message}</p>
                 {paymentResult.pixQrCodeImage ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- QR Code comes from a generated data URI.
                   <img src={paymentResult.pixQrCodeImage} alt="QR Code PIX" className="mt-4 aspect-square w-full bg-white object-contain p-3" />
                 ) : null}
                 {paymentResult.pixQrCode ? (

@@ -29,7 +29,7 @@ async function main() {
     ["Zakat", "zakat"]
   ] as const;
 
-  const brands = await Promise.all(
+  await Promise.all(
     brandSeeds.map(([name, slug]) =>
       prisma.brand.upsert({
         where: { slug },
@@ -38,8 +38,6 @@ async function main() {
       })
     )
   );
-
-  const brandBySlug = new Map(brands.map((brand) => [brand.slug, brand]));
 
   const categories = await Promise.all(
     brandSeeds.map(([name, slug]) =>

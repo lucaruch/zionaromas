@@ -7,8 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { AdminBanner, AdminCategory } from "@/lib/admin-data";
 
-type Resource = "categorias" | "banners";
-
 type CategoryForm = {
   id: string;
   name: string;
