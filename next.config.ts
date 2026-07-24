@@ -23,7 +23,7 @@ const securityHeaders = [
       process.env.NODE_ENV === "production"
         ? "script-src 'self' 'unsafe-inline'"
         : "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-      "connect-src 'self' https://viacep.com.br https://sandbox.melhorenvio.com.br https://www.melhorenvio.com.br https://melhorenvio.com.br"
+      "connect-src 'self' https://viacep.com.br https://sandbox.melhorenvio.com.br https://www.melhorenvio.com.br https://melhorenvio.com.br https://api.cieloecommerce.cielo.com.br https://apisandbox.cieloecommerce.cielo.com.br"
     ].join("; ")
   },
   ...(process.env.NODE_ENV === "production"

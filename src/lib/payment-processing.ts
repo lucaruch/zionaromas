@@ -19,11 +19,7 @@ function cents(value: number) {
   return Math.round(value * 100);
 }
 
-function cieloBaseUrl(environment: PaymentSettings["environment"]) {
-  return environment === "PRODUCAO"
-    ? "https://api.cieloecommerce.cielo.com.br"
-    : "https://apisandbox.cieloecommerce.cielo.com.br";
-}
+const CIELO_API_URL = "https://api.cieloecommerce.cielo.com.br";
 
 function base64Image(value: unknown) {
   if (typeof value !== "string" || !value) return undefined;
@@ -36,7 +32,7 @@ async function createCieloPixCharge(order: Order, customer: { name: string; emai
   const merchantKey = process.env.CIELO_MERCHANT_KEY;
   if (!merchantId || !merchantKey) return null;
 
-  const response = await fetch(`${cieloBaseUrl(settings.environment)}/1/sales`, {
+  const response = await fetch(`${CIELO_API_URL}/1/sales`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

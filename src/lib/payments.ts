@@ -16,7 +16,7 @@ export type PaymentSettings = {
 
 export const defaultPaymentSettings: PaymentSettings = {
   activeProvider: "CIELO",
-  environment: "HOMOLOGACAO",
+  environment: "PRODUCAO",
   enabledMethods: ["PIX", "CARTAO", "BOLETO"]
 };
 
