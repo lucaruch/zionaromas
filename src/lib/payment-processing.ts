@@ -27,7 +27,7 @@ function base64Image(value: unknown) {
   return `data:image/png;base64,${value}`;
 }
 
-async function createCieloPixCharge(order: Order, customer: { name: string; email: string }, settings: PaymentSettings) {
+async function createCieloPixCharge(order: Order, customer: { name: string; email: string }) {
   const merchantId = process.env.CIELO_MERCHANT_ID?.trim();
   const merchantKey = process.env.CIELO_MERCHANT_KEY?.trim();
   if (!merchantId || !merchantKey) {
@@ -130,7 +130,7 @@ export async function createPaymentInstruction({
 }): Promise<PaymentInstruction> {
   if (order.paymentMethod === "PIX") {
     const cieloPix = settings.activeProvider === "CIELO"
-      ? await createCieloPixCharge(order, customer, settings).catch(() => null)
+      ? await createCieloPixCharge(order, customer).catch(() => null)
       : null;
     if (cieloPix?.status === "ready") return cieloPix;
 

@@ -122,25 +122,25 @@ export default async function HomePage() {
       </section>
 
       <section className="section-pad border-y border-gold/15 bg-[#070604] text-white">
-        <div className="container grid items-center gap-10 lg:grid-cols-[0.85fr_1.15fr]">
-          <div>
+        <div className="container grid items-start gap-8 lg:grid-cols-[0.8fr_1.2fr]">
+          <div className="max-w-md lg:sticky lg:top-28">
             <Badge className="border-gold/40 bg-gold/10 text-gold">Mais vendidos</Badge>
-            <h2 className="mt-5 font-display text-4xl sm:text-5xl">Fragrâncias que permanecem</h2>
-            <p className="mt-5 leading-8 text-white/60">
+            <h2 className="mt-4 font-display text-4xl sm:text-5xl">Fragrâncias que permanecem</h2>
+            <p className="mt-4 leading-8 text-white/60">
               Os favoritos da ZION reúnem projeção elegante, notas marcantes e aquele rastro que chama atenção na medida certa.
             </p>
-            <Link href="/mais-vendidos" className="mt-8 inline-flex w-full sm:w-auto">
+            <Link href="/mais-vendidos" className="mt-6 inline-flex w-full sm:w-auto">
               <Button className="w-full sm:w-auto">Ver mais vendidos</Button>
             </Link>
           </div>
-          <div className="grid gap-5 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2 xl:gap-5">
             {bestSellers.map((product) => (
-              <Link key={product.slug} href={`/produto/${product.slug}`} className="group min-w-0 border border-gold/20 bg-white/[0.025] p-4 transition hover:border-gold/60 hover:bg-white/[0.045]">
-                <div className="relative aspect-[4/3] overflow-hidden bg-[#f6f2e8]">
+              <Link key={product.slug} href={`/produto/${product.slug}`} className="group min-w-0 border border-gold/20 bg-white/[0.025] p-3 transition hover:border-gold/60 hover:bg-white/[0.045] sm:p-4">
+                <div className="relative aspect-[16/9] overflow-hidden bg-[#f6f2e8]">
                   <Image src={product.image} alt={product.name} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 30vw" className="object-cover transition duration-700 group-hover:scale-[1.03]" />
                 </div>
-                <h3 className="mt-4 font-display text-2xl text-gold">{product.name}</h3>
-                <p className="mt-2 text-sm leading-6 text-white/55">{product.shortDescription}</p>
+                <h3 className="mt-3 font-display text-xl text-gold sm:text-2xl">{product.name}</h3>
+                <p className="mt-2 line-clamp-4 text-sm leading-6 text-white/55">{product.shortDescription}</p>
               </Link>
             ))}
           </div>
