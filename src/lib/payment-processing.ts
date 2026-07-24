@@ -28,9 +28,14 @@ function base64Image(value: unknown) {
 }
 
 async function createCieloPixCharge(order: Order, customer: { name: string; email: string }, settings: PaymentSettings) {
-  const merchantId = process.env.CIELO_MERCHANT_ID;
-  const merchantKey = process.env.CIELO_MERCHANT_KEY;
-  if (!merchantId || !merchantKey) return null;
+  const merchantId = process.env.CIELO_MERCHANT_ID?.trim();
+  const merchantKey = process.env.CIELO_MERCHANT_KEY?.trim();
+  if (!merchantId || !merchantKey) {
+    console.error("[Cielo] Credenciais ausentes: CIELO_MERCHANT_ID ou CIELO_MERCHANT_KEY não configurados.");
+    return null;
+  }
+
+  console.log(`[Cielo] Iniciando cobrança PIX | URL: ${CIELO_API_URL}/1/sales | MerchantId tamanho: ${merchantId.length} | MerchantKey tamanho: ${merchantKey.length}`);
 
   const response = await fetch(`${CIELO_API_URL}/1/sales`, {
     method: "POST",
@@ -55,6 +60,8 @@ async function createCieloPixCharge(order: Order, customer: { name: string; emai
   });
 
   const data = await response.json().catch(() => ({}));
+  console.log(`[Cielo] Resposta HTTP ${response.status} | Body: ${JSON.stringify(data)}`);
+
   if (!response.ok) {
     return {
       method: "PIX" as const,

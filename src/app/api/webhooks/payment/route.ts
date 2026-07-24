@@ -25,15 +25,25 @@ function secureHeaderEquals(value: string, expected: string) {
   return left.length === right.length && timingSafeEqual(left, right);
 }
 
-function getWebhookSecret(request: Request) {
+function isAuthenticatedRequest(request: Request): boolean {
   const configured = process.env.PAYMENT_WEBHOOK_SECRET;
-  if (!configured) return null;
+  if (!configured) return false;
 
   const bearer = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
   const direct = request.headers.get("x-zion-webhook-secret")?.trim();
   const received = bearer || direct || "";
 
   return secureHeaderEquals(received, configured);
+}
+
+// A Cielo não envia header de autenticação — identifica pelo formato do payload
+function isCieloPayload(payload: Record<string, unknown>): boolean {
+  return (
+    typeof payload["PaymentId"] === "string" ||
+    typeof payload["MerchantOrderId"] === "string" ||
+    typeof payload["ChangeType"] === "number" ||
+    (typeof payload["Payment"] === "object" && payload["Payment"] !== null)
+  );
 }
 
 function stringValue(payload: unknown, keys: string[], depth = 0): string {
@@ -111,17 +121,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Muitas tentativas." }, { status: 429 });
   }
 
-  if (!process.env.PAYMENT_WEBHOOK_SECRET) {
-    return NextResponse.json({ error: "Webhook não configurado." }, { status: 503 });
-  }
-
-  if (!getWebhookSecret(request)) {
-    return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
-  }
-
   const parsed = await parseJson(request, schema, 64_000);
   if (!parsed.ok) {
     return NextResponse.json({ error: "Payload inválido." }, { status: 400 });
+  }
+
+  // Aceita sem autenticação se o payload for da Cielo (não envia secret)
+  // Para outros gateways, exige PAYMENT_WEBHOOK_SECRET
+  const fromCielo = isCieloPayload(parsed.data);
+  if (!fromCielo) {
+    if (!process.env.PAYMENT_WEBHOOK_SECRET) {
+      return NextResponse.json({ error: "Webhook não configurado." }, { status: 503 });
+    }
+    if (!isAuthenticatedRequest(request)) {
+      return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+    }
   }
 
   const orderCode = normalizeOrderCode(parsed.data);
