@@ -37,10 +37,11 @@ type BpmpiWindow = Window & {
   __zionBpmpiScriptLoading?: Promise<void>;
   __zionBpmpiReload?: boolean;
   __zionBpmpiInitAmount?: number;
+  __zionBpmpiAccessToken?: string;
   Cardinal?: unknown;
 };
 
-const SCRIPT_SRC = "/js/BP.Mpi.3ds20.min.js";
+const SCRIPT_SRC = "/js/BP.Mpi.3ds20.min.js?v=20260725d";
 
 const READY_TIMEOUT_MS = 25_000;
 const AUTH_TIMEOUT_MS = 90_000;
@@ -366,9 +367,11 @@ export async function runCielo3dsAuthentication(
   if (!fields.accessToken || fields.accessToken.length < 20) {
     throw new Error("Token 3DS inválido antes de iniciar o MPI.");
   }
-  if (tokenInput && tokenInput.value.length < 20) {
+  if (tokenInput) {
     tokenInput.value = fields.accessToken;
   }
+  // Fallback se o DOM não for lido pelo script MPI (classe/timing).
+  win.__zionBpmpiAccessToken = fields.accessToken;
 
   // Se o MPI já iniciou com outro valor, força re-init (senão enroll dá 403).
   const needsReload =
