@@ -12,10 +12,52 @@ function redactBody(raw: string) {
     if (typeof data.cardnumber === "string" && data.cardnumber.length > 4) {
       data.cardnumber = `${data.cardnumber.slice(0, 6)}****${data.cardnumber.slice(-4)}`;
     }
+    delete data.__zionAccessToken;
     return JSON.stringify(data);
   } catch {
     return "[unparseable]";
   }
+}
+
+function resolveBearer(request: Request, bodyText: string) {
+  const headerAuth = request.headers.get("authorization")?.trim() || "";
+  if (headerAuth.toLowerCase().startsWith("bearer ") && headerAuth.length > 20) {
+    return headerAuth;
+  }
+
+  // Coolify/Traefik costuma remover Authorization — usamos header alternativo.
+  const alt =
+    request.headers.get("x-cielo-3ds-token")?.trim() ||
+    request.headers.get("x-forwarded-authorization")?.trim() ||
+    "";
+  if (alt) {
+    return alt.toLowerCase().startsWith("bearer ") ? alt : `Bearer ${alt}`;
+  }
+
+  // Fallback: token embutido no JSON pelo script MPI.
+  try {
+    const parsed = JSON.parse(bodyText) as { __zionAccessToken?: unknown };
+    if (typeof parsed.__zionAccessToken === "string" && parsed.__zionAccessToken.trim()) {
+      return `Bearer ${parsed.__zionAccessToken.trim()}`;
+    }
+  } catch {
+    // ignore
+  }
+
+  return "";
+}
+
+function stripEmbeddedToken(bodyText: string) {
+  try {
+    const parsed = JSON.parse(bodyText) as Record<string, unknown>;
+    if ("__zionAccessToken" in parsed) {
+      delete parsed.__zionAccessToken;
+      return JSON.stringify(parsed);
+    }
+  } catch {
+    // ignore
+  }
+  return bodyText;
 }
 
 type RouteContext = { params: Promise<{ path?: string[] }> };
@@ -37,12 +79,23 @@ export async function POST(request: Request, context: RouteContext) {
       ? "https://mpi.braspag.com.br"
       : "https://mpisandbox.braspag.com.br";
 
-  const authorization = request.headers.get("authorization") || "";
-  if (!authorization.toLowerCase().startsWith("bearer ")) {
-    return NextResponse.json({ Message: "Authorization Bearer ausente no 3DS." }, { status: 401 });
+  const rawBody = await request.text();
+  const authorization = resolveBearer(request, rawBody);
+
+  if (!authorization.toLowerCase().startsWith("bearer ") || authorization.length < 30) {
+    console.error(
+      `[Cielo 3DS Proxy] ${path} sem token | hasAuth=${Boolean(request.headers.get("authorization"))} | hasAlt=${Boolean(request.headers.get("x-cielo-3ds-token"))}`
+    );
+    return NextResponse.json(
+      {
+        Message:
+          "Token 3DS ausente no proxy (header Authorization removido pelo servidor). Atualize o deploy e limpe o cache (Ctrl+F5)."
+      },
+      { status: 401 }
+    );
   }
 
-  const body = await request.text();
+  const body = stripEmbeddedToken(rawBody);
   const target = `${baseUrl}/${path}`;
 
   try {

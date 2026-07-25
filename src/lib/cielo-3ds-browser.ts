@@ -360,7 +360,15 @@ export async function runCielo3dsAuthentication(
   ensureConfig(environment);
   populateBpmpiFields(fields);
 
-  console.info("[ZION 3DS] amountCents=", fields.amountCents, "order=", fields.orderNumber);
+  console.info("[ZION 3DS] amountCents=", fields.amountCents, "order=", fields.orderNumber, "tokenLen=", fields.accessToken.length);
+
+  const tokenInput = document.querySelector<HTMLInputElement>("input.bpmpi_accesstoken");
+  if (!fields.accessToken || fields.accessToken.length < 20) {
+    throw new Error("Token 3DS inválido antes de iniciar o MPI.");
+  }
+  if (tokenInput && tokenInput.value.length < 20) {
+    tokenInput.value = fields.accessToken;
+  }
 
   // Se o MPI já iniciou com outro valor, força re-init (senão enroll dá 403).
   const needsReload =
