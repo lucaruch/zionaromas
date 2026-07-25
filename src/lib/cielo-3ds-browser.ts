@@ -193,10 +193,35 @@ function normalizePhone(phone: string) {
   return digits.slice(0, 15);
 }
 
+function asciiText(value: string, fallback: string, maxLength: number) {
+  const cleaned = value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Za-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return (cleaned || fallback).slice(0, maxLength);
+}
+
+function asciiSku(value: string, fallback: string, maxLength: number) {
+  const cleaned = value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Za-z0-9_-]/g, "")
+    .trim();
+  return (cleaned || fallback).slice(0, maxLength);
+}
+
 export function populateBpmpiFields(payload: Cielo3dsFieldPayload) {
   const root = ensureContainer();
   clearCartFields(root);
   const customerIp = (payload.customerIp || "").trim();
+  const billToName = asciiText(payload.customerName, "Cliente ZION AROMAS", 120);
+  const street1 = asciiText(payload.street1, "Endereco do comprador", 60);
+  const street2 = asciiText(payload.street2 || "Centro", "Centro", 60);
+  const city = asciiText(payload.city || "Praia Grande", "Praia Grande", 50);
+  const phone = normalizePhone(payload.phone);
+  const email = payload.customerEmail.trim().slice(0, 255);
 
   setField(root, "bpmpi_auth", "true");
   setField(root, "bpmpi_auth_suppresschallenge", "false");
@@ -222,16 +247,26 @@ export function populateBpmpiFields(payload: Cielo3dsFieldPayload) {
   setField(root, "bpmpi_merchant_newcustomer", "true");
   setField(root, "bpmpi_merchant_url", payload.merchantUrl.slice(0, 100));
   setField(root, "bpmpi_billto_customerid", payload.customerDocument.replace(/\D/g, "").slice(0, 14));
-  setField(root, "bpmpi_billto_contactname", payload.customerName.slice(0, 120));
-  setField(root, "bpmpi_billto_phonenumber", normalizePhone(payload.phone));
-  setField(root, "bpmpi_billto_email", payload.customerEmail.slice(0, 255));
-  setField(root, "bpmpi_billto_street1", payload.street1.slice(0, 60));
-  setField(root, "bpmpi_billto_street2", (payload.street2 || "Centro").slice(0, 60));
-  setField(root, "bpmpi_billto_city", (payload.city || "Praia Grande").slice(0, 50));
+  setField(root, "bpmpi_billto_contactname", billToName);
+  setField(root, "bpmpi_billto_phonenumber", phone);
+  setField(root, "bpmpi_billto_email", email);
+  setField(root, "bpmpi_billto_street1", street1);
+  setField(root, "bpmpi_billto_street2", street2);
+  setField(root, "bpmpi_billto_city", city);
   setField(root, "bpmpi_billto_state", (payload.state || "SP").toUpperCase().slice(0, 2));
   setField(root, "bpmpi_billto_zipcode", payload.zipcode.replace(/\D/g, "").slice(0, 8));
   setField(root, "bpmpi_billto_country", "BR");
   setField(root, "bpmpi_shipto_sameasbillto", "true");
+  setField(root, "bpmpi_shipto_addressee", billToName.slice(0, 60));
+  setField(root, "bpmpi_shipto_phonenumber", phone);
+  setField(root, "bpmpi_shipto_email", email);
+  setField(root, "bpmpi_shipto_street1", street1);
+  setField(root, "bpmpi_shipto_street2", street2);
+  setField(root, "bpmpi_shipto_city", city);
+  setField(root, "bpmpi_shipto_state", (payload.state || "SP").toUpperCase().slice(0, 2));
+  setField(root, "bpmpi_shipto_zipcode", payload.zipcode.replace(/\D/g, "").slice(0, 8));
+  setField(root, "bpmpi_shipto_country", "BR");
+  setField(root, "bpmpi_shipto_shippingmethod", "other");
   setField(root, "bpmpi_useraccount_guest", "true");
   if (customerIp) {
     setField(root, "bpmpi_device_ipaddress", customerIp.slice(0, 45));
@@ -240,9 +275,10 @@ export function populateBpmpiFields(payload: Cielo3dsFieldPayload) {
 
   payload.items.slice(0, 10).forEach((item, index) => {
     const n = index + 1;
-    setField(root, `bpmpi_cart_${n}_name`, item.name.slice(0, 255));
-    setField(root, `bpmpi_cart_${n}_description`, item.name.slice(0, 255));
-    setField(root, `bpmpi_cart_${n}_sku`, item.sku.slice(0, 255));
+    const itemName = asciiText(item.name, "Perfume arabe", 255);
+    setField(root, `bpmpi_cart_${n}_name`, itemName);
+    setField(root, `bpmpi_cart_${n}_description`, itemName);
+    setField(root, `bpmpi_cart_${n}_sku`, asciiSku(item.sku, `item${n}`, 255));
     setField(root, `bpmpi_cart_${n}_quantity`, String(item.quantity));
     setField(root, `bpmpi_cart_${n}_unitprice`, String(Math.max(0, Math.round(item.unitPriceCents))));
   });
