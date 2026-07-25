@@ -1,17 +1,20 @@
 import QRCode from "qrcode";
 
 function tlv(id: string, value: string) {
-  const normalized = value.slice(0, 99);
-  return `${id}${String(normalized.length).padStart(2, "0")}${normalized}`;
+  const normalized = value;
+  const length = new TextEncoder().encode(normalized).length;
+  return `${id}${String(length).padStart(2, "0")}${normalized}`;
 }
 
 function onlyPixSafe(value: string, max: number) {
   return value
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^A-Za-z0-9 $%*+\-./:]/g, "")
+    .replace(/[^A-Za-z0-9 ]/g, "")
+    .replace(/\s+/g, " ")
     .trim()
-    .slice(0, max);
+    .slice(0, max)
+    .toUpperCase();
 }
 
 function crc16(payload: string) {
@@ -44,10 +47,13 @@ export async function createPixPayload({
   txid: string;
   description?: string;
 }) {
+  const safeKey = key.trim();
+  const safeName = onlyPixSafe(merchantName || "ZION AROMAS", 25) || "ZION AROMAS";
+  const safeCity = onlyPixSafe(merchantCity || "PRAIA GRANDE", 15) || "PRAIA GRANDE";
+  const safeTxid = onlyPixSafe(txid, 25) || "***";
   const merchantAccount = [
     tlv("00", "br.gov.bcb.pix"),
-    tlv("01", key.trim()),
-    description ? tlv("02", onlyPixSafe(description, 72)) : ""
+    tlv("01", safeKey)
   ].join("");
   const withoutCrc = [
     tlv("00", "01"),
@@ -56,9 +62,9 @@ export async function createPixPayload({
     tlv("53", "986"),
     tlv("54", amount.toFixed(2)),
     tlv("58", "BR"),
-    tlv("59", onlyPixSafe(merchantName || "ZION AROMAS", 25)),
-    tlv("60", onlyPixSafe(merchantCity || "PRAIA GRANDE", 15)),
-    tlv("62", tlv("05", onlyPixSafe(txid, 25))),
+    tlv("59", safeName),
+    tlv("60", safeCity),
+    tlv("62", tlv("05", safeTxid)),
     "6304"
   ].join("");
   const code = `${withoutCrc}${crc16(withoutCrc)}`;

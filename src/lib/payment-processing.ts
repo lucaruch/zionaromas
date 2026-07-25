@@ -69,6 +69,11 @@ function normalizeExpirationDate(value: string) {
   return `${month}/${year || "0000"}`;
 }
 
+function sanitizeMerchantOrderId(value: string) {
+  const clean = value.replace(/[^A-Za-z0-9]/g, "").trim().toUpperCase();
+  return clean.slice(0, 50) || "ZIONAORAMS";
+}
+
 async function createCieloPixCharge(order: Order, customer: { name: string; email: string }, settings: PaymentSettings) {
   const merchantId = process.env.CIELO_MERCHANT_ID?.trim();
   const merchantKey = process.env.CIELO_MERCHANT_KEY?.trim();
@@ -89,7 +94,7 @@ async function createCieloPixCharge(order: Order, customer: { name: string; emai
       MerchantKey: merchantKey
     },
     body: JSON.stringify({
-      MerchantOrderId: order.code,
+      MerchantOrderId: merchantOrderId,
       Customer: {
         Name: customer.name,
         Email: customer.email
@@ -166,6 +171,7 @@ async function createCieloCardCharge(
   const siteUrl = getPublicSiteUrl();
   const returnUrl = `${siteUrl}/api/checkout/callback`;
   const holder = sanitizeHolderName(card.holder);
+  const merchantOrderId = sanitizeMerchantOrderId(order.code);
 
   const paymentPayload: Record<string, unknown> = {
     Type: isDebit ? "DebitCard" : "CreditCard",
@@ -197,7 +203,7 @@ async function createCieloCardCharge(
         })
   };
 
-  console.log(`[Cielo Card] Enviando requisição de Cartão de ${isDebit ? "Débito" : "Crédito"} para pedido ${order.code}`);
+  console.log(`[Cielo Card] Enviando requisição de Cartão de ${isDebit ? "Débito" : "Crédito"} para pedido ${merchantOrderId}`);
 
   const apiUrl = cieloApiUrl(settings);
   const response = await fetch(`${apiUrl}/1/sales`, {
@@ -209,7 +215,7 @@ async function createCieloCardCharge(
       MerchantKey: merchantKey
     },
     body: JSON.stringify({
-      MerchantOrderId: order.code,
+      MerchantOrderId: merchantOrderId,
       Customer: {
         Name: customer.name,
         Email: customer.email
