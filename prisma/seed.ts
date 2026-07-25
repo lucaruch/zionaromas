@@ -1,8 +1,15 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
-import { MOCK_PRODUCT_SLUGS } from "../src/lib/mock-products";
 
 const prisma = new PrismaClient();
+const MOCK_PRODUCT_SLUGS = [
+  "sultan-oud",
+  "ameer-al-layl",
+  "rose-dubai",
+  "golden-musk",
+  "royal-arabian-set",
+  "desert-vanilla"
+];
 
 async function main() {
   const passwordHash = await bcrypt.hash("admin123", 10);
