@@ -155,7 +155,7 @@ export async function POST(request: Request) {
   if (!token) {
     return NextResponse.json({
       options: [...extras, ...fallbackCorreiosQuote()],
-      warning: "Configure MELHOR_ENVIO_TOKEN para usar a cotação real do Melhor Envio."
+      warning: "Cotação de entrega disponível com base nas opções dos Correios."
     });
   }
 

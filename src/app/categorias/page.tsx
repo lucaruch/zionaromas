@@ -24,13 +24,13 @@ export default async function CategoriesPage() {
           {categories.map((category) => (
             <Link key={category.slug} href={`/produtos?categoria=${category.slug}`} className="group grid overflow-hidden border border-gold/20 bg-white/[0.03] md:grid-cols-[0.95fr_1.05fr]">
               <div className="relative min-h-72 overflow-hidden bg-[radial-gradient(circle_at_50%_35%,rgba(212,175,55,.13),transparent_42%),#070604] p-6">
-                <div className="relative h-full min-h-60 overflow-hidden border border-gold/12 bg-[#f6f2e8]">
+                <div className="relative h-full min-h-60 overflow-hidden border border-gold/12 bg-[#0d0b07]">
                   <Image
                     src={category.image}
                     alt={`Perfumes árabes ${category.name}`}
                     fill
                     sizes="(max-width: 768px) 100vw, 40vw"
-                    className="object-contain p-1.5 transition duration-700 group-hover:scale-[1.08]"
+                    className="object-cover object-center transition duration-700 group-hover:scale-[1.06]"
                   />
                 </div>
               </div>

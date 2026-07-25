@@ -86,7 +86,7 @@ export async function getPublicationStatus(): Promise<PublicationStatus> {
       check("CEP de origem", shippingSettings.originPostalCode.length === 8, `Origem ${shippingSettings.originPostalCode}.`),
       check("Serviços dos Correios", shippingSettings.correiosServices.length > 0, `Serviços ativos: ${shippingSettings.correiosServices.join(", ")}.`),
       check("Peso e dimensões padrão", shippingSettings.defaultWeightKg > 0 && shippingSettings.defaultWidthCm > 0 && shippingSettings.defaultHeightCm > 0 && shippingSettings.defaultLengthCm > 0, `${shippingSettings.defaultWeightKg} kg, ${shippingSettings.defaultWidthCm}x${shippingSettings.defaultHeightCm}x${shippingSettings.defaultLengthCm} cm.`),
-      check("Melhor Envio", hasEnv("MELHOR_ENVIO_TOKEN"), "Token necessário para cotações reais dos Correios.", true),
+      check("Cotação de entrega", hasEnv("MELHOR_ENVIO_TOKEN"), "As opções de entrega estão integradas aos Correios.", true),
       check("Site público", siteUrl.valid, siteUrl.value ? `URL configurada: ${siteUrl.value}. URL usada: ${siteUrl.resolved}.` : `URL pública ainda não configurada. URL usada: ${siteUrl.resolved}.`, true),
       check("Admin protegido", hasEnv("ADMIN_PASSWORD") && hasEnv("AUTH_SECRET"), "Senha do admin e segredo de sessão configurados."),
       check("Contatos da loja", true, "WhatsApp, e-mail, Instagram, Maps, CNPJ e razão social estão no site."),
