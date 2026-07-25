@@ -43,12 +43,6 @@ function cents(value: number) {
   return Math.round(value * 100);
 }
 
-function cieloApiUrl(settings: PaymentSettings) {
-  return settings.environment === "PRODUCAO"
-    ? "https://api.cieloecommerce.cielo.com.br"
-    : "https://apisandbox.cieloecommerce.cielo.com.br";
-}
-
 function cieloApiUrls(settings: PaymentSettings) {
   const production = "https://api.cieloecommerce.cielo.com.br";
   const sandbox = "https://apisandbox.cieloecommerce.cielo.com.br";

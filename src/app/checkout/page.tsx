@@ -260,10 +260,6 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (isCardPayment && phone.replace(/\D/g, "").length < 10) {
-      setCheckoutMessage("Informe um telefone válido para a autenticação 3DS do cartão.");
-      return;
-    }
 
     setCheckoutLoading(true);
 
@@ -279,54 +275,57 @@ export default function CheckoutPage() {
         | undefined;
 
       if (isCardPayment) {
-        setCheckoutMessage(
-          "Autenticando cartão com o banco (3DS)... Se abrir uma janela, confirme a compra nela."
-        );
-        const expDigits = cardExpiration.replace(/\D/g, "");
-        const expirationMonth = expDigits.slice(0, 2);
-        let expirationYear = expDigits.slice(2);
-        if (expirationYear.length === 2) expirationYear = `20${expirationYear}`;
+        setCheckoutMessage("Validando o cartão com segurança...");
+        try {
+          const expDigits = cardExpiration.replace(/\D/g, "");
+          const expirationMonth = expDigits.slice(0, 2);
+          let expirationYear = expDigits.slice(2);
+          if (expirationYear.length === 2) expirationYear = `20${expirationYear}`;
 
-        const { accessToken, environment } = await fetchCielo3dsToken();
-        const amountCents = Math.round(total * 100);
-        if (!Number.isFinite(amountCents) || amountCents < 100) {
-          throw new Error("Valor do pedido inválido para autenticação 3DS. Recarregue o carrinho e tente de novo.");
+          const { accessToken, environment } = await fetchCielo3dsToken();
+          const amountCents = Math.round(total * 100);
+          if (!Number.isFinite(amountCents) || amountCents < 100) {
+            throw new Error("Valor do pedido inválido para autenticação 3DS. Recarregue o carrinho e tente de novo.");
+          }
+
+          const configuredSite =
+            (typeof process !== "undefined" && process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "")) ||
+            "https://zionaromas.com";
+          const merchantUrl = configuredSite.replace("://www.", "://");
+
+          externalAuthentication = await runCielo3dsAuthentication(environment, {
+            accessToken,
+            orderNumber: `ZA${Date.now().toString().slice(-8)}`,
+            amountCents,
+            installments: paymentMethod === "CARTAO_CREDITO" ? cardInstallments : 1,
+            paymentMethod: paymentMethod === "CARTAO_DEBITO" ? "Debit" : "Credit",
+            cardNumber,
+            expirationMonth,
+            expirationYear,
+            customerName: name,
+            customerEmail: email,
+            customerDocument: document,
+            phone,
+            street1: `${isPickup ? address || "Retirada ZION AROMAS" : address}, ${isPickup ? number || "S/N" : number}`.slice(
+              0,
+              60
+            ),
+            street2: (complement || "Centro").slice(0, 60),
+            city: "Praia Grande",
+            state: "SP",
+            zipcode: cep.replace(/\D/g, "").length === 8 ? cep : "11700007",
+            merchantUrl,
+            items: items.map((item) => ({
+              name: item.name,
+              sku: item.slug,
+              quantity: item.quantity,
+              unitPriceCents: Math.round((item.salePrice ?? item.price) * 100)
+            }))
+          });
+        } catch (error) {
+          console.warn("[Checkout] 3DS indisponível, seguindo com autorização da operadora:", error);
+          externalAuthentication = undefined;
         }
-
-        const configuredSite =
-          (typeof process !== "undefined" && process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "")) ||
-          "https://zionaromas.com";
-        const merchantUrl = configuredSite.replace("://www.", "://");
-
-        externalAuthentication = await runCielo3dsAuthentication(environment, {
-          accessToken,
-          orderNumber: `ZA${Date.now().toString().slice(-8)}`,
-          amountCents,
-          installments: paymentMethod === "CARTAO_CREDITO" ? cardInstallments : 1,
-          paymentMethod: paymentMethod === "CARTAO_DEBITO" ? "Debit" : "Credit",
-          cardNumber,
-          expirationMonth,
-          expirationYear,
-          customerName: name,
-          customerEmail: email,
-          customerDocument: document,
-          phone,
-          street1: `${isPickup ? address || "Retirada ZION AROMAS" : address}, ${isPickup ? number || "S/N" : number}`.slice(
-            0,
-            60
-          ),
-          street2: (complement || "Centro").slice(0, 60),
-          city: "Praia Grande",
-          state: "SP",
-          zipcode: cep.replace(/\D/g, "").length === 8 ? cep : "11700007",
-          merchantUrl,
-          items: items.map((item) => ({
-            name: item.name,
-            sku: item.slug,
-            quantity: item.quantity,
-            unitPriceCents: Math.round((item.salePrice ?? item.price) * 100)
-          }))
-        });
       }
 
       setCheckoutMessage("Processando pagamento...");
@@ -399,6 +398,10 @@ export default function CheckoutPage() {
                 : `Pedido ${data.orderCode} recebido. ${data.nextStep}`
       );
 
+      if (typeof window !== "undefined") {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
       if (payment?.redirectUrl) {
         window.location.href = payment.redirectUrl;
       }
@@ -418,6 +421,23 @@ export default function CheckoutPage() {
       <div className="container">
         <p className="text-xs uppercase tracking-[0.22em] text-gold">Finalização segura</p>
         <h1 className="mt-3 font-display text-4xl sm:text-5xl">Concluir pedido</h1>
+        {(checkoutMessage || paymentResult || orderCode) ? (
+          <div
+            role="status"
+            className={`mt-6 border p-4 text-sm leading-6 sm:p-5 ${
+              paymentApproved
+                ? "border-emerald-400/35 bg-emerald-400/10 text-emerald-100"
+                : isCardPayment && paymentResult?.status === "manual"
+                  ? "border-red-400/35 bg-red-400/10 text-red-100"
+                  : "border-gold/25 bg-white/[0.04] text-white/75"
+            }`}
+          >
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-gold/80">
+              {paymentApproved ? "Pedido confirmado" : orderCode ? `Pedido ${orderCode}` : "Status do pedido"}
+            </p>
+            <p className="mt-2">{checkoutMessage || paymentResult?.message}</p>
+          </div>
+        ) : null}
         <div className="mt-8 grid gap-6 lg:mt-10 lg:grid-cols-[minmax(0,1fr)_380px]">
           <form className="grid min-w-0 gap-6 sm:gap-8">
             <div className="border border-gold/18 bg-white/[0.03] p-4 sm:p-6">
