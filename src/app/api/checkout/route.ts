@@ -191,7 +191,11 @@ export async function POST(request: Request) {
 
   const paymentInstruction = await createPaymentInstruction({
     order,
-    customer: { name: customer.name, email: customer.email },
+    customer: {
+      name: customer.name,
+      email: customer.email,
+      document: parsed.data.customer.document || customer.document || undefined
+    },
     settings: paymentSettings,
     card: cardDetails
   });

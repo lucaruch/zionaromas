@@ -251,6 +251,11 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (paymentMethod === "PIX" && document.replace(/\D/g, "").length < 11) {
+      setCheckoutMessage("Informe um CPF ou CNPJ válido para gerar o PIX.");
+      return;
+    }
+
     setCheckoutLoading(true);
 
     try {
