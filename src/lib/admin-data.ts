@@ -131,7 +131,12 @@ export async function getAdminStats(): Promise<AdminStats> {
   try {
     const [products, openOrders, customers, activeCoupons, newMessages] = await Promise.all([
       prisma.product.count(),
-      prisma.order.count({ where: { status: { in: ["RECEBIDO", "PAGO", "SEPARACAO", "ENVIADO"] } } }),
+      prisma.order.count({
+        where: {
+          status: { in: ["PAGO", "SEPARACAO", "ENVIADO"] },
+          paymentStatus: "aprovado"
+        }
+      }),
       prisma.customer.count(),
       prisma.coupon.count({ where: { active: true } }),
       prisma.contactMessage.count({ where: { status: "NOVO" } })
@@ -248,6 +253,9 @@ export async function getAdminCoupons(): Promise<AdminCoupon[]> {
 export async function getAdminOrders(): Promise<AdminOrder[]> {
   try {
     const orders = await prisma.order.findMany({
+      where: {
+        paymentStatus: "aprovado"
+      },
       orderBy: { createdAt: "desc" },
       include: {
         customer: true,

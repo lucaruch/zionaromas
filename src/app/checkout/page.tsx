@@ -41,8 +41,7 @@ type CheckoutPaymentResult = {
 
 const paymentIcons: Record<PaymentMethod, LucideIcon> = {
   PIX: QrCode,
-  CARTAO: CreditCard,
-  BOLETO: Landmark
+  CARTAO: CreditCard
 };
 
 export default function CheckoutPage() {
@@ -65,10 +64,12 @@ export default function CheckoutPage() {
   const [paymentResult, setPaymentResult] = useState<CheckoutPaymentResult | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutMessage, setCheckoutMessage] = useState("");
-  const discount = useMemo(() => (subtotal > 400 ? 35 : 0), [subtotal]);
+  const pixDiscount = useMemo(() => (paymentMethod === "PIX" ? subtotal * 0.10 : 0), [paymentMethod, subtotal]);
+  const automaticDiscount = useMemo(() => (subtotal > 400 ? 35 : 0), [subtotal]);
+  const discount = automaticDiscount + pixDiscount;
   const selectedShipping = shippingOptions.find((option) => option.id === selectedShippingId);
   const shipping = selectedShipping?.price ?? 0;
-  const total = subtotal + shipping - discount;
+  const total = Math.max(0, subtotal + shipping - discount);
 
   useEffect(() => {
     let mounted = true;

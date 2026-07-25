@@ -32,7 +32,7 @@ const schema = z.object({
     )
     .min(1)
     .max(30),
-  paymentMethod: z.enum(["PIX", "CARTAO", "BOLETO"]),
+  paymentMethod: z.enum(["PIX", "CARTAO"]),
   coupon: z.string().trim().max(40).optional().or(z.literal("")),
   shipping: z.coerce.number().min(0).max(10_000).optional().default(0)
 });
@@ -74,6 +74,7 @@ export async function POST(request: Request) {
   }, 0);
   const shipping = parsed.data.shipping ?? 0;
   const automaticDiscount = subtotal > 400 ? 35 : 0;
+  const pixDiscount = parsed.data.paymentMethod === "PIX" ? subtotal * 0.10 : 0;
   const couponCode = parsed.data.coupon?.trim().toUpperCase();
   const coupon = couponCode
     ? await prisma.coupon.findFirst({
@@ -99,7 +100,7 @@ export async function POST(request: Request) {
     : couponAvailable && coupon?.discountRate
       ? subtotal * (coupon.discountRate / 100)
       : 0;
-  const discount = Math.min(subtotal, automaticDiscount + couponDiscount);
+  const discount = Math.min(subtotal, automaticDiscount + couponDiscount + pixDiscount);
   const total = Math.max(0, subtotal + shipping - discount);
   const orderCode = `ZA-${Date.now().toString().slice(-6)}`;
 

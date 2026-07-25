@@ -26,6 +26,10 @@ PAYMENT_WEBHOOK_SECRET="segredo-forte-para-webhooks-de-pagamento"
 PIX_KEY="chave-pix-da-loja"
 PIX_MERCHANT_NAME="ZION AROMAS"
 PIX_MERCHANT_CITY="PRAIA GRANDE"
+CIELO_MERCHANT_ID="seu-merchant-id"
+CIELO_MERCHANT_KEY="sua-merchant-key"
+CIELO_3DS_CLIENT_ID="seu-3ds-client-id"
+CIELO_3DS_CLIENT_SECRET="seu-3ds-client-secret"
 ```
 
 `AUTH_URL` e `NEXT_PUBLIC_SITE_URL` nunca devem ficar como `localhost` em produção. Use sempre o domínio final com `https://`.
