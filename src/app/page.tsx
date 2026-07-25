@@ -85,13 +85,13 @@ export default async function HomePage() {
                 className="group gold-frame relative min-h-[430px] overflow-hidden rounded-sm border border-gold/20 bg-[#070604] shadow-[0_24px_80px_rgba(0,0,0,.45)]"
               >
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_22%,rgba(212,175,55,.12),transparent_38%),linear-gradient(180deg,rgba(255,255,255,.035),rgba(0,0,0,.18)_45%,rgba(0,0,0,.88))]" />
-                <div className="relative mx-5 mt-5 aspect-square overflow-hidden border border-gold/12 bg-[#f6f2e8]">
+                <div className="relative mx-4 mt-4 aspect-square overflow-hidden border border-gold/12 bg-[#f6f2e8]">
                   <Image
                     src={category.image}
                     alt={`Perfumes árabes ${category.name}`}
                     fill
                     sizes="(max-width: 640px) 80vw, (max-width: 1024px) 40vw, 22vw"
-                    className="object-contain p-4 transition duration-700 group-hover:scale-[1.02]"
+                    className="object-contain p-1.5 transition duration-700 group-hover:scale-[1.08]"
                   />
                 </div>
                 <div className="relative p-5 text-white">
