@@ -42,7 +42,7 @@ Use este guia depois de cada publicação importante.
 - Em `/admin/configuracoes`, escolha apenas Cielo ou Getnet.
 - Habilite somente os meios de pagamento contratados com a operadora.
 - PIX deve gerar QR Code e copia e cola no checkout.
-- Cartão e boleto precisam ser testados no ambiente real da operadora antes de divulgação.
+- Cartão de crédito e cartão de débito precisam ser testados no ambiente real da operadora antes de divulgação.
 
 ## Pós-publicação
 

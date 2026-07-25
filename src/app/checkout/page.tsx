@@ -37,11 +37,13 @@ type CheckoutPaymentResult = {
   pixQrCodeImage?: string;
   boletoUrl?: string;
   boletoBarcode?: string;
+  redirectUrl?: string;
 };
 
 const paymentIcons: Record<PaymentMethod, LucideIcon> = {
   PIX: QrCode,
-  CARTAO: CreditCard
+  CARTAO_CREDITO: CreditCard,
+  CARTAO_DEBITO: Landmark
 };
 
 const defaultPickupOption: ShippingOption = {
@@ -73,12 +75,19 @@ export default function CheckoutPage() {
   const [paymentResult, setPaymentResult] = useState<CheckoutPaymentResult | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutMessage, setCheckoutMessage] = useState("");
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardHolder, setCardHolder] = useState("");
+  const [cardExpiration, setCardExpiration] = useState("");
+  const [cardSecurityCode, setCardSecurityCode] = useState("");
+  const [cardBrand, setCardBrand] = useState("Visa");
+  const [cardInstallments, setCardInstallments] = useState(1);
   const pixDiscount = useMemo(() => (paymentMethod === "PIX" ? subtotal * 0.10 : 0), [paymentMethod, subtotal]);
   const automaticDiscount = useMemo(() => (subtotal > 400 ? 35 : 0), [subtotal]);
   const discount = automaticDiscount + pixDiscount;
   const selectedShipping = shippingOptions.find((option) => option.id === selectedShippingId);
   const shipping = selectedShipping?.price ?? 0;
   const total = Math.max(0, subtotal + shipping - discount);
+  const isCardPayment = paymentMethod === "CARTAO_CREDITO" || paymentMethod === "CARTAO_DEBITO";
 
   useEffect(() => {
     let mounted = true;
@@ -178,6 +187,11 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (isCardPayment && (!cardNumber || !cardHolder || !cardExpiration || !cardSecurityCode)) {
+      setCheckoutMessage("Preencha os dados do cartão para continuar.");
+      return;
+    }
+
     setCheckoutLoading(true);
 
     try {
@@ -194,6 +208,16 @@ export default function CheckoutPage() {
           },
           items: items.map((item) => ({ productId: item.slug, quantity: item.quantity })),
           paymentMethod,
+          card: isCardPayment
+            ? {
+                cardNumber,
+                holder: cardHolder,
+                expirationDate: cardExpiration,
+                securityCode: cardSecurityCode,
+                brand: cardBrand,
+                installments: paymentMethod === "CARTAO_CREDITO" ? cardInstallments : 1
+              }
+            : undefined,
           coupon,
           shipping
         })
@@ -205,8 +229,9 @@ export default function CheckoutPage() {
         return;
       }
 
-      clear();
-      setPaymentResult(data.payment || null);
+      const payment = data.payment || null;
+      if (!(isCardPayment && payment?.status === "manual")) clear();
+      setPaymentResult(payment);
       setCheckoutMessage(`Pedido ${data.orderCode} recebido. ${data.nextStep}`);
     } catch {
       setCheckoutMessage("Não foi possível finalizar o pedido agora.");
@@ -313,6 +338,34 @@ export default function CheckoutPage() {
                   );
                 })}
               </div>
+              {isCardPayment ? (
+                <div className="mt-5 grid gap-4 border border-gold/18 bg-black/35 p-4 md:grid-cols-2">
+                  <Input placeholder="Número do cartão" inputMode="numeric" value={cardNumber} onChange={(event) => setCardNumber(event.target.value)} />
+                  <Input placeholder="Nome impresso no cartão" value={cardHolder} onChange={(event) => setCardHolder(event.target.value)} />
+                  <Input placeholder="Validade MM/AAAA" value={cardExpiration} onChange={(event) => setCardExpiration(event.target.value)} />
+                  <Input placeholder="CVV" inputMode="numeric" value={cardSecurityCode} onChange={(event) => setCardSecurityCode(event.target.value)} />
+                  <select value={cardBrand} onChange={(event) => setCardBrand(event.target.value)} className="h-12 border border-gold/18 bg-black px-4 text-sm text-white outline-none transition focus:border-gold">
+                    <option value="Visa">Visa</option>
+                    <option value="Master">Mastercard</option>
+                    <option value="Amex">American Express</option>
+                    <option value="Elo">Elo</option>
+                    <option value="Hipercard">Hipercard</option>
+                  </select>
+                  {paymentMethod === "CARTAO_CREDITO" ? (
+                    <select value={cardInstallments} onChange={(event) => setCardInstallments(Number(event.target.value))} className="h-12 border border-gold/18 bg-black px-4 text-sm text-white outline-none transition focus:border-gold">
+                      {Array.from({ length: 12 }, (_, index) => index + 1).map((installment) => (
+                        <option key={installment} value={installment}>
+                          {installment}x de {formatCurrency(total / installment)}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <p className="flex min-h-12 items-center border border-gold/18 px-4 text-sm text-white/60">
+                      Débito pode exigir autenticação do banco emissor.
+                    </p>
+                  )}
+                </div>
+              ) : null}
             </div>
           </form>
 
@@ -374,6 +427,11 @@ export default function CheckoutPage() {
                 {paymentResult.boletoUrl ? (
                   <a href={paymentResult.boletoUrl} target="_blank" rel="noreferrer" className="mt-4 inline-flex text-sm font-bold text-gold underline">
                     Abrir boleto
+                  </a>
+                ) : null}
+                {paymentResult.redirectUrl ? (
+                  <a href={paymentResult.redirectUrl} className="mt-4 inline-flex w-full justify-center rounded-full bg-gold-metal px-5 py-3 text-sm font-bold text-black">
+                    Continuar autenticação do banco
                   </a>
                 ) : null}
               </div>

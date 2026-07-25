@@ -2,6 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { confirmOrderPayment } from "@/lib/order-workflow";
+import { prisma } from "@/lib/prisma";
 import { isRateLimited, parseJson } from "@/lib/security";
 
 const schema = z.record(z.unknown());
@@ -36,7 +37,6 @@ function isAuthenticatedRequest(request: Request): boolean {
   return secureHeaderEquals(received, configured);
 }
 
-// A Cielo não envia header de autenticação — identifica pelo formato do payload
 function isCieloPayload(payload: Record<string, unknown>): boolean {
   return (
     typeof payload["PaymentId"] === "string" ||
@@ -116,6 +116,15 @@ function normalizePaymentReference(payload: Record<string, unknown>) {
   ]);
 }
 
+async function hasKnownPaymentReference(paymentReference: string) {
+  const order = await prisma.order.findFirst({
+    where: { paymentReference },
+    select: { id: true }
+  });
+
+  return Boolean(order);
+}
+
 export async function POST(request: Request) {
   if (isRateLimited(request, "payment-webhook", 120, 60_000)) {
     return NextResponse.json({ error: "Muitas tentativas." }, { status: 429 });
@@ -126,18 +135,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Payload inválido." }, { status: 400 });
   }
 
-  // Aceita sem autenticação se o payload for da Cielo (não envia secret)
-  // Para outros gateways, exige PAYMENT_WEBHOOK_SECRET
-  const fromCielo = isCieloPayload(parsed.data);
-  if (!fromCielo) {
-    if (!process.env.PAYMENT_WEBHOOK_SECRET) {
-      return NextResponse.json({ error: "Webhook não configurado." }, { status: 503 });
-    }
-    if (!isAuthenticatedRequest(request)) {
-      return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
-    }
-  }
-
   const orderCode = normalizeOrderCode(parsed.data);
   const paymentReference = normalizePaymentReference(parsed.data);
   const signal = normalizePaymentSignal(parsed.data);
@@ -146,12 +143,34 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Pedido não informado." }, { status: 400 });
   }
 
+  const fromCielo = isCieloPayload(parsed.data);
+  const authenticated = isAuthenticatedRequest(request);
+
+  if (!fromCielo) {
+    if (!process.env.PAYMENT_WEBHOOK_SECRET) {
+      return NextResponse.json({ error: "Webhook não configurado." }, { status: 503 });
+    }
+
+    if (!authenticated) {
+      return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+    }
+  }
+
+  if (fromCielo && !authenticated) {
+    if (!paymentReference || !(await hasKnownPaymentReference(paymentReference))) {
+      return NextResponse.json({ error: "Referência de pagamento não reconhecida." }, { status: 401 });
+    }
+  }
+
   if (!approvedSignals.has(signal)) {
     return NextResponse.json({ ok: true, ignored: true });
   }
 
   try {
-    await confirmOrderPayment({ code: orderCode, paymentReference }, "aprovado");
+    await confirmOrderPayment(
+      authenticated ? { code: orderCode, paymentReference } : { paymentReference },
+      "aprovado"
+    );
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: "Pedido não localizado ou sem estoque disponível." }, { status: 409 });

@@ -63,13 +63,15 @@ export async function getPublicationStatus(): Promise<PublicationStatus> {
     await prisma.$queryRaw`SELECT 1`;
 
     const pixEnabled = paymentSettings.enabledMethods.includes("PIX");
-    const cardEnabled = paymentSettings.enabledMethods.includes("CARTAO");
+    const creditEnabled = paymentSettings.enabledMethods.includes("CARTAO_CREDITO");
+    const debitEnabled = paymentSettings.enabledMethods.includes("CARTAO_DEBITO");
     const gatewayCredentials =
       paymentSettings.activeProvider === "CIELO"
         ? hasEnv("CIELO_MERCHANT_ID") && hasEnv("CIELO_MERCHANT_KEY")
         : hasEnv("GETNET_SELLER_ID") && hasEnv("GETNET_CLIENT_ID") && hasEnv("GETNET_CLIENT_SECRET");
     const pixReady = !pixEnabled || gatewayCredentials || hasEnv("PIX_KEY");
-    const cardReady = !cardEnabled || gatewayCredentials;
+    const creditReady = !creditEnabled || gatewayCredentials;
+    const debitReady = !debitEnabled || gatewayCredentials;
     const siteUrl = publicSiteUrl();
 
     const checks: PublicationCheck[] = [
@@ -78,7 +80,8 @@ export async function getPublicationStatus(): Promise<PublicationStatus> {
       check("Operadora de pagamento", true, `${paymentSettings.activeProvider === "CIELO" ? "Cielo" : "Getnet"} selecionada.`),
       check("Credenciais do gateway", gatewayCredentials, "Credenciais de produção/homologação precisam estar nas variáveis da Coolify.", true),
       check("PIX", pixReady, pixEnabled ? "PIX habilitado com 10% de desconto e QR/copia e cola." : "PIX não está ativo no checkout.", !pixReady),
-      check("Cartão", cardReady, cardEnabled ? "Cartão depende de credenciais e teste real no gateway." : "Cartão não está ativo no checkout.", !cardReady),
+      check("Cartão de crédito", creditReady, creditEnabled ? "Crédito depende de credenciais e teste real no gateway." : "Crédito não está ativo no checkout.", !creditReady),
+      check("Cartão de débito", debitReady, debitEnabled ? "Débito depende de credenciais, autenticação bancária e teste real no gateway." : "Débito não está ativo no checkout.", !debitReady),
       check("Webhook de pagamento", hasEnv("PAYMENT_WEBHOOK_SECRET"), "/api/webhooks/payment protegido por segredo.", true),
       check("CEP de origem", shippingSettings.originPostalCode.length === 8, `Origem ${shippingSettings.originPostalCode}.`),
       check("Serviços dos Correios", shippingSettings.correiosServices.length > 0, `Serviços ativos: ${shippingSettings.correiosServices.join(", ")}.`),

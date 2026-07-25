@@ -57,7 +57,7 @@ export default async function HomePage() {
         <div className="absolute bottom-0 left-0 right-0 border-y border-gold/20 bg-black/75 backdrop-blur">
           <div className="container grid gap-3 py-4 text-sm text-white/72 sm:grid-cols-3">
             <span className="inline-flex items-center justify-center gap-2 text-center"><Truck className="h-4 w-4 shrink-0 text-gold" /> Frete por CEP com Correios</span>
-            <span className="inline-flex items-center justify-center gap-2 text-center"><Check className="h-4 w-4 shrink-0 text-gold" /> PIX, cartão e boleto</span>
+            <span className="inline-flex items-center justify-center gap-2 text-center"><Check className="h-4 w-4 shrink-0 text-gold" /> PIX, crédito e débito</span>
             <span className="inline-flex items-center justify-center gap-2 text-center"><Gem className="h-4 w-4 shrink-0 text-gold" /> Marcas árabes selecionadas</span>
           </div>
         </div>

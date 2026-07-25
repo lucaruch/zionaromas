@@ -1,6 +1,18 @@
 import type { Order, PaymentMethod } from "@prisma/client";
 import { createPixPayload } from "@/lib/pix";
 import { providerLabels, type PaymentSettings } from "@/lib/payments";
+import { confirmOrderPaymentByCode } from "@/lib/order-workflow";
+import { getPublicSiteUrl } from "@/lib/site-url";
+
+export type CardDetails = {
+  cardType: "CreditCard" | "DebitCard";
+  cardNumber: string;
+  holder: string;
+  expirationDate: string;
+  securityCode: string;
+  brand: string;
+  installments?: number;
+};
 
 export type PaymentInstruction = {
   method: PaymentMethod;
@@ -12,6 +24,7 @@ export type PaymentInstruction = {
   pixQrCodeImage?: string;
   boletoUrl?: string;
   boletoBarcode?: string;
+  redirectUrl?: string;
   raw?: unknown;
 };
 
@@ -19,7 +32,11 @@ function cents(value: number) {
   return Math.round(value * 100);
 }
 
-const CIELO_API_URL = "https://api.cieloecommerce.cielo.com.br";
+function cieloApiUrl(settings: PaymentSettings) {
+  return settings.environment === "PRODUCAO"
+    ? "https://api.cieloecommerce.cielo.com.br"
+    : "https://apisandbox.cieloecommerce.cielo.com.br";
+}
 
 function base64Image(value: unknown) {
   if (typeof value !== "string" || !value) return undefined;
@@ -27,7 +44,7 @@ function base64Image(value: unknown) {
   return `data:image/png;base64,${value}`;
 }
 
-async function createCieloPixCharge(order: Order, customer: { name: string; email: string }) {
+async function createCieloPixCharge(order: Order, customer: { name: string; email: string }, settings: PaymentSettings) {
   const merchantId = process.env.CIELO_MERCHANT_ID?.trim();
   const merchantKey = process.env.CIELO_MERCHANT_KEY?.trim();
   if (!merchantId || !merchantKey) {
@@ -35,9 +52,10 @@ async function createCieloPixCharge(order: Order, customer: { name: string; emai
     return null;
   }
 
-  console.log(`[Cielo] Iniciando cobrança PIX | URL: ${CIELO_API_URL}/1/sales | MerchantId tamanho: ${merchantId.length} | MerchantKey tamanho: ${merchantKey.length}`);
+  const apiUrl = cieloApiUrl(settings);
+  console.log(`[Cielo] Iniciando cobrança PIX | URL: ${apiUrl}/1/sales | MerchantId tamanho: ${merchantId.length} | MerchantKey tamanho: ${merchantKey.length}`);
 
-  const response = await fetch(`${CIELO_API_URL}/1/sales`, {
+  const response = await fetch(`${apiUrl}/1/sales`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -95,6 +113,130 @@ async function createCieloPixCharge(order: Order, customer: { name: string; emai
   };
 }
 
+async function createCieloCardCharge(
+  order: Order,
+  customer: { name: string; email: string },
+  settings: PaymentSettings,
+  card: CardDetails
+) {
+  const merchantId = process.env.CIELO_MERCHANT_ID?.trim();
+  const merchantKey = process.env.CIELO_MERCHANT_KEY?.trim();
+  if (!merchantId || !merchantKey) {
+    console.error("[Cielo Card] Credenciais ausentes no ambiente.");
+    return {
+      method: "CARTAO" as const,
+      provider: providerLabels.CIELO,
+      status: "manual" as const,
+      message: "Erro na operadora de cartão: Credenciais da loja não configuradas no servidor."
+    };
+  }
+
+  const cleanCardNumber = card.cardNumber.replace(/\D/g, "");
+  const cleanExp = card.expirationDate.replace(/\D/g, "");
+  const expMonth = cleanExp.slice(0, 2);
+  const expYear = cleanExp.length >= 4 ? cleanExp.slice(2, 6) : `20${cleanExp.slice(2, 4)}`;
+  const formattedExpiration = `${expMonth}/${expYear}`;
+  const isDebit = card.cardType === "DebitCard";
+  const siteUrl = getPublicSiteUrl();
+  const returnUrl = `${siteUrl}/api/checkout/callback`;
+
+  const paymentPayload: Record<string, unknown> = {
+    Type: isDebit ? "DebitCard" : "CreditCard",
+    Amount: cents(Number(order.total)),
+    SoftDescriptor: "ZION AROMAS",
+    ...(isDebit
+      ? {
+          ReturnUrl: returnUrl,
+          Authenticate: true,
+          DebitCard: {
+            CardNumber: cleanCardNumber,
+            Holder: card.holder.trim().toUpperCase(),
+            ExpirationDate: formattedExpiration,
+            SecurityCode: card.securityCode.trim(),
+            Brand: card.brand || "Visa"
+          }
+        }
+      : {
+          Installments: Math.max(1, Math.min(12, card.installments || 1)),
+          Capture: true,
+          CreditCard: {
+            CardNumber: cleanCardNumber,
+            Holder: card.holder.trim().toUpperCase(),
+            ExpirationDate: formattedExpiration,
+            SecurityCode: card.securityCode.trim(),
+            Brand: card.brand || "Visa"
+          }
+        })
+  };
+
+  console.log(`[Cielo Card] Enviando requisição de Cartão de ${isDebit ? "Débito" : "Crédito"} para pedido ${order.code}`);
+
+  const apiUrl = cieloApiUrl(settings);
+  const response = await fetch(`${apiUrl}/1/sales`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      MerchantId: merchantId,
+      MerchantKey: merchantKey
+    },
+    body: JSON.stringify({
+      MerchantOrderId: order.code,
+      Customer: {
+        Name: customer.name,
+        Email: customer.email
+      },
+      Payment: paymentPayload
+    }),
+    signal: AbortSignal.timeout(15_000)
+  });
+
+  const data = await response.json().catch(() => ({}));
+  console.log(`[Cielo Card] Resposta ${response.status} | Body: ${JSON.stringify(data)}`);
+
+  const payment = (data as { Payment?: Record<string, unknown> }).Payment || {};
+  const statusNumber = Number(payment.Status);
+  const returnMessage = String(payment.ReturnMessage || "Transação não autorizada");
+  const authenticationUrl = typeof payment.AuthenticationUrl === "string" ? payment.AuthenticationUrl : undefined;
+  const paymentId = typeof payment.PaymentId === "string" ? payment.PaymentId : undefined;
+
+  // Status 1 = Authorized, 2 = Payment Confirmed (Captured)
+  if (response.ok && (statusNumber === 2 || statusNumber === 1)) {
+    await confirmOrderPaymentByCode(order.code, "aprovado").catch(() => null);
+
+    return {
+      method: "CARTAO" as const,
+      provider: providerLabels.CIELO,
+      status: "ready" as const,
+      message: "Pagamento com cartão APROVADO com sucesso!",
+      reference: paymentId,
+      raw: data
+    };
+  }
+
+  // 3DS Redirect (DebitCard or 3DS CreditCard)
+  if (response.ok && (statusNumber === 12 || authenticationUrl)) {
+    return {
+      method: "CARTAO" as const,
+      provider: providerLabels.CIELO,
+      status: "pending" as const,
+      message: "Aguardando autenticação 3DS do seu banco.",
+      reference: paymentId,
+      redirectUrl: authenticationUrl,
+      raw: data
+    };
+  }
+
+  return {
+    method: "CARTAO" as const,
+    provider: providerLabels.CIELO,
+    status: "manual" as const,
+    message: `Cartão recusado pela Cielo: ${returnMessage}`,
+    reference: paymentId,
+    raw: data
+  };
+}
+
 async function createStaticPixCharge(order: Order) {
   const key = process.env.PIX_KEY;
   if (!key) return null;
@@ -122,15 +264,17 @@ async function createStaticPixCharge(order: Order) {
 export async function createPaymentInstruction({
   order,
   customer,
-  settings
+  settings,
+  card
 }: {
   order: Order;
   customer: { name: string; email: string };
   settings: PaymentSettings;
+  card?: CardDetails;
 }): Promise<PaymentInstruction> {
   if (order.paymentMethod === "PIX") {
     const cieloPix = settings.activeProvider === "CIELO"
-      ? await createCieloPixCharge(order, customer).catch(() => null)
+      ? await createCieloPixCharge(order, customer, settings).catch(() => null)
       : null;
     if (cieloPix?.status === "ready") return cieloPix;
 
@@ -146,13 +290,8 @@ export async function createPaymentInstruction({
     };
   }
 
-  if (order.paymentMethod === "BOLETO") {
-    return {
-      method: "BOLETO",
-      provider: providerLabels[settings.activeProvider],
-      status: "pending",
-      message: "Pedido recebido. O boleto será emitido pelo ambiente seguro da operadora."
-    };
+  if (card && settings.activeProvider === "CIELO") {
+    return createCieloCardCharge(order, customer, settings, card);
   }
 
   return {

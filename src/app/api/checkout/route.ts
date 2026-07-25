@@ -32,7 +32,17 @@ const schema = z.object({
     )
     .min(1)
     .max(30),
-  paymentMethod: z.enum(["PIX", "CARTAO"]),
+  paymentMethod: z.enum(["PIX", "CARTAO_CREDITO", "CARTAO_DEBITO"]),
+  card: z
+    .object({
+      cardNumber: z.string().trim().min(12).max(30),
+      holder: z.string().trim().min(2).max(80),
+      expirationDate: z.string().trim().min(4).max(10),
+      securityCode: z.string().trim().min(3).max(4),
+      brand: z.string().trim().min(2).max(30).optional().default("Visa"),
+      installments: z.number().int().min(1).max(12).optional().default(1)
+    })
+    .optional(),
   coupon: z.string().trim().max(40).optional().or(z.literal("")),
   shipping: z.coerce.number().min(0).max(10_000).optional().default(0)
 });
@@ -51,6 +61,11 @@ export async function POST(request: Request) {
   const paymentSettings = await getPaymentSettings();
   if (!paymentSettings.enabledMethods.includes(parsed.data.paymentMethod)) {
     return NextResponse.json({ error: "Forma de pagamento indisponível no momento." }, { status: 400 });
+  }
+
+  const isCardMethod = parsed.data.paymentMethod === "CARTAO_CREDITO" || parsed.data.paymentMethod === "CARTAO_DEBITO";
+  if (isCardMethod && !parsed.data.card) {
+    return NextResponse.json({ error: "Informe os dados do cartão para continuar." }, { status: 400 });
   }
 
   const productKeys = parsed.data.items.map((item) => item.productId);
@@ -103,6 +118,7 @@ export async function POST(request: Request) {
   const discount = Math.min(subtotal, automaticDiscount + couponDiscount + pixDiscount);
   const total = Math.max(0, subtotal + shipping - discount);
   const orderCode = `ZA-${Date.now().toString().slice(-6)}`;
+  const dbPaymentMethod = parsed.data.paymentMethod === "PIX" ? "PIX" : "CARTAO";
 
   const { order, customer } = await prisma.$transaction(async (tx) => {
     const customer = await tx.customer.upsert({
@@ -141,7 +157,7 @@ export async function POST(request: Request) {
         addressId: address.id,
         couponId: couponAvailable ? coupon?.id : null,
         status: "RECEBIDO",
-        paymentMethod: parsed.data.paymentMethod,
+        paymentMethod: dbPaymentMethod,
         paymentStatus: "pendente",
         subtotal,
         shipping,
@@ -163,10 +179,21 @@ export async function POST(request: Request) {
     return { order, customer };
   });
 
+  const cardDetails = isCardMethod && parsed.data.card ? {
+    cardType: (parsed.data.paymentMethod === "CARTAO_DEBITO" ? "DebitCard" : "CreditCard") as "CreditCard" | "DebitCard",
+    cardNumber: parsed.data.card.cardNumber,
+    holder: parsed.data.card.holder,
+    expirationDate: parsed.data.card.expirationDate,
+    securityCode: parsed.data.card.securityCode,
+    brand: parsed.data.card.brand || "Visa",
+    installments: parsed.data.card.installments
+  } : undefined;
+
   const paymentInstruction = await createPaymentInstruction({
     order,
     customer: { name: customer.name, email: customer.email },
-    settings: paymentSettings
+    settings: paymentSettings,
+    card: cardDetails
   });
 
   const paymentData: Prisma.OrderUpdateInput = {
@@ -194,14 +221,15 @@ export async function POST(request: Request) {
     paymentProvider: providerName,
     nextStep: paymentInstruction.message,
     payment: {
-      method: paymentInstruction.method,
+      method: parsed.data.paymentMethod,
       provider: paymentInstruction.provider,
       status: paymentInstruction.status,
       message: paymentInstruction.message,
       pixQrCode: paymentInstruction.pixQrCode,
       pixQrCodeImage: paymentInstruction.pixQrCodeImage,
       boletoUrl: paymentInstruction.boletoUrl,
-      boletoBarcode: paymentInstruction.boletoBarcode
+      boletoBarcode: paymentInstruction.boletoBarcode,
+      redirectUrl: paymentInstruction.redirectUrl
     }
   });
 }

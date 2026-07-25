@@ -110,7 +110,7 @@ async function main() {
       value: {
         activeProvider: "CIELO",
         environment: "HOMOLOGACAO",
-        enabledMethods: ["PIX", "CARTAO", "BOLETO"]
+        enabledMethods: ["PIX", "CARTAO_CREDITO", "CARTAO_DEBITO"]
       }
     },
     create: {
@@ -120,7 +120,7 @@ async function main() {
       value: {
         activeProvider: "CIELO",
         environment: "HOMOLOGACAO",
-        enabledMethods: ["PIX", "CARTAO", "BOLETO"]
+        enabledMethods: ["PIX", "CARTAO_CREDITO", "CARTAO_DEBITO"]
       }
     }
   });
