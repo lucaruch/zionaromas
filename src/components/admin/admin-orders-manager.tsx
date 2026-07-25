@@ -21,6 +21,13 @@ const paymentLabels: Record<string, string> = {
   BOLETO: "Boleto"
 };
 
+const paymentStatusLabels: Record<string, string> = {
+  aprovado: "Aprovado",
+  pendente: "Pendente",
+  cancelado: "Cancelado",
+  recusado: "Recusado"
+};
+
 export function AdminOrdersManager({ orders }: { orders: AdminOrder[] }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -93,6 +100,15 @@ export function AdminOrdersManager({ orders }: { orders: AdminOrder[] }) {
               <span className="rounded-full border border-gold/20 bg-gold/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-gold">
                 {statusLabels[order.status] || order.status}
               </span>
+              <span
+                className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${
+                  order.paymentStatus === "aprovado"
+                    ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300"
+                    : "border-amber-400/30 bg-amber-400/10 text-amber-200"
+                }`}
+              >
+                {paymentStatusLabels[order.paymentStatus] || order.paymentStatus}
+              </span>
               <span className="text-xs text-white/45">{new Date(order.createdAt).toLocaleString("pt-BR")}</span>
             </div>
 
@@ -132,7 +148,7 @@ export function AdminOrdersManager({ orders }: { orders: AdminOrder[] }) {
               <div className="mt-3 grid gap-2 text-sm">
                 <span className="flex justify-between gap-4"><span className="text-white/55">Total</span><strong className="text-gold">{formatCurrency(Number(order.total))}</strong></span>
                 <span className="flex justify-between gap-4"><span className="text-white/55">Pagamento</span><strong>{paymentLabels[order.paymentMethod] || order.paymentMethod}</strong></span>
-                <span className="flex justify-between gap-4"><span className="text-white/55">Status financeiro</span><strong>{order.paymentStatus}</strong></span>
+                <span className="flex justify-between gap-4"><span className="text-white/55">Status financeiro</span><strong>{paymentStatusLabels[order.paymentStatus] || order.paymentStatus}</strong></span>
                 {order.paymentProvider ? <span className="flex justify-between gap-4"><span className="text-white/55">Operadora</span><strong>{order.paymentProvider}</strong></span> : null}
                 {order.paymentReference ? <span className="flex justify-between gap-4"><span className="text-white/55">Referência</span><strong className="break-all text-right">{order.paymentReference}</strong></span> : null}
                 <span className="flex justify-between gap-4"><span className="text-white/55">Estoque</span><strong>{order.stockReducedAt ? "Baixado" : "Pendente"}</strong></span>

@@ -2,6 +2,8 @@ import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { confirmOrderPayment } from "@/lib/order-workflow";
+import { getPaymentSettings } from "@/lib/payment-store";
+import { syncCieloPaymentStatus } from "@/lib/payment-processing";
 import { prisma } from "@/lib/prisma";
 import { isRateLimited, parseJson } from "@/lib/security";
 
@@ -16,9 +18,12 @@ const approvedSignals = new Set([
   "confirmado",
   "authorized",
   "autorizado",
+  "1",
   "2",
   "6"
 ]);
+
+const cieloStatusChangeTypes = new Set(["1", "5"]);
 
 function secureHeaderEquals(value: string, expected: string) {
   const left = Buffer.from(value);
@@ -159,6 +164,25 @@ export async function POST(request: Request) {
   if (fromCielo && !authenticated) {
     if (!paymentReference || !(await hasKnownPaymentReference(paymentReference))) {
       return NextResponse.json({ error: "Referência de pagamento não reconhecida." }, { status: 401 });
+    }
+  }
+
+  const changeType = stringValue(parsed.data, ["ChangeType", "changeType", "change_type"]);
+  const shouldQueryCielo =
+    fromCielo &&
+    Boolean(paymentReference) &&
+    (!approvedSignals.has(signal) || cieloStatusChangeTypes.has(changeType));
+
+  if (shouldQueryCielo && paymentReference) {
+    try {
+      const settings = await getPaymentSettings();
+      const synced = await syncCieloPaymentStatus(paymentReference, settings);
+      if (synced.approved) {
+        return NextResponse.json({ ok: true, synced: true });
+      }
+      return NextResponse.json({ ok: true, ignored: !synced.synced, status: synced.status ?? null });
+    } catch {
+      return NextResponse.json({ error: "Pedido não localizado ou sem estoque disponível." }, { status: 409 });
     }
   }
 

@@ -214,10 +214,16 @@ export async function POST(request: Request) {
     data: paymentData
   });
 
+  const freshOrder = await prisma.order.findUnique({
+    where: { id: order.id },
+    select: { status: true, paymentStatus: true }
+  });
+
   return NextResponse.json({
     ok: true,
     orderCode: order.code,
-    status: order.status,
+    status: freshOrder?.status || order.status,
+    paymentStatus: freshOrder?.paymentStatus || "pendente",
     paymentProvider: providerName,
     nextStep: paymentInstruction.message,
     payment: {

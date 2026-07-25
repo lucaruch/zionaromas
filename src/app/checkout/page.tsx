@@ -1,6 +1,6 @@
 "use client";
 
-import { CreditCard, Landmark, Loader2, QrCode, Truck, type LucideIcon } from "lucide-react";
+import { CheckCircle2, CreditCard, Landmark, Loader2, QrCode, Truck, type LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/components/commerce/cart-provider";
 import { Button } from "@/components/ui/button";
@@ -73,6 +73,8 @@ export default function CheckoutPage() {
   const [paymentSettings, setPaymentSettings] = useState<CheckoutPaymentSettings | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("PIX");
   const [paymentResult, setPaymentResult] = useState<CheckoutPaymentResult | null>(null);
+  const [orderCode, setOrderCode] = useState("");
+  const [paymentApproved, setPaymentApproved] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutMessage, setCheckoutMessage] = useState("");
   const [cardNumber, setCardNumber] = useState("");
@@ -117,6 +119,61 @@ export default function CheckoutPage() {
       mounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const storedCode = window.sessionStorage.getItem("zion-last-order") || "";
+    const fromAuth = params.get("pagamento") === "autenticado";
+    if (fromAuth && storedCode) {
+      setOrderCode(storedCode);
+      setCheckoutMessage(`Pedido ${storedCode} recebido. Confirmando autenticação do pagamento...`);
+    }
+  }, []);
+  useEffect(() => {
+    if (!orderCode || paymentApproved) return;
+
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    async function checkStatus() {
+      try {
+        const response = await fetch(`/api/checkout/status?orderCode=${encodeURIComponent(orderCode)}`, {
+          cache: "no-store"
+        });
+        const data = await response.json();
+        if (cancelled || !response.ok) return;
+
+        if (data.approved) {
+          setPaymentApproved(true);
+          setCheckoutMessage(`Pedido ${orderCode}: ${data.message}`);
+          setPaymentResult((current) =>
+            current
+              ? { ...current, status: "ready", message: data.message }
+              : {
+                  method: paymentMethod,
+                  provider: paymentSettings?.providerName || "ZION AROMAS",
+                  status: "ready",
+                  message: data.message
+                }
+          );
+          clear();
+          return;
+        }
+      } catch {
+        // Mantém polling silencioso.
+      }
+
+      if (!cancelled) {
+        timer = setTimeout(checkStatus, 4000);
+      }
+    }
+
+    checkStatus();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [clear, orderCode, paymentApproved, paymentMethod, paymentSettings?.providerName]);
 
   async function quoteShipping(postalCode: string) {
     setShippingLoading(true);
@@ -170,6 +227,8 @@ export default function CheckoutPage() {
   async function finishOrder() {
     setCheckoutMessage("");
     setPaymentResult(null);
+    setPaymentApproved(false);
+    setOrderCode("");
 
     if (!items.length) {
       setCheckoutMessage("Seu carrinho está vazio.");
@@ -230,9 +289,23 @@ export default function CheckoutPage() {
       }
 
       const payment = data.payment || null;
+      const approved = data.paymentStatus === "aprovado" || /aprovado/i.test(String(data.nextStep || ""));
+      setOrderCode(data.orderCode || "");
+      if (typeof window !== "undefined" && data.orderCode) {
+        window.sessionStorage.setItem("zion-last-order", data.orderCode);
+      }
       if (!(isCardPayment && payment?.status === "manual")) clear();
+      setPaymentApproved(approved);
       setPaymentResult(payment);
-      setCheckoutMessage(`Pedido ${data.orderCode} recebido. ${data.nextStep}`);
+      setCheckoutMessage(
+        approved
+          ? `Pedido ${data.orderCode}: Pagamento aprovado! Seu pedido já está sendo preparado.`
+          : `Pedido ${data.orderCode} recebido. ${data.nextStep}`
+      );
+
+      if (payment?.redirectUrl) {
+        window.location.href = payment.redirectUrl;
+      }
     } catch {
       setCheckoutMessage("Não foi possível finalizar o pedido agora.");
     } finally {
@@ -400,13 +473,39 @@ export default function CheckoutPage() {
                 <strong>{formatCurrency(total)}</strong>
               </div>
             </div>
-            {checkoutMessage ? <p className="mt-4 text-sm leading-6 text-gold">{checkoutMessage}</p> : null}
-            {paymentResult ? (
+            {checkoutMessage ? (
+              <p className={`mt-4 text-sm leading-6 ${paymentApproved ? "text-emerald-300" : "text-gold"}`}>
+                {checkoutMessage}
+              </p>
+            ) : null}
+            {paymentApproved ? (
+              <div className="mt-5 border border-emerald-400/35 bg-emerald-400/10 p-4">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-300" />
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-300/80">
+                      Pagamento aprovado
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-white/80">
+                      {orderCode ? `Pedido ${orderCode} confirmado. ` : ""}
+                      Já recebemos o pagamento e vamos seguir com a separação do seu pedido.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+            {paymentResult && !paymentApproved ? (
               <div className="mt-5 border border-gold/18 bg-white/[0.035] p-4">
                 <p className="text-[10px] font-black uppercase tracking-[0.18em] text-gold/70">
                   {paymentResult.provider}
                 </p>
                 <p className="mt-2 text-sm leading-6 text-white/70">{paymentResult.message}</p>
+                {paymentResult.pixQrCodeImage || paymentResult.pixQrCode ? (
+                  <p className="mt-3 inline-flex items-center gap-2 text-xs text-white/55">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Aguardando confirmação do pagamento...
+                  </p>
+                ) : null}
                 {paymentResult.pixQrCodeImage ? (
                   // eslint-disable-next-line @next/next/no-img-element -- QR Code comes from a generated data URI.
                   <img src={paymentResult.pixQrCodeImage} alt="QR Code PIX" className="mt-4 aspect-square w-full bg-white object-contain p-3" />
@@ -436,8 +535,8 @@ export default function CheckoutPage() {
                 ) : null}
               </div>
             ) : null}
-            <Button className="mt-6 w-full" type="button" disabled={!items.length || !selectedShippingId || checkoutLoading} onClick={finishOrder}>
-              {checkoutLoading ? "Finalizando..." : "Finalizar pedido"}
+            <Button className="mt-6 w-full" type="button" disabled={!items.length || !selectedShippingId || checkoutLoading || paymentApproved} onClick={finishOrder}>
+              {checkoutLoading ? "Finalizando..." : paymentApproved ? "Pedido confirmado" : "Finalizar pedido"}
             </Button>
           </aside>
         </div>

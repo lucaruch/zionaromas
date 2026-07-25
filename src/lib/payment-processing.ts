@@ -1,7 +1,8 @@
 import type { Order, PaymentMethod } from "@prisma/client";
 import { createPixPayload, createQrCodeImage } from "@/lib/pix";
+import { getPaymentSettings } from "@/lib/payment-store";
 import { providerLabels, type PaymentSettings } from "@/lib/payments";
-import { confirmOrderPaymentByCode } from "@/lib/order-workflow";
+import { confirmOrderPayment, confirmOrderPaymentByCode } from "@/lib/order-workflow";
 import { getPublicSiteUrl } from "@/lib/site-url";
 
 export type CardDetails = {
@@ -36,6 +37,63 @@ function cieloApiUrl(settings: PaymentSettings) {
   return settings.environment === "PRODUCAO"
     ? "https://api.cieloecommerce.cielo.com.br"
     : "https://apisandbox.cieloecommerce.cielo.com.br";
+}
+
+function cieloQueryUrl(settings: PaymentSettings) {
+  return settings.environment === "PRODUCAO"
+    ? "https://apiquery.cieloecommerce.cielo.com.br"
+    : "https://apiquerysandbox.cieloecommerce.cielo.com.br";
+}
+
+const cieloApprovedStatuses = new Set([1, 2]);
+
+export function isCieloPaymentApproved(status: unknown) {
+  return cieloApprovedStatuses.has(Number(status));
+}
+
+export async function fetchCieloPaymentById(paymentId: string, settings: PaymentSettings) {
+  const merchantId = process.env.CIELO_MERCHANT_ID?.trim();
+  const merchantKey = process.env.CIELO_MERCHANT_KEY?.trim();
+  if (!merchantId || !merchantKey || !paymentId.trim()) return null;
+
+  const response = await fetch(`${cieloQueryUrl(settings)}/1/sales/${encodeURIComponent(paymentId.trim())}`, {
+    method: "GET",
+    headers: {
+      Accept: "application/json",
+      MerchantId: merchantId,
+      MerchantKey: merchantKey
+    },
+    signal: AbortSignal.timeout(12_000)
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    console.error(`[Cielo Query] Falha ${response.status} | Body: ${JSON.stringify(data)}`);
+    return null;
+  }
+
+  return data as { Payment?: Record<string, unknown>; MerchantOrderId?: string };
+}
+
+export async function syncCieloPaymentStatus(paymentId: string, settings?: PaymentSettings) {
+  const paymentSettings = settings || (await getPaymentSettings());
+  const sale = await fetchCieloPaymentById(paymentId, paymentSettings);
+  if (!sale) return { synced: false as const, approved: false as const };
+
+  const payment = sale.Payment || {};
+  const statusNumber = Number(payment.Status);
+  const approved = isCieloPaymentApproved(statusNumber);
+
+  if (approved) {
+    await confirmOrderPayment({ paymentReference: paymentId }, "aprovado");
+  }
+
+  return {
+    synced: true as const,
+    approved,
+    status: statusNumber,
+    merchantOrderId: typeof sale.MerchantOrderId === "string" ? sale.MerchantOrderId : undefined
+  };
 }
 
 function base64Image(value: unknown) {
@@ -240,16 +298,27 @@ async function createCieloCardCharge(
 
   // Status 1 = Authorized, 2 = Payment Confirmed (Captured)
   if (response.ok && (statusNumber === 2 || statusNumber === 1)) {
-    await confirmOrderPaymentByCode(order.code, "aprovado").catch(() => null);
-
-    return {
-      method: "CARTAO" as const,
-      provider: providerLabels.CIELO,
-      status: "ready" as const,
-      message: "Pagamento com cartão APROVADO com sucesso!",
-      reference: paymentId,
-      raw: data
-    };
+    try {
+      await confirmOrderPaymentByCode(order.code, "aprovado");
+      return {
+        method: "CARTAO" as const,
+        provider: providerLabels.CIELO,
+        status: "ready" as const,
+        message: "Pagamento com cartão APROVADO com sucesso!",
+        reference: paymentId,
+        raw: data
+      };
+    } catch (error) {
+      console.error(`[Cielo Card] Pagamento autorizado, mas pedido não confirmado:`, error);
+      return {
+        method: "CARTAO" as const,
+        provider: providerLabels.CIELO,
+        status: "manual" as const,
+        message: "Pagamento autorizado. Nossa equipe confirmará o pedido em instantes.",
+        reference: paymentId,
+        raw: data
+      };
+    }
   }
 
   // 3DS Redirect (DebitCard or 3DS CreditCard)
