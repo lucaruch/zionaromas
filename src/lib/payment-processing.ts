@@ -697,6 +697,9 @@ async function createCieloCardCharge(
           SoftDescriptor: softDescriptor(),
           Installments: installments,
           Capture: true,
+          // Sem autenticação a Cielo/emissor costuma negar com código AI.
+          Authenticate: true,
+          ReturnUrl: returnUrl,
           CreditCard: cardNode,
           ...(sandbox ? { Provider: cieloCardProvider() } : {})
         };
@@ -813,6 +816,17 @@ async function createCieloCardCharge(
       lastError = `Cartão não autorizado pela Cielo: ${returnMessage}${
         payment.ReturnCode != null ? ` (código ${payment.ReturnCode})` : ""
       }`;
+
+      const returnCode = String(payment.ReturnCode ?? "").toUpperCase();
+      if (returnCode === "AI") {
+        lastError =
+          "Cartão não autorizado: a autenticação do banco não foi concluída. " +
+          "Tente novamente e finalize a verificação no app/site do seu banco (3DS).";
+      } else if (returnCode === "AH") {
+        lastError =
+          "Este cartão é de crédito. Selecione a opção Cartão de Crédito no checkout e tente novamente.";
+      }
+
       break;
     } catch (error) {
       console.error(`[Cielo Card] Falha em ${apiUrl}:`, error);

@@ -472,9 +472,14 @@ export default function CheckoutPage() {
                     </select>
                   ) : (
                     <p className="flex min-h-12 items-center border border-gold/18 px-4 text-sm text-white/60">
-                      Débito pode exigir autenticação do banco emissor.
+                      Débito exige autenticação do banco emissor.
                     </p>
                   )}
+                  {paymentMethod === "CARTAO_CREDITO" ? (
+                    <p className="md:col-span-2 text-xs leading-5 text-white/45">
+                      O banco pode pedir autenticação (app ou senha) antes de aprovar o pagamento.
+                    </p>
+                  ) : null}
                 </div>
               ) : null}
             </div>
