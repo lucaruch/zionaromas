@@ -318,6 +318,25 @@ function cieloCardProvider() {
   return "Simulado" as const;
 }
 
+function softDescriptor() {
+  return "ZIONAROMAS";
+}
+
+function detectCardBrand(cardNumber: string, fallback = "Visa") {
+  const digits = cardNumber.replace(/\D/g, "");
+  if (/^3[47]/.test(digits)) return "Amex";
+  if (/^(606282|3841|6370|6371|6372)/.test(digits) || /^(606282|384100|384140|384160)/.test(digits)) return "Hipercard";
+  if (
+    /^(4011|4312|4389|4514|4576|5041|5066|5067|5090|6277|6362|6363|6500|6504|6505|6516|6550)/.test(digits) ||
+    /^(506699|5067|4576|4011)/.test(digits)
+  ) {
+    return "Elo";
+  }
+  if (/^5[1-5]/.test(digits) || /^2(2[2-9]|[3-6]|7[01]|720)/.test(digits)) return "Master";
+  if (/^4/.test(digits)) return "Visa";
+  return fallback || "Visa";
+}
+
 function sanitizeHolderName(value: string) {
   return value
     .normalize("NFD")
@@ -325,14 +344,19 @@ function sanitizeHolderName(value: string) {
     .replace(/[^A-Za-z\s]/g, " ")
     .replace(/\s+/g, " ")
     .trim()
-    .toUpperCase();
+    .toUpperCase()
+    .slice(0, 25);
 }
 
 function normalizeExpirationDate(value: string) {
   const clean = value.replace(/\D/g, "");
   const month = clean.slice(0, 2).padStart(2, "0");
-  const year = clean.length >= 4 ? clean.slice(2, 6) : clean.length === 2 ? `20${clean}` : "";
-  return `${month}/${year || "0000"}`;
+  let year = "";
+  if (clean.length >= 6) year = clean.slice(2, 6);
+  else if (clean.length === 4) year = `20${clean.slice(2, 4)}`;
+  else if (clean.length === 2) year = "0000";
+  else year = clean.slice(2) || "0000";
+  return `${month}/${year}`;
 }
 
 function sanitizeMerchantOrderId(value: string) {
@@ -533,13 +557,12 @@ async function createCieloPixCharge(
 
 async function createCieloCardCharge(
   order: Order,
-  customer: { name: string; email: string },
+  customer: { name: string; email: string; document?: string },
   settings: PaymentSettings,
   card: CardDetails
 ) {
-  const merchantId = process.env.CIELO_MERCHANT_ID?.trim();
-  const merchantKey = process.env.CIELO_MERCHANT_KEY?.trim();
-  if (!merchantId || !merchantKey) {
+  const credentials = cieloCredentials();
+  if (!credentials) {
     console.error("[Cielo Card] Credenciais ausentes no ambiente.");
     return {
       method: "CARTAO" as const,
@@ -549,120 +572,209 @@ async function createCieloCardCharge(
     };
   }
 
-  const cleanCardNumber = card.cardNumber.replace(/\D/g, "");
-  const formattedExpiration = normalizeExpirationDate(card.expirationDate);
-  const isDebit = card.cardType === "DebitCard";
-  const siteUrl = getPublicSiteUrl();
-  const returnUrl = `${siteUrl}/api/checkout/callback`;
-  const holder = sanitizeHolderName(card.holder);
-  const merchantOrderId = sanitizeMerchantOrderId(order.code);
-
-  const paymentPayload: Record<string, unknown> = {
-    Type: isDebit ? "DebitCard" : "CreditCard",
-    Amount: cents(Number(order.total)),
-    SoftDescriptor: "ZION AROMAS",
-    ...(settings.environment === "HOMOLOGACAO" ? { Provider: cieloCardProvider() } : {}),
-    ...(isDebit
-      ? {
-          ReturnUrl: returnUrl,
-          Authenticate: true,
-          DebitCard: {
-            CardNumber: cleanCardNumber,
-            Holder: holder,
-            ExpirationDate: formattedExpiration,
-            SecurityCode: card.securityCode.trim(),
-            Brand: card.brand || "Visa"
-          }
-        }
-      : {
-          Installments: Math.max(1, Math.min(12, card.installments || 1)),
-          Capture: true,
-          CreditCard: {
-            CardNumber: cleanCardNumber,
-            Holder: holder,
-            ExpirationDate: formattedExpiration,
-            SecurityCode: card.securityCode.trim(),
-            Brand: card.brand || "Visa"
-          }
-        })
-  };
-
-  console.log(`[Cielo Card] Enviando requisição de Cartão de ${isDebit ? "Débito" : "Crédito"} para pedido ${merchantOrderId}`);
-
-  const apiUrl = cieloApiUrl(settings);
-  const response = await fetch(`${apiUrl}/1/sales`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      MerchantId: merchantId,
-      MerchantKey: merchantKey
-    },
-    body: JSON.stringify({
-      MerchantOrderId: merchantOrderId,
-      Customer: {
-        Name: customer.name,
-        Email: customer.email
-      },
-      Payment: paymentPayload
-    }),
-    signal: AbortSignal.timeout(15_000)
-  });
-
-  const data = await response.json().catch(() => ({}));
-  console.log(`[Cielo Card] Resposta ${response.status} | Body: ${JSON.stringify(data)}`);
-
-  const payment = (data as { Payment?: Record<string, unknown> }).Payment || {};
-  const statusNumber = Number(payment.Status);
-  const returnMessage = String(payment.ReturnMessage || "Transação não autorizada");
-  const authenticationUrl = typeof payment.AuthenticationUrl === "string" ? payment.AuthenticationUrl : undefined;
-  const paymentId = typeof payment.PaymentId === "string" ? payment.PaymentId : undefined;
-
-  // Status 1 = Authorized, 2 = Payment Confirmed (Captured)
-  if (response.ok && (statusNumber === 2 || statusNumber === 1)) {
-    try {
-      await confirmOrderPaymentByCode(order.code, "aprovado");
-      return {
-        method: "CARTAO" as const,
-        provider: providerLabels.CIELO,
-        status: "ready" as const,
-        message: "Pagamento com cartão APROVADO com sucesso!",
-        reference: paymentId,
-        raw: data
-      };
-    } catch (error) {
-      console.error(`[Cielo Card] Pagamento autorizado, mas pedido não confirmado:`, error);
-      return {
-        method: "CARTAO" as const,
-        provider: providerLabels.CIELO,
-        status: "manual" as const,
-        message: "Pagamento autorizado. Nossa equipe confirmará o pedido em instantes.",
-        reference: paymentId,
-        raw: data
-      };
-    }
-  }
-
-  // 3DS Redirect (DebitCard or 3DS CreditCard)
-  if (response.ok && (statusNumber === 12 || authenticationUrl)) {
+  const amount = cents(Number(order.total));
+  if (!Number.isFinite(amount) || amount < 1) {
     return {
       method: "CARTAO" as const,
       provider: providerLabels.CIELO,
-      status: "pending" as const,
-      message: "Aguardando autenticação 3DS do seu banco.",
-      reference: paymentId,
-      redirectUrl: authenticationUrl,
-      raw: data
+      status: "manual" as const,
+      message: "Valor do pedido inválido para cobrança no cartão."
     };
+  }
+
+  const cleanCardNumber = card.cardNumber.replace(/\D/g, "");
+  if (cleanCardNumber.length < 13 || cleanCardNumber.length > 19) {
+    return {
+      method: "CARTAO" as const,
+      provider: providerLabels.CIELO,
+      status: "manual" as const,
+      message: "Número do cartão inválido."
+    };
+  }
+
+  const formattedExpiration = normalizeExpirationDate(card.expirationDate);
+  if (!/^\d{2}\/\d{4}$/.test(formattedExpiration) || formattedExpiration.endsWith("/0000")) {
+    return {
+      method: "CARTAO" as const,
+      provider: providerLabels.CIELO,
+      status: "manual" as const,
+      message: "Validade do cartão inválida. Use o formato MM/AAAA."
+    };
+  }
+
+  const isDebit = card.cardType === "DebitCard";
+  const siteUrl = getPublicSiteUrl();
+  const returnUrl = `${siteUrl}/api/checkout/callback?orderCode=${encodeURIComponent(order.code)}`;
+  const holder = sanitizeHolderName(card.holder);
+  if (holder.length < 2) {
+    return {
+      method: "CARTAO" as const,
+      provider: providerLabels.CIELO,
+      status: "manual" as const,
+      message: "Nome impresso no cartão inválido."
+    };
+  }
+
+  const brand = detectCardBrand(cleanCardNumber, card.brand || "Visa");
+  const merchantOrderId = sanitizeMerchantOrderId(order.code);
+  const documentDigits = (customer.document || "").replace(/\D/g, "");
+  const identityType = documentDigits.length === 14 ? "CNPJ" : documentDigits.length === 11 ? "CPF" : undefined;
+  const installments = Math.max(1, Math.min(12, card.installments || 1));
+  const securityCode = card.securityCode.replace(/\D/g, "").slice(0, 4);
+
+  const customerPayload: Record<string, string> = {
+    Name: sanitizeHolderName(customer.name) || customer.name,
+    Email: customer.email
+  };
+  if (identityType && documentDigits) {
+    customerPayload.Identity = documentDigits;
+    customerPayload.IdentityType = identityType;
+  }
+
+  const cardNode = {
+    CardNumber: cleanCardNumber,
+    Holder: holder,
+    ExpirationDate: formattedExpiration,
+    SecurityCode: securityCode,
+    Brand: brand
+  };
+
+  const paymentPayload: Record<string, unknown> = isDebit
+    ? {
+        Type: "DebitCard",
+        Amount: amount,
+        SoftDescriptor: softDescriptor(),
+        Authenticate: true,
+        ReturnUrl: returnUrl,
+        Tip: false,
+        DebitCard: cardNode,
+        ...(settings.environment === "HOMOLOGACAO" ? { Provider: cieloCardProvider() } : {})
+      }
+    : {
+        Type: "CreditCard",
+        Amount: amount,
+        SoftDescriptor: softDescriptor(),
+        Installments: installments,
+        Interest: "ByMerchant",
+        Capture: true,
+        Authenticate: false,
+        Tip: false,
+        CreditCard: cardNode,
+        ...(settings.environment === "HOMOLOGACAO" ? { Provider: cieloCardProvider() } : {})
+      };
+
+  let lastError = "Não foi possível processar o cartão na Cielo.";
+  let lastRaw: unknown;
+
+  for (const apiUrl of cieloApiUrls(settings)) {
+    try {
+      console.log(
+        `[Cielo Card] POST ${apiUrl}/1/sales | ${isDebit ? "DebitCard" : "CreditCard"} | pedido ${merchantOrderId} | brand=${brand} | parcelas=${installments}`
+      );
+
+      const response = await fetch(`${apiUrl}/1/sales`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          MerchantId: credentials.merchantId,
+          MerchantKey: credentials.merchantKey
+        },
+        body: JSON.stringify({
+          MerchantOrderId: merchantOrderId,
+          Customer: customerPayload,
+          Payment: paymentPayload
+        }),
+        signal: AbortSignal.timeout(20_000)
+      });
+
+      const data = await response.json().catch(() => ({}));
+      lastRaw = data;
+      console.log(`[Cielo Card] HTTP ${response.status} | Body: ${JSON.stringify(data)}`);
+
+      const errorMessage = extractCieloErrorMessage(data);
+      if (!response.ok) {
+        lastError = errorMessage
+          ? `Cielo recusou o cartão: ${errorMessage}`
+          : `Cielo recusou o cartão (HTTP ${response.status}).`;
+        continue;
+      }
+
+      const payment =
+        data && typeof data === "object" && !Array.isArray(data)
+          ? ((data as { Payment?: Record<string, unknown> }).Payment || {})
+          : {};
+      const statusNumber = Number(payment.Status);
+      const returnMessage =
+        (typeof payment.ReturnMessage === "string" && payment.ReturnMessage) ||
+        errorMessage ||
+        "Transação não autorizada";
+      const authenticationUrl =
+        typeof payment.AuthenticationUrl === "string" ? payment.AuthenticationUrl : undefined;
+      const paymentId =
+        (typeof payment.PaymentId === "string" && payment.PaymentId) ||
+        (typeof payment.Paymentid === "string" && payment.Paymentid) ||
+        undefined;
+
+      // Status 1 = Authorized, 2 = Payment Confirmed (Captured)
+      if (statusNumber === 2 || statusNumber === 1) {
+        try {
+          await confirmOrderPaymentByCode(order.code, "aprovado");
+          if (paymentId) {
+            await prisma.order.update({
+              where: { code: order.code },
+              data: { paymentReference: paymentId }
+            });
+          }
+          return {
+            method: "CARTAO" as const,
+            provider: providerLabels.CIELO,
+            status: "ready" as const,
+            message: "Pagamento com cartão APROVADO com sucesso!",
+            reference: paymentId,
+            raw: data
+          };
+        } catch (error) {
+          console.error(`[Cielo Card] Pagamento autorizado, mas pedido não confirmado:`, error);
+          return {
+            method: "CARTAO" as const,
+            provider: providerLabels.CIELO,
+            status: "manual" as const,
+            message: "Pagamento autorizado na Cielo. Nossa equipe confirmará o pedido em instantes.",
+            reference: paymentId,
+            raw: data
+          };
+        }
+      }
+
+      // 3DS / autenticação do banco (débito ou crédito autenticado)
+      if (statusNumber === 12 || authenticationUrl) {
+        return {
+          method: "CARTAO" as const,
+          provider: providerLabels.CIELO,
+          status: "pending" as const,
+          message: "Aguardando autenticação do seu banco. Você será redirecionado.",
+          reference: paymentId,
+          redirectUrl: authenticationUrl || returnUrl,
+          raw: data
+        };
+      }
+
+      lastError = `Cartão não autorizado pela Cielo: ${returnMessage}${
+        payment.ReturnCode != null ? ` (código ${payment.ReturnCode})` : ""
+      }`;
+    } catch (error) {
+      console.error(`[Cielo Card] Falha em ${apiUrl}:`, error);
+      lastError = "Falha de conexão com a Cielo ao processar o cartão.";
+    }
   }
 
   return {
     method: "CARTAO" as const,
     provider: providerLabels.CIELO,
     status: "manual" as const,
-    message: `Cartão recusado pela Cielo: ${returnMessage}`,
-    reference: paymentId,
-    raw: data
+    message: lastError,
+    raw: lastRaw
   };
 }
 

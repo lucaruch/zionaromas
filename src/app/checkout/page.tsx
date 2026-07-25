@@ -124,9 +124,12 @@ export default function CheckoutPage() {
     const params = new URLSearchParams(window.location.search);
     const storedCode = window.sessionStorage.getItem("zion-last-order") || "";
     const fromAuth = params.get("pagamento") === "autenticado";
-    if (fromAuth && storedCode) {
-      setOrderCode(storedCode);
-      setCheckoutMessage(`Pedido ${storedCode} recebido. Confirmando autenticação do pagamento...`);
+    const codeFromUrl = (params.get("orderCode") || "").trim().toUpperCase();
+    const code = codeFromUrl || storedCode;
+    if (fromAuth && code) {
+      setOrderCode(code);
+      window.sessionStorage.setItem("zion-last-order", code);
+      setCheckoutMessage(`Pedido ${code} recebido. Confirmando autenticação do pagamento...`);
     }
   }, []);
   useEffect(() => {
@@ -251,8 +254,8 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (paymentMethod === "PIX" && document.replace(/\D/g, "").length < 11) {
-      setCheckoutMessage("Informe um CPF ou CNPJ válido para gerar o PIX.");
+    if ((paymentMethod === "PIX" || isCardPayment) && document.replace(/\D/g, "").length < 11) {
+      setCheckoutMessage("Informe um CPF ou CNPJ válido para continuar o pagamento.");
       return;
     }
 
@@ -295,16 +298,20 @@ export default function CheckoutPage() {
 
       const payment = data.payment || null;
       const hasPixQr = Boolean(payment?.pixQrCode || payment?.pixQrCodeImage);
-      const approved = data.paymentStatus === "aprovado" || /aprovado/i.test(String(data.nextStep || ""));
+      const approved =
+        data.paymentStatus === "aprovado" ||
+        payment?.status === "ready" && /aprovado/i.test(String(payment?.message || data.nextStep || ""));
       const pixFailed = paymentMethod === "PIX" && !hasPixQr && !approved;
+      const cardFailed = isCardPayment && payment?.status === "manual" && !approved;
+      const cardPendingAuth = isCardPayment && payment?.status === "pending" && Boolean(payment?.redirectUrl);
 
       setOrderCode(data.orderCode || "");
       if (typeof window !== "undefined" && data.orderCode) {
         window.sessionStorage.setItem("zion-last-order", data.orderCode);
       }
 
-      // Só limpa o carrinho se o PIX/cartão realmente avançou.
-      if (!pixFailed && !(isCardPayment && payment?.status === "manual")) {
+      // Só limpa o carrinho se o pagamento avançou (aprovado, PIX gerado ou redirecionamento 3DS).
+      if (!pixFailed && !cardFailed) {
         clear();
       }
 
@@ -315,7 +322,11 @@ export default function CheckoutPage() {
           ? `Pedido ${data.orderCode}: Pagamento aprovado! Seu pedido já está sendo preparado.`
           : pixFailed
             ? `Não foi possível gerar o QR Code PIX. ${payment?.message || data.nextStep || ""}`
-            : `Pedido ${data.orderCode} recebido. ${data.nextStep}`
+            : cardFailed
+              ? `Pagamento com cartão não concluído. ${payment?.message || data.nextStep || ""}`
+              : cardPendingAuth
+                ? `Pedido ${data.orderCode}: redirecionando para autenticação do banco...`
+                : `Pedido ${data.orderCode} recebido. ${data.nextStep}`
       );
 
       if (payment?.redirectUrl) {
@@ -428,7 +439,19 @@ export default function CheckoutPage() {
               </div>
               {isCardPayment ? (
                 <div className="mt-5 grid gap-4 border border-gold/18 bg-black/35 p-4 md:grid-cols-2">
-                  <Input placeholder="Número do cartão" inputMode="numeric" value={cardNumber} onChange={(event) => setCardNumber(event.target.value)} />
+                  <Input
+                    placeholder="Número do cartão"
+                    inputMode="numeric"
+                    value={cardNumber}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setCardNumber(value);
+                      const digits = value.replace(/\D/g, "");
+                      if (/^3[47]/.test(digits)) setCardBrand("Amex");
+                      else if (/^5[1-5]/.test(digits) || /^2(2[2-9]|[3-6]|7[01]|720)/.test(digits)) setCardBrand("Master");
+                      else if (/^4/.test(digits)) setCardBrand("Visa");
+                    }}
+                  />
                   <Input placeholder="Nome impresso no cartão" value={cardHolder} onChange={(event) => setCardHolder(event.target.value)} />
                   <Input placeholder="Validade MM/AAAA" value={cardExpiration} onChange={(event) => setCardExpiration(event.target.value)} />
                   <Input placeholder="CVV" inputMode="numeric" value={cardSecurityCode} onChange={(event) => setCardSecurityCode(event.target.value)} />
@@ -493,7 +516,8 @@ export default function CheckoutPage() {
                 className={`mt-4 text-sm leading-6 ${
                   paymentApproved
                     ? "text-emerald-300"
-                    : paymentResult && paymentMethod === "PIX" && !paymentResult.pixQrCode && !paymentResult.pixQrCodeImage
+                    : (paymentResult && paymentMethod === "PIX" && !paymentResult.pixQrCode && !paymentResult.pixQrCodeImage) ||
+                        (isCardPayment && paymentResult?.status === "manual")
                       ? "text-red-300"
                       : "text-gold"
                 }`}
