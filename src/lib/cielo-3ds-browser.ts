@@ -181,6 +181,7 @@ export type Cielo3dsFieldPayload = {
   state: string;
   zipcode: string;
   merchantUrl: string;
+  customerIp?: string;
   items: Array<{ name: string; sku: string; quantity: number; unitPriceCents: number }>;
 };
 
@@ -195,6 +196,7 @@ function normalizePhone(phone: string) {
 export function populateBpmpiFields(payload: Cielo3dsFieldPayload) {
   const root = ensureContainer();
   clearCartFields(root);
+  const customerIp = (payload.customerIp || "").trim();
 
   setField(root, "bpmpi_auth", "true");
   setField(root, "bpmpi_auth_suppresschallenge", "false");
@@ -211,7 +213,13 @@ export function populateBpmpiFields(payload: Cielo3dsFieldPayload) {
   setField(root, "bpmpi_cardexpirationyear", payload.expirationYear.slice(0, 4));
   setField(root, "bpmpi_default_card", "false");
   setField(root, "bpmpi_order_productcode", "PHY");
+  setField(root, "bpmpi_order_recurrence", "false");
+  setField(root, "bpmpi_order_countlast24hours", "1");
+  setField(root, "bpmpi_order_countlast6months", "1");
+  setField(root, "bpmpi_order_countlast1year", "1");
+  setField(root, "bpmpi_order_cardattemptslast24hours", "1");
   setField(root, "bpmpi_transaction_mode", "S");
+  setField(root, "bpmpi_merchant_newcustomer", "true");
   setField(root, "bpmpi_merchant_url", payload.merchantUrl.slice(0, 100));
   setField(root, "bpmpi_billto_customerid", payload.customerDocument.replace(/\D/g, "").slice(0, 14));
   setField(root, "bpmpi_billto_contactname", payload.customerName.slice(0, 120));
@@ -224,6 +232,10 @@ export function populateBpmpiFields(payload: Cielo3dsFieldPayload) {
   setField(root, "bpmpi_billto_zipcode", payload.zipcode.replace(/\D/g, "").slice(0, 8));
   setField(root, "bpmpi_billto_country", "BR");
   setField(root, "bpmpi_shipto_sameasbillto", "true");
+  setField(root, "bpmpi_useraccount_guest", "true");
+  if (customerIp) {
+    setField(root, "bpmpi_device_ipaddress", customerIp.slice(0, 45));
+  }
   setField(root, "bpmpi_device_channel", "Browser");
 
   payload.items.slice(0, 10).forEach((item, index) => {

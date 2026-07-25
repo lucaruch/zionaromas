@@ -282,11 +282,18 @@ export default function CheckoutPage() {
           let expirationYear = expDigits.slice(2);
           if (expirationYear.length === 2) expirationYear = `20${expirationYear}`;
 
-          const { accessToken, environment } = await fetchCielo3dsToken();
           const amountCents = Math.round(total * 100);
           if (!Number.isFinite(amountCents) || amountCents < 100) {
             throw new Error("Valor do pedido inválido. Recarregue o carrinho e tente novamente.");
           }
+
+          const [{ accessToken, environment }, ipData] = await Promise.all([
+            fetchCielo3dsToken(),
+            fetch("/api/client-ip", { cache: "no-store" })
+              .then((response) => response.json())
+              .catch(() => ({}))
+          ]);
+          const customerIp = typeof ipData?.ip === "string" ? ipData.ip : "";
 
           const configuredSite =
             (typeof process !== "undefined" && process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "")) ||
@@ -315,6 +322,7 @@ export default function CheckoutPage() {
             state: "SP",
             zipcode: cep.replace(/\D/g, "").length === 8 ? cep : "11700007",
             merchantUrl,
+            customerIp,
             items: items.map((item) => ({
               name: item.name,
               sku: item.slug,

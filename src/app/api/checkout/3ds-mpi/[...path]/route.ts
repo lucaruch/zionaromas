@@ -12,6 +12,12 @@ function redactBody(raw: string) {
     if (typeof data.cardnumber === "string" && data.cardnumber.length > 4) {
       data.cardnumber = `${data.cardnumber.slice(0, 6)}****${data.cardnumber.slice(-4)}`;
     }
+    if (typeof data.billtocustomerid === "string" && data.billtocustomerid.length > 4) {
+      data.billtocustomerid = `****${data.billtocustomerid.slice(-4)}`;
+    }
+    if (typeof data.billtoemail === "string") {
+      data.billtoemail = "[email]";
+    }
     delete data.__zionAccessToken;
     return JSON.stringify(data);
   } catch {
