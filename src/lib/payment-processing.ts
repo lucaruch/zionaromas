@@ -1,5 +1,5 @@
 import type { Order, PaymentMethod } from "@prisma/client";
-import { createPixPayload, createQrCodeImage } from "@/lib/pix";
+import { createQrCodeImage } from "@/lib/pix";
 import { getPaymentSettings } from "@/lib/payment-store";
 import { providerLabels, type PaymentSettings } from "@/lib/payments";
 import { confirmOrderPayment, confirmOrderPaymentByCode, normalizeOrderCode } from "@/lib/order-workflow";
@@ -38,6 +38,12 @@ function cieloApiUrl(settings: PaymentSettings) {
   return settings.environment === "PRODUCAO"
     ? "https://api.cieloecommerce.cielo.com.br"
     : "https://apisandbox.cieloecommerce.cielo.com.br";
+}
+
+function cieloApiUrls(settings: PaymentSettings) {
+  const production = "https://api.cieloecommerce.cielo.com.br";
+  const sandbox = "https://apisandbox.cieloecommerce.cielo.com.br";
+  return settings.environment === "PRODUCAO" ? [production, sandbox] : [sandbox, production];
 }
 
 function cieloQueryUrls(settings: PaymentSettings) {
@@ -334,114 +340,194 @@ function sanitizeMerchantOrderId(value: string) {
   return clean.slice(0, 50) || "ZIONAROMAS";
 }
 
+function extractCieloErrorMessage(data: unknown) {
+  if (Array.isArray(data)) {
+    const parts = data
+      .map((item) => {
+        if (!item || typeof item !== "object") return "";
+        const row = item as Record<string, unknown>;
+        const code = row.Code ?? row.code;
+        const message = row.Message ?? row.message;
+        if (typeof message === "string" && message.trim()) {
+          return code != null ? `${code}: ${message.trim()}` : message.trim();
+        }
+        return "";
+      })
+      .filter(Boolean);
+    if (parts.length) return parts.join(" | ");
+  }
+
+  if (data && typeof data === "object") {
+    const row = data as Record<string, unknown>;
+    if (typeof row.Message === "string" && row.Message.trim()) return row.Message.trim();
+    if (typeof row.message === "string" && row.message.trim()) return row.message.trim();
+    const payment = row.Payment;
+    if (payment && typeof payment === "object") {
+      const paymentRow = payment as Record<string, unknown>;
+      if (typeof paymentRow.ReturnMessage === "string" && paymentRow.ReturnMessage.trim()) {
+        return paymentRow.ReturnMessage.trim();
+      }
+    }
+  }
+
+  return "";
+}
+
+function extractPixFromPayment(payment: Record<string, unknown>) {
+  const pixQrCode =
+    (typeof payment.QrCodeString === "string" && payment.QrCodeString) ||
+    (typeof payment.QrcodeString === "string" && payment.QrcodeString) ||
+    (typeof payment.qrCodeString === "string" && payment.qrCodeString) ||
+    (typeof payment.QrCode === "string" && payment.QrCode.startsWith("000201") ? payment.QrCode : undefined) ||
+    undefined;
+
+  const rawImage =
+    payment.QrcodeBase64Image ??
+    payment.QrCodeBase64Image ??
+    payment.qrCodeBase64Image ??
+    (typeof payment.QrCode === "string" && !payment.QrCode.startsWith("000201") ? payment.QrCode : undefined);
+
+  const paymentId =
+    (typeof payment.PaymentId === "string" && payment.PaymentId) ||
+    (typeof payment.Paymentid === "string" && payment.Paymentid) ||
+    undefined;
+
+  return {
+    pixQrCode,
+    cieloPixImage: base64Image(rawImage),
+    paymentId,
+    returnMessage: typeof payment.ReturnMessage === "string" ? payment.ReturnMessage : ""
+  };
+}
+
 async function createCieloPixCharge(
   order: Order,
   customer: { name: string; email: string; document?: string },
   settings: PaymentSettings
 ) {
-  const merchantId = process.env.CIELO_MERCHANT_ID?.trim();
-  const merchantKey = process.env.CIELO_MERCHANT_KEY?.trim();
-  if (!merchantId || !merchantKey) {
+  const credentials = cieloCredentials();
+  if (!credentials) {
     console.error("[Cielo] Credenciais ausentes: CIELO_MERCHANT_ID ou CIELO_MERCHANT_KEY não configurados.");
-    return null;
+    return {
+      method: "PIX" as const,
+      provider: providerLabels.CIELO,
+      status: "manual" as const,
+      message: "Credenciais da Cielo ausentes no servidor (CIELO_MERCHANT_ID / CIELO_MERCHANT_KEY)."
+    };
   }
 
-  const apiUrl = cieloApiUrl(settings);
+  const amount = cents(Number(order.total));
+  if (!Number.isFinite(amount) || amount < 1) {
+    return {
+      method: "PIX" as const,
+      provider: providerLabels.CIELO,
+      status: "manual" as const,
+      message: "Valor do pedido inválido para gerar PIX."
+    };
+  }
+
   const merchantOrderId = sanitizeMerchantOrderId(order.code);
   const documentDigits = (customer.document || "").replace(/\D/g, "");
   const identityType = documentDigits.length === 14 ? "CNPJ" : documentDigits.length === 11 ? "CPF" : undefined;
 
-  // Payload mínimo oficial da Cielo (Type + Amount). Provider/QrCode extras costumam quebrar a geração.
+  if (!identityType) {
+    return {
+      method: "PIX" as const,
+      provider: providerLabels.CIELO,
+      status: "manual" as const,
+      message: "Informe um CPF ou CNPJ válido para gerar o PIX na Cielo."
+    };
+  }
+
   const customerPayload: Record<string, string> = {
-    Name: customer.name,
+    Name: sanitizeHolderName(customer.name) || customer.name,
+    Identity: documentDigits,
+    IdentityType: identityType,
     Email: customer.email
   };
-  if (identityType && documentDigits) {
-    customerPayload.Identity = documentDigits;
-    customerPayload.IdentityType = identityType;
-  }
 
-  console.log(`[Cielo] Iniciando cobrança PIX | URL: ${apiUrl}/1/sales | MerchantOrderId: ${merchantOrderId}`);
+  const paymentVariants: Array<Record<string, unknown>> = [
+    { Type: "Pix", Amount: amount },
+    { Type: "Pix", Amount: amount, QrCodeExpiration: 86400 }
+  ];
 
-  const response = await fetch(`${apiUrl}/1/sales`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      MerchantId: merchantId,
-      MerchantKey: merchantKey
-    },
-    body: JSON.stringify({
-      MerchantOrderId: merchantOrderId,
-      Customer: customerPayload,
-      Payment: {
-        Type: "Pix",
-        Amount: cents(Number(order.total))
+  let lastError = "Não foi possível gerar o PIX na Cielo.";
+  let lastRaw: unknown;
+
+  for (const apiUrl of cieloApiUrls(settings)) {
+    for (const paymentBody of paymentVariants) {
+      try {
+        console.log(
+          `[Cielo] PIX POST ${apiUrl}/1/sales | MerchantOrderId=${merchantOrderId} | Amount=${amount} | Env=${settings.environment}`
+        );
+
+        const response = await fetch(`${apiUrl}/1/sales`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            MerchantId: credentials.merchantId,
+            MerchantKey: credentials.merchantKey
+          },
+          body: JSON.stringify({
+            MerchantOrderId: merchantOrderId,
+            Customer: customerPayload,
+            Payment: paymentBody
+          }),
+          signal: AbortSignal.timeout(20_000)
+        });
+
+        const data = await response.json().catch(() => ({}));
+        lastRaw = data;
+        console.log(`[Cielo] PIX HTTP ${response.status} | Body: ${JSON.stringify(data)}`);
+
+        const errorMessage = extractCieloErrorMessage(data);
+        if (!response.ok) {
+          lastError = errorMessage
+            ? `Cielo recusou o PIX: ${errorMessage}`
+            : `Cielo recusou o PIX (HTTP ${response.status}). Confira se o PIX está habilitado em Meu Cadastro > Autorizações.`;
+          continue;
+        }
+
+        const payment =
+          data && typeof data === "object" && !Array.isArray(data)
+            ? ((data as { Payment?: Record<string, unknown> }).Payment || {})
+            : {};
+        const extracted = extractPixFromPayment(payment);
+        const pixQrCodeImage = extracted.pixQrCode
+          ? await createQrCodeImage(extracted.pixQrCode).catch(() => extracted.cieloPixImage)
+          : extracted.cieloPixImage;
+
+        if (extracted.pixQrCode || pixQrCodeImage) {
+          return {
+            method: "PIX" as const,
+            provider: providerLabels.CIELO,
+            status: "ready" as const,
+            message: "PIX gerado pela Cielo. Escaneie o QR Code ou use o copia e cola.",
+            reference: extracted.paymentId,
+            pixQrCode: extracted.pixQrCode,
+            pixQrCodeImage,
+            raw: data
+          };
+        }
+
+        lastError =
+          extracted.returnMessage ||
+          errorMessage ||
+          "A Cielo respondeu sem QR Code. Verifique se o PIX está habilitado na conta Cielo.";
+      } catch (error) {
+        console.error(`[Cielo] PIX falhou em ${apiUrl}:`, error);
+        lastError = "Falha de conexão com a Cielo ao gerar o PIX.";
       }
-    }),
-    signal: AbortSignal.timeout(15_000)
-  });
-
-  const data = await response.json().catch(() => ({}));
-  console.log(`[Cielo] Resposta HTTP ${response.status} | Body: ${JSON.stringify(data)}`);
-
-  const payment = (data as { Payment?: Record<string, unknown> }).Payment || {};
-  const returnMessage =
-    typeof payment.ReturnMessage === "string"
-      ? payment.ReturnMessage
-      : typeof (data as { Message?: unknown }).Message === "string"
-        ? String((data as { Message: string }).Message)
-        : "";
-
-  if (!response.ok) {
-    return {
-      method: "PIX" as const,
-      provider: providerLabels.CIELO,
-      status: "manual" as const,
-      message: returnMessage
-        ? `Não foi possível gerar o PIX na Cielo: ${returnMessage}`
-        : "Pedido recebido. Nossa equipe enviará as instruções de pagamento em instantes.",
-      raw: data
-    };
-  }
-
-  const pixQrCode =
-    typeof payment.QrCodeString === "string"
-      ? payment.QrCodeString
-      : typeof payment.QrCode === "string"
-        ? payment.QrCode
-        : undefined;
-  const cieloPixImage = base64Image(payment.QrcodeBase64Image ?? payment.QrCodeBase64Image);
-  const pixQrCodeImage = pixQrCode
-    ? await createQrCodeImage(pixQrCode).catch(() => cieloPixImage)
-    : cieloPixImage;
-  const paymentId =
-    typeof payment.PaymentId === "string"
-      ? payment.PaymentId
-      : typeof payment.Paymentid === "string"
-        ? payment.Paymentid
-        : undefined;
-
-  if (!pixQrCode && !pixQrCodeImage) {
-    return {
-      method: "PIX" as const,
-      provider: providerLabels.CIELO,
-      status: "manual" as const,
-      message: returnMessage || "A Cielo não retornou o QR Code do PIX.",
-      reference: paymentId,
-      raw: data
-    };
+    }
   }
 
   return {
     method: "PIX" as const,
     provider: providerLabels.CIELO,
-    status: "ready" as const,
-    message: "PIX gerado com segurança. Escaneie o QR Code ou use o copia e cola.",
-    reference: paymentId,
-    pixQrCode,
-    pixQrCodeImage,
-    raw: data
+    status: "manual" as const,
+    message: lastError,
+    raw: lastRaw
   };
 }
 
@@ -580,30 +666,6 @@ async function createCieloCardCharge(
   };
 }
 
-async function createStaticPixCharge(order: Order) {
-  const key = process.env.PIX_KEY;
-  if (!key) return null;
-
-  const pix = await createPixPayload({
-    key,
-    merchantName: process.env.PIX_MERCHANT_NAME || "ZION AROMAS",
-    merchantCity: process.env.PIX_MERCHANT_CITY || "PRAIA GRANDE",
-    amount: Number(order.total),
-    txid: order.code.replace(/[^A-Za-z0-9]/g, ""),
-    description: `Pedido ${order.code}`
-  });
-
-  return {
-    method: "PIX" as const,
-    provider: "PIX ZION AROMAS",
-    status: "ready" as const,
-    message: "PIX gerado. Escaneie o QR Code ou use o copia e cola.",
-    reference: order.code,
-    pixQrCode: pix.code,
-    pixQrCodeImage: pix.image
-  };
-}
-
 export async function createPaymentInstruction({
   order,
   customer,
@@ -618,38 +680,33 @@ export async function createPaymentInstruction({
   if (order.paymentMethod === "PIX") {
     const hasCieloCredentials = Boolean(process.env.CIELO_MERCHANT_ID?.trim() && process.env.CIELO_MERCHANT_KEY?.trim());
 
-    // Com credenciais Cielo, prioriza cobrança Cielo (única que auto-aprova via consulta/webhook).
+    // PIX deve cair na Cielo — não usa PIX_KEY (chave de outro banco/CNPJ).
     if (settings.activeProvider === "CIELO" && hasCieloCredentials) {
-      const cieloPix = await createCieloPixCharge(order, customer, settings).catch((error) => {
-        console.error("[Cielo PIX] Falha ao gerar cobrança:", error);
-        return null;
-      });
-      if (cieloPix?.status === "ready" && (cieloPix.pixQrCode || cieloPix.pixQrCodeImage)) {
-        return cieloPix;
-      }
-
       return (
-        cieloPix || {
+        (await createCieloPixCharge(order, customer, settings).catch((error) => {
+          console.error("[Cielo PIX] Falha ao gerar cobrança:", error);
+          return {
+            method: "PIX" as const,
+            provider: providerLabels.CIELO,
+            status: "manual" as const,
+            message: "Falha ao gerar PIX na Cielo. Tente novamente em instantes."
+          };
+        })) || {
           method: "PIX",
           provider: providerLabels.CIELO,
           status: "manual",
           message:
-            "Não foi possível gerar o PIX na Cielo. Verifique se o PIX está habilitado na conta e se as credenciais estão corretas."
+            "Não foi possível gerar o PIX na Cielo. Verifique se o PIX está habilitado em Meu Cadastro > Autorizações."
         }
       );
     }
-
-    const staticPix = await createStaticPixCharge(order).catch((error) => {
-      console.error("[PIX estático] Falha ao gerar QR:", error);
-      return null;
-    });
-    if (staticPix) return staticPix;
 
     return {
       method: "PIX",
       provider: providerLabels[settings.activeProvider],
       status: "manual",
-      message: "Não foi possível gerar o PIX agora. Configure CIELO_MERCHANT_ID/KEY ou PIX_KEY no servidor."
+      message:
+        "Configure CIELO_MERCHANT_ID e CIELO_MERCHANT_KEY no servidor para gerar PIX pela Cielo. A chave PIX_KEY não é usada para não cair em outro banco."
     };
   }
 

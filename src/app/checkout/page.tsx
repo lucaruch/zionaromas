@@ -294,18 +294,28 @@ export default function CheckoutPage() {
       }
 
       const payment = data.payment || null;
+      const hasPixQr = Boolean(payment?.pixQrCode || payment?.pixQrCodeImage);
       const approved = data.paymentStatus === "aprovado" || /aprovado/i.test(String(data.nextStep || ""));
+      const pixFailed = paymentMethod === "PIX" && !hasPixQr && !approved;
+
       setOrderCode(data.orderCode || "");
       if (typeof window !== "undefined" && data.orderCode) {
         window.sessionStorage.setItem("zion-last-order", data.orderCode);
       }
-      if (!(isCardPayment && payment?.status === "manual")) clear();
+
+      // Só limpa o carrinho se o PIX/cartão realmente avançou.
+      if (!pixFailed && !(isCardPayment && payment?.status === "manual")) {
+        clear();
+      }
+
       setPaymentApproved(approved);
       setPaymentResult(payment);
       setCheckoutMessage(
         approved
           ? `Pedido ${data.orderCode}: Pagamento aprovado! Seu pedido já está sendo preparado.`
-          : `Pedido ${data.orderCode} recebido. ${data.nextStep}`
+          : pixFailed
+            ? `Não foi possível gerar o QR Code PIX. ${payment?.message || data.nextStep || ""}`
+            : `Pedido ${data.orderCode} recebido. ${data.nextStep}`
       );
 
       if (payment?.redirectUrl) {
@@ -479,7 +489,15 @@ export default function CheckoutPage() {
               </div>
             </div>
             {checkoutMessage ? (
-              <p className={`mt-4 text-sm leading-6 ${paymentApproved ? "text-emerald-300" : "text-gold"}`}>
+              <p
+                className={`mt-4 text-sm leading-6 ${
+                  paymentApproved
+                    ? "text-emerald-300"
+                    : paymentResult && paymentMethod === "PIX" && !paymentResult.pixQrCode && !paymentResult.pixQrCodeImage
+                      ? "text-red-300"
+                      : "text-gold"
+                }`}
+              >
                 {checkoutMessage}
               </p>
             ) : null}
