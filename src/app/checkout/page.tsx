@@ -526,6 +526,31 @@ export default function CheckoutPage() {
                     <Button type="button" onClick={() => navigator.clipboard.writeText(paymentResult.pixQrCode || "")}>
                       Copiar PIX copia e cola
                     </Button>
+                    {orderCode ? (
+                      <Button
+                        type="button"
+                        variant="glass"
+                        onClick={async () => {
+                          try {
+                            const response = await fetch(`/api/checkout/status?orderCode=${encodeURIComponent(orderCode)}`, {
+                              cache: "no-store"
+                            });
+                            const data = await response.json();
+                            if (data.approved) {
+                              setPaymentApproved(true);
+                              setCheckoutMessage(`Pedido ${orderCode}: ${data.message}`);
+                              clear();
+                            } else {
+                              setCheckoutMessage(`Pedido ${orderCode}: ainda aguardando confirmação do pagamento.`);
+                            }
+                          } catch {
+                            setCheckoutMessage("Não foi possível verificar o pagamento agora.");
+                          }
+                        }}
+                      >
+                        Já paguei — verificar agora
+                      </Button>
+                    ) : null}
                   </div>
                 ) : null}
                 {paymentResult.boletoUrl ? (

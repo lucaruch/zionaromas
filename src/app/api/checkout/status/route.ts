@@ -42,6 +42,9 @@ export async function GET(request: Request) {
         { code: order.code, paymentReference: order.paymentReference },
         settings
       );
+      console.log(
+        `[checkout-status] ${order.code} ref=${order.paymentReference || "-"} synced=${synced.synced} approved=${synced.approved} status=${synced.status ?? "-"}`
+      );
       if (synced.approved) {
         paymentStatus = "aprovado";
         status = "PAGO";

@@ -3,9 +3,12 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { confirmOrderPayment, findOrderForPayment, normalizeOrderCode } from "@/lib/order-workflow";
 import { getPaymentSettings } from "@/lib/payment-store";
-import { syncCieloPaymentStatus, syncOrderPaymentFromCielo } from "@/lib/payment-processing";
-import { prisma } from "@/lib/prisma";
-import { isRateLimited, parseJson } from "@/lib/security";
+import {
+  fetchCieloPaymentById,
+  syncCieloPaymentStatus,
+  syncOrderPaymentFromCielo
+} from "@/lib/payment-processing";
+import { isRateLimited } from "@/lib/security";
 
 const schema = z.record(z.unknown());
 
@@ -45,8 +48,10 @@ function isAuthenticatedRequest(request: Request): boolean {
 function isCieloPayload(payload: Record<string, unknown>): boolean {
   return (
     typeof payload["PaymentId"] === "string" ||
+    typeof payload["paymentId"] === "string" ||
     typeof payload["MerchantOrderId"] === "string" ||
     typeof payload["ChangeType"] === "number" ||
+    typeof payload["ChangeType"] === "string" ||
     (typeof payload["Payment"] === "object" && payload["Payment"] !== null)
   );
 }
@@ -88,8 +93,7 @@ function normalizePaymentSignal(payload: Record<string, unknown>) {
     "Status",
     "payment_status",
     "PaymentStatus",
-    "event",
-    "type"
+    "event"
   ]).toLowerCase();
 }
 
@@ -111,6 +115,7 @@ function normalizePaymentReference(payload: Record<string, unknown>) {
     "payment_reference",
     "paymentId",
     "PaymentId",
+    "Paymentid",
     "payment_id",
     "transactionId",
     "transaction_id",
@@ -121,13 +126,41 @@ function normalizePaymentReference(payload: Record<string, unknown>) {
   ]);
 }
 
-async function hasKnownPaymentReference(paymentReference: string) {
-  const order = await prisma.order.findFirst({
-    where: { paymentReference },
-    select: { id: true }
-  });
+/** A Cielo às vezes envia JSON sem Content-Type, ou form-urlencoded. */
+async function parseWebhookPayload(request: Request): Promise<Record<string, unknown> | null> {
+  const contentType = (request.headers.get("content-type") || "").toLowerCase();
 
-  return Boolean(order);
+  try {
+    if (contentType.includes("application/x-www-form-urlencoded")) {
+      const text = await request.text();
+      const params = new URLSearchParams(text);
+      const data: Record<string, unknown> = {};
+      for (const [key, value] of params.entries()) {
+        const asNumber = Number(value);
+        data[key] = value !== "" && Number.isFinite(asNumber) && String(asNumber) === value ? asNumber : value;
+      }
+      return data;
+    }
+
+    const text = await request.text();
+    if (!text.trim()) return null;
+
+    try {
+      const json = JSON.parse(text) as unknown;
+      const parsed = schema.safeParse(json);
+      return parsed.success ? parsed.data : null;
+    } catch {
+      const params = new URLSearchParams(text);
+      if ([...params.keys()].length) {
+        const data: Record<string, unknown> = {};
+        for (const [key, value] of params.entries()) data[key] = value;
+        return data;
+      }
+      return null;
+    }
+  } catch {
+    return null;
+  }
 }
 
 export async function POST(request: Request) {
@@ -135,20 +168,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Muitas tentativas." }, { status: 429 });
   }
 
-  const parsed = await parseJson(request, schema, 64_000);
-  if (!parsed.ok) {
+  const payload = await parseWebhookPayload(request);
+  if (!payload) {
     return NextResponse.json({ error: "Payload inválido." }, { status: 400 });
   }
 
-  const orderCode = normalizeOrderCode(normalizeOrderCodeRaw(parsed.data));
-  const paymentReference = normalizePaymentReference(parsed.data);
-  const signal = normalizePaymentSignal(parsed.data);
+  let orderCode = normalizeOrderCode(normalizeOrderCodeRaw(payload));
+  const paymentReference = normalizePaymentReference(payload);
+  const signal = normalizePaymentSignal(payload);
+  const changeType = stringValue(payload, ["ChangeType", "changeType", "change_type"]);
 
   if (!orderCode && !paymentReference) {
     return NextResponse.json({ error: "Pedido não informado." }, { status: 400 });
   }
 
-  const fromCielo = isCieloPayload(parsed.data);
+  const fromCielo = isCieloPayload(payload);
   const authenticated = isAuthenticatedRequest(request);
 
   if (!fromCielo) {
@@ -161,49 +195,63 @@ export async function POST(request: Request) {
     }
   }
 
-  if (fromCielo && !authenticated) {
-    const knownReference = paymentReference ? await hasKnownPaymentReference(paymentReference) : false;
-    const knownOrder = orderCode ? Boolean(await findOrderForPayment({ code: orderCode })) : false;
-    if (!knownReference && !knownOrder) {
-      return NextResponse.json({ error: "Referência de pagamento não reconhecida." }, { status: 401 });
-    }
-  }
-
-  const changeType = stringValue(parsed.data, ["ChangeType", "changeType", "change_type"]);
-  const shouldQueryCielo =
-    fromCielo &&
-    (Boolean(paymentReference) || Boolean(orderCode)) &&
-    (!approvedSignals.has(signal) || cieloStatusChangeTypes.has(changeType));
-
-  if (shouldQueryCielo) {
+  // Notificação típica da Cielo: { PaymentId, ChangeType } — consulta a venda e localiza o pedido.
+  if (fromCielo && paymentReference) {
     try {
       const settings = await getPaymentSettings();
+      const sale = await fetchCieloPaymentById(paymentReference, settings);
+      const merchantOrderId =
+        (typeof sale?.MerchantOrderId === "string" && sale.MerchantOrderId) ||
+        (typeof sale?.Payment?.MerchantOrderId === "string" && String(sale.Payment.MerchantOrderId)) ||
+        "";
+      if (merchantOrderId && !orderCode) {
+        orderCode = normalizeOrderCode(merchantOrderId);
+      }
 
-      if (paymentReference) {
+      const knownOrder = await findOrderForPayment({
+        code: orderCode || undefined,
+        paymentReference
+      });
+
+      if (!authenticated && !knownOrder && !sale) {
+        return NextResponse.json({ error: "Referência de pagamento não reconhecida." }, { status: 401 });
+      }
+
+      if (!authenticated && !knownOrder && sale && orderCode) {
+        const matched = await findOrderForPayment({ code: orderCode });
+        if (!matched) {
+          return NextResponse.json({ error: "Pedido não reconhecido." }, { status: 401 });
+        }
+      }
+
+      const shouldQuery =
+        !approvedSignals.has(signal) || cieloStatusChangeTypes.has(changeType) || Boolean(changeType);
+
+      if (shouldQuery) {
         const synced = await syncCieloPaymentStatus(paymentReference, settings);
         if (synced.approved) {
           return NextResponse.json({ ok: true, synced: true });
         }
-      }
 
-      if (orderCode) {
-        const order = await findOrderForPayment({ code: orderCode, paymentReference });
-        if (order) {
-          const synced = await syncOrderPaymentFromCielo(
-            { code: order.code, paymentReference: order.paymentReference },
-            settings
-          );
-          if (synced.approved) {
-            return NextResponse.json({ ok: true, synced: true });
+        if (orderCode) {
+          const order = await findOrderForPayment({ code: orderCode, paymentReference });
+          if (order) {
+            const byOrder = await syncOrderPaymentFromCielo(
+              { code: order.code, paymentReference: order.paymentReference || paymentReference },
+              settings
+            );
+            if (byOrder.approved) {
+              return NextResponse.json({ ok: true, synced: true });
+            }
+            return NextResponse.json({ ok: true, ignored: !byOrder.synced, status: byOrder.status ?? null });
           }
-          return NextResponse.json({ ok: true, ignored: !synced.synced, status: synced.status ?? null });
         }
-      }
 
-      return NextResponse.json({ ok: true, ignored: true });
+        return NextResponse.json({ ok: true, ignored: !synced.synced, status: synced.status ?? null });
+      }
     } catch (error) {
       console.error("[payment-webhook] Falha ao sincronizar Cielo:", error);
-      return NextResponse.json({ error: "Pedido não localizado ou sem estoque disponível." }, { status: 409 });
+      return NextResponse.json({ error: "Falha ao confirmar pagamento." }, { status: 409 });
     }
   }
 
@@ -213,14 +261,14 @@ export async function POST(request: Request) {
 
   try {
     await confirmOrderPayment(
-      authenticated ? { code: orderCode, paymentReference } : { code: orderCode, paymentReference },
+      { code: orderCode || undefined, paymentReference: paymentReference || undefined },
       "aprovado",
       { paymentReference: paymentReference || undefined }
     );
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("[payment-webhook] Falha ao confirmar pedido:", error);
-    return NextResponse.json({ error: "Pedido não localizado ou sem estoque disponível." }, { status: 409 });
+    return NextResponse.json({ error: "Pedido não localizado." }, { status: 409 });
   }
 }
 
