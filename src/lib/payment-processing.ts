@@ -44,6 +44,31 @@ function base64Image(value: unknown) {
   return `data:image/png;base64,${value}`;
 }
 
+function cieloCardProvider() {
+  return "Cielo30" as const;
+}
+
+function cieloPixProvider() {
+  return "Cielo2" as const;
+}
+
+function sanitizeHolderName(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Za-z\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
+}
+
+function normalizeExpirationDate(value: string) {
+  const clean = value.replace(/\D/g, "");
+  const month = clean.slice(0, 2).padStart(2, "0");
+  const year = clean.length >= 4 ? clean.slice(2, 6) : clean.length === 2 ? `20${clean}` : "";
+  return `${month}/${year || "0000"}`;
+}
+
 async function createCieloPixCharge(order: Order, customer: { name: string; email: string }, settings: PaymentSettings) {
   const merchantId = process.env.CIELO_MERCHANT_ID?.trim();
   const merchantKey = process.env.CIELO_MERCHANT_KEY?.trim();
@@ -71,7 +96,11 @@ async function createCieloPixCharge(order: Order, customer: { name: string; emai
       },
       Payment: {
         Type: "Pix",
-        Amount: cents(Number(order.total))
+        Provider: cieloPixProvider(),
+        Amount: cents(Number(order.total)),
+        QrCode: {
+          Expiration: 86400
+        }
       }
     }),
     signal: AbortSignal.timeout(12_000)
@@ -97,7 +126,7 @@ async function createCieloPixCharge(order: Order, customer: { name: string; emai
       : typeof payment.QrCode === "string"
         ? payment.QrCode
         : undefined;
-  const pixQrCodeImage = base64Image(payment.QrCodeBase64Image);
+  const pixQrCodeImage = base64Image(payment.QrcodeBase64Image ?? payment.QrCodeBase64Image);
 
   return {
     method: "PIX" as const,
@@ -132,16 +161,15 @@ async function createCieloCardCharge(
   }
 
   const cleanCardNumber = card.cardNumber.replace(/\D/g, "");
-  const cleanExp = card.expirationDate.replace(/\D/g, "");
-  const expMonth = cleanExp.slice(0, 2);
-  const expYear = cleanExp.length >= 4 ? cleanExp.slice(2, 6) : `20${cleanExp.slice(2, 4)}`;
-  const formattedExpiration = `${expMonth}/${expYear}`;
+  const formattedExpiration = normalizeExpirationDate(card.expirationDate);
   const isDebit = card.cardType === "DebitCard";
   const siteUrl = getPublicSiteUrl();
   const returnUrl = `${siteUrl}/api/checkout/callback`;
+  const holder = sanitizeHolderName(card.holder);
 
   const paymentPayload: Record<string, unknown> = {
     Type: isDebit ? "DebitCard" : "CreditCard",
+    Provider: cieloCardProvider(),
     Amount: cents(Number(order.total)),
     SoftDescriptor: "ZION AROMAS",
     ...(isDebit
@@ -150,7 +178,7 @@ async function createCieloCardCharge(
           Authenticate: true,
           DebitCard: {
             CardNumber: cleanCardNumber,
-            Holder: card.holder.trim().toUpperCase(),
+            Holder: holder,
             ExpirationDate: formattedExpiration,
             SecurityCode: card.securityCode.trim(),
             Brand: card.brand || "Visa"
@@ -161,7 +189,7 @@ async function createCieloCardCharge(
           Capture: true,
           CreditCard: {
             CardNumber: cleanCardNumber,
-            Holder: card.holder.trim().toUpperCase(),
+            Holder: holder,
             ExpirationDate: formattedExpiration,
             SecurityCode: card.securityCode.trim(),
             Brand: card.brand || "Visa"
