@@ -44,6 +44,15 @@ const paymentIcons: Record<PaymentMethod, LucideIcon> = {
   CARTAO: CreditCard
 };
 
+const defaultPickupOption: ShippingOption = {
+  id: 900,
+  name: "Retirada na Loja (Grátis)",
+  company: "ZION AROMAS",
+  price: 0,
+  deliveryTime: 0,
+  source: "pickup"
+};
+
 export default function CheckoutPage() {
   const { items, subtotal, clear } = useCart();
   const [name, setName] = useState("");
@@ -55,8 +64,8 @@ export default function CheckoutPage() {
   const [number, setNumber] = useState("");
   const [complement, setComplement] = useState("");
   const [coupon, setCoupon] = useState("");
-  const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
-  const [selectedShippingId, setSelectedShippingId] = useState<number | null>(null);
+  const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([defaultPickupOption]);
+  const [selectedShippingId, setSelectedShippingId] = useState<number | null>(900);
   const [shippingLoading, setShippingLoading] = useState(false);
   const [shippingMessage, setShippingMessage] = useState("");
   const [paymentSettings, setPaymentSettings] = useState<CheckoutPaymentSettings | null>(null);
@@ -88,7 +97,7 @@ export default function CheckoutPage() {
         if (mounted) {
           setPaymentSettings({
             providerName: "ZION AROMAS",
-            methods: [{ id: "PIX", label: "PIX", description: "Pagamento seguro via PIX." }]
+            methods: [{ id: "PIX", label: "PIX (10% OFF)", description: "Pagamento seguro via PIX com 10% de desconto." }]
           });
         }
       }
@@ -114,14 +123,17 @@ export default function CheckoutPage() {
         })
       });
       const data = await response.json();
-      const options = (data.options || []) as ShippingOption[];
+      const rawOptions = (data.options || []) as ShippingOption[];
+      const hasPickup = rawOptions.some((opt) => opt.id === 900);
+      const options = hasPickup ? rawOptions : [defaultPickupOption, ...rawOptions];
+
       setShippingOptions(options);
-      setSelectedShippingId(options[0]?.id ?? null);
+      setSelectedShippingId((prev) => (prev !== null && options.some((opt) => opt.id === prev) ? prev : options[0]?.id ?? 900));
       setShippingMessage(data.warning || (response.ok ? "" : "Usando frete de contingência."));
     } catch {
-      setShippingMessage("Não foi possível consultar o frete agora.");
-      setShippingOptions([]);
-      setSelectedShippingId(null);
+      setShippingMessage("Não foi possível consultar o frete dos Correios agora.");
+      setShippingOptions([defaultPickupOption]);
+      setSelectedShippingId(900);
     } finally {
       setShippingLoading(false);
     }
@@ -130,8 +142,6 @@ export default function CheckoutPage() {
   async function lookupCep(value: string) {
     const clean = value.replace(/\D/g, "");
     setCep(value);
-    setShippingOptions([]);
-    setSelectedShippingId(null);
 
     if (clean.length === 8) {
       try {
@@ -157,8 +167,14 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (!name || !email || cep.replace(/\D/g, "").length !== 8 || !address || !number) {
-      setCheckoutMessage("Preencha seus dados e confirme o endereço de entrega.");
+    const isPickup = selectedShippingId === 900;
+    if (!name || !email) {
+      setCheckoutMessage("Preencha seu nome e e-mail.");
+      return;
+    }
+
+    if (!isPickup && (cep.replace(/\D/g, "").length !== 8 || !address || !number)) {
+      setCheckoutMessage("Preencha seus dados de endereço para entrega.");
       return;
     }
 
@@ -171,9 +187,9 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           customer: { name, email, phone, document },
           address: {
-            postalCode: cep,
-            street: address,
-            number,
+            postalCode: cep.replace(/\D/g, "").length === 8 ? cep : "11700-007",
+            street: isPickup ? (address || "Retirada na Loja ZION AROMAS") : address,
+            number: isPickup ? (number || "S/N") : number,
             complement
           },
           items: items.map((item) => ({ productId: item.slug, quantity: item.quantity })),

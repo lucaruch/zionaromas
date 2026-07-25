@@ -22,8 +22,8 @@ export const defaultShippingSettings: ShippingSettings = {
   defaultWidthCm: 12,
   defaultHeightCm: 18,
   defaultLengthCm: 12,
-  pickupEnabled: false,
-  pickupLabel: "Retirada na loja",
+  pickupEnabled: true,
+  pickupLabel: "Retirada na Loja (Grátis)",
   freeShippingEnabled: false,
   freeShippingThreshold: 0
 };
@@ -52,7 +52,7 @@ export function normalizeShippingSettings(value: unknown): ShippingSettings {
     defaultWidthCm: asPositiveNumber(payload.defaultWidthCm, defaultShippingSettings.defaultWidthCm),
     defaultHeightCm: asPositiveNumber(payload.defaultHeightCm, defaultShippingSettings.defaultHeightCm),
     defaultLengthCm: asPositiveNumber(payload.defaultLengthCm, defaultShippingSettings.defaultLengthCm),
-    pickupEnabled: Boolean(payload.pickupEnabled),
+    pickupEnabled: payload.pickupEnabled !== undefined ? Boolean(payload.pickupEnabled) : true,
     pickupLabel: String(payload.pickupLabel || defaultShippingSettings.pickupLabel).slice(0, 80),
     freeShippingEnabled: Boolean(payload.freeShippingEnabled),
     freeShippingThreshold: Math.max(0, asPositiveNumber(payload.freeShippingThreshold, 0))

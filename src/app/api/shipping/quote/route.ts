@@ -65,16 +65,14 @@ function fallbackCorreiosQuote() {
 function extraShippingOptions(settings: ShippingSettings, subtotal: number) {
   const options = [];
 
-  if (settings.pickupEnabled) {
-    options.push({
-      id: 900,
-      name: settings.pickupLabel,
-      company: "ZION AROMAS",
-      price: 0,
-      deliveryTime: 0,
-      source: "pickup"
-    });
-  }
+  options.push({
+    id: 900,
+    name: settings.pickupLabel || "Retirada na Loja (Grátis)",
+    company: "ZION AROMAS",
+    price: 0,
+    deliveryTime: 0,
+    source: "pickup"
+  });
 
   if (settings.freeShippingEnabled && subtotal >= settings.freeShippingThreshold) {
     options.push({
