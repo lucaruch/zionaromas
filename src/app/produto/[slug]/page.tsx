@@ -57,7 +57,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             <Badge className="border-gold/40 bg-gold/10 text-gold">{product.category}</Badge>
             <h1 className="mt-5 break-words font-display text-4xl leading-tight sm:text-5xl md:text-6xl">{product.name}</h1>
             <p className="mt-4 flex flex-wrap items-center gap-2 text-sm text-white/55">
-              <Star className="h-4 w-4 fill-gold text-gold" /> {product.rating} · {product.reviews} avaliações · SKU {product.sku}
+              <Star className="h-4 w-4 fill-gold text-gold" /> {product.rating} · {product.reviews} avaliações
             </p>
             <p className="mt-6 text-base leading-8 text-white/65 sm:text-lg">{product.shortDescription}</p>
             <div className="mt-7 flex flex-wrap items-end gap-4">
