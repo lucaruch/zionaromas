@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { getPaymentSettings } from "@/lib/payment-store";
-import { syncCieloPaymentStatus } from "@/lib/payment-processing";
+import { syncOrderPaymentFromCielo } from "@/lib/payment-processing";
 import { prisma } from "@/lib/prisma";
 import { isRateLimited } from "@/lib/security";
 
 export async function GET(request: Request) {
-  if (isRateLimited(request, "checkout-status", 60, 60_000)) {
+  if (isRateLimited(request, "checkout-status", 90, 60_000)) {
     return NextResponse.json({ error: "Muitas tentativas. Aguarde um instante." }, { status: 429 });
   }
 
@@ -35,16 +35,19 @@ export async function GET(request: Request) {
   let paymentStatus = order.paymentStatus;
   let status = order.status;
 
-  if (paymentStatus !== "aprovado" && order.paymentReference) {
+  if (paymentStatus !== "aprovado") {
     try {
       const settings = await getPaymentSettings();
-      const synced = await syncCieloPaymentStatus(order.paymentReference, settings);
+      const synced = await syncOrderPaymentFromCielo(
+        { code: order.code, paymentReference: order.paymentReference },
+        settings
+      );
       if (synced.approved) {
         paymentStatus = "aprovado";
         status = "PAGO";
       }
-    } catch {
-      // Mantém o status atual se a consulta/sincronização falhar.
+    } catch (error) {
+      console.error(`[checkout-status] Falha ao sincronizar ${order.code}:`, error);
     }
   }
 

@@ -164,7 +164,7 @@ export default function CheckoutPage() {
       }
 
       if (!cancelled) {
-        timer = setTimeout(checkStatus, 4000);
+        timer = setTimeout(checkStatus, 2500);
       }
     }
 

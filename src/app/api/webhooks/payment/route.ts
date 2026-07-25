@@ -1,9 +1,9 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { confirmOrderPayment } from "@/lib/order-workflow";
+import { confirmOrderPayment, findOrderForPayment, normalizeOrderCode } from "@/lib/order-workflow";
 import { getPaymentSettings } from "@/lib/payment-store";
-import { syncCieloPaymentStatus } from "@/lib/payment-processing";
+import { syncCieloPaymentStatus, syncOrderPaymentFromCielo } from "@/lib/payment-processing";
 import { prisma } from "@/lib/prisma";
 import { isRateLimited, parseJson } from "@/lib/security";
 
@@ -93,7 +93,7 @@ function normalizePaymentSignal(payload: Record<string, unknown>) {
   ]).toLowerCase();
 }
 
-function normalizeOrderCode(payload: Record<string, unknown>) {
+function normalizeOrderCodeRaw(payload: Record<string, unknown>) {
   return stringValue(payload, [
     "orderCode",
     "order_code",
@@ -140,7 +140,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Payload inválido." }, { status: 400 });
   }
 
-  const orderCode = normalizeOrderCode(parsed.data);
+  const orderCode = normalizeOrderCode(normalizeOrderCodeRaw(parsed.data));
   const paymentReference = normalizePaymentReference(parsed.data);
   const signal = normalizePaymentSignal(parsed.data);
 
@@ -162,7 +162,9 @@ export async function POST(request: Request) {
   }
 
   if (fromCielo && !authenticated) {
-    if (!paymentReference || !(await hasKnownPaymentReference(paymentReference))) {
+    const knownReference = paymentReference ? await hasKnownPaymentReference(paymentReference) : false;
+    const knownOrder = orderCode ? Boolean(await findOrderForPayment({ code: orderCode })) : false;
+    if (!knownReference && !knownOrder) {
       return NextResponse.json({ error: "Referência de pagamento não reconhecida." }, { status: 401 });
     }
   }
@@ -170,18 +172,37 @@ export async function POST(request: Request) {
   const changeType = stringValue(parsed.data, ["ChangeType", "changeType", "change_type"]);
   const shouldQueryCielo =
     fromCielo &&
-    Boolean(paymentReference) &&
+    (Boolean(paymentReference) || Boolean(orderCode)) &&
     (!approvedSignals.has(signal) || cieloStatusChangeTypes.has(changeType));
 
-  if (shouldQueryCielo && paymentReference) {
+  if (shouldQueryCielo) {
     try {
       const settings = await getPaymentSettings();
-      const synced = await syncCieloPaymentStatus(paymentReference, settings);
-      if (synced.approved) {
-        return NextResponse.json({ ok: true, synced: true });
+
+      if (paymentReference) {
+        const synced = await syncCieloPaymentStatus(paymentReference, settings);
+        if (synced.approved) {
+          return NextResponse.json({ ok: true, synced: true });
+        }
       }
-      return NextResponse.json({ ok: true, ignored: !synced.synced, status: synced.status ?? null });
-    } catch {
+
+      if (orderCode) {
+        const order = await findOrderForPayment({ code: orderCode, paymentReference });
+        if (order) {
+          const synced = await syncOrderPaymentFromCielo(
+            { code: order.code, paymentReference: order.paymentReference },
+            settings
+          );
+          if (synced.approved) {
+            return NextResponse.json({ ok: true, synced: true });
+          }
+          return NextResponse.json({ ok: true, ignored: !synced.synced, status: synced.status ?? null });
+        }
+      }
+
+      return NextResponse.json({ ok: true, ignored: true });
+    } catch (error) {
+      console.error("[payment-webhook] Falha ao sincronizar Cielo:", error);
       return NextResponse.json({ error: "Pedido não localizado ou sem estoque disponível." }, { status: 409 });
     }
   }
@@ -192,11 +213,13 @@ export async function POST(request: Request) {
 
   try {
     await confirmOrderPayment(
-      authenticated ? { code: orderCode, paymentReference } : { paymentReference },
-      "aprovado"
+      authenticated ? { code: orderCode, paymentReference } : { code: orderCode, paymentReference },
+      "aprovado",
+      { paymentReference: paymentReference || undefined }
     );
     return NextResponse.json({ ok: true });
-  } catch {
+  } catch (error) {
+    console.error("[payment-webhook] Falha ao confirmar pedido:", error);
     return NextResponse.json({ error: "Pedido não localizado ou sem estoque disponível." }, { status: 409 });
   }
 }

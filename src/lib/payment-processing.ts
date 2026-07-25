@@ -2,7 +2,7 @@ import type { Order, PaymentMethod } from "@prisma/client";
 import { createPixPayload, createQrCodeImage } from "@/lib/pix";
 import { getPaymentSettings } from "@/lib/payment-store";
 import { providerLabels, type PaymentSettings } from "@/lib/payments";
-import { confirmOrderPayment, confirmOrderPaymentByCode } from "@/lib/order-workflow";
+import { confirmOrderPayment, confirmOrderPaymentByCode, normalizeOrderCode } from "@/lib/order-workflow";
 import { getPublicSiteUrl } from "@/lib/site-url";
 
 export type CardDetails = {
@@ -47,21 +47,31 @@ function cieloQueryUrl(settings: PaymentSettings) {
 
 const cieloApprovedStatuses = new Set([1, 2]);
 
+function cieloCredentials() {
+  const merchantId = process.env.CIELO_MERCHANT_ID?.trim();
+  const merchantKey = process.env.CIELO_MERCHANT_KEY?.trim();
+  if (!merchantId || !merchantKey) return null;
+  return { merchantId, merchantKey };
+}
+
 export function isCieloPaymentApproved(status: unknown) {
   return cieloApprovedStatuses.has(Number(status));
 }
 
+function looksLikeCieloPaymentId(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value.trim());
+}
+
 export async function fetchCieloPaymentById(paymentId: string, settings: PaymentSettings) {
-  const merchantId = process.env.CIELO_MERCHANT_ID?.trim();
-  const merchantKey = process.env.CIELO_MERCHANT_KEY?.trim();
-  if (!merchantId || !merchantKey || !paymentId.trim()) return null;
+  const credentials = cieloCredentials();
+  if (!credentials || !paymentId.trim()) return null;
 
   const response = await fetch(`${cieloQueryUrl(settings)}/1/sales/${encodeURIComponent(paymentId.trim())}`, {
     method: "GET",
     headers: {
       Accept: "application/json",
-      MerchantId: merchantId,
-      MerchantKey: merchantKey
+      MerchantId: credentials.merchantId,
+      MerchantKey: credentials.merchantKey
     },
     signal: AbortSignal.timeout(12_000)
   });
@@ -75,24 +85,159 @@ export async function fetchCieloPaymentById(paymentId: string, settings: Payment
   return data as { Payment?: Record<string, unknown>; MerchantOrderId?: string };
 }
 
+export async function fetchCieloSalesByMerchantOrderId(merchantOrderId: string, settings: PaymentSettings) {
+  const credentials = cieloCredentials();
+  const cleanId = merchantOrderId.replace(/[^A-Za-z0-9]/g, "").trim().toUpperCase();
+  if (!credentials || !cleanId) return [];
+
+  const response = await fetch(
+    `${cieloQueryUrl(settings)}/1/sales?merchantOrderId=${encodeURIComponent(cleanId)}`,
+    {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        MerchantId: credentials.merchantId,
+        MerchantKey: credentials.merchantKey
+      },
+      signal: AbortSignal.timeout(12_000)
+    }
+  );
+
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    console.error(`[Cielo Query MerchantOrder] Falha ${response.status} | Body: ${JSON.stringify(data)}`);
+    return [];
+  }
+
+  type CieloSaleRow = {
+    PaymentId?: string;
+    MerchantOrderId: string;
+    Payment?: Record<string, unknown>;
+  };
+
+  const rows: unknown[] = Array.isArray(data)
+    ? data
+    : data && typeof data === "object" && Array.isArray((data as { Payments?: unknown }).Payments)
+      ? (data as { Payments: unknown[] }).Payments
+      : data && typeof data === "object" && (data as { Payment?: unknown }).Payment
+        ? [data]
+        : [];
+
+  const parsedRows: CieloSaleRow[] = [];
+
+  for (const row of rows) {
+    if (!row || typeof row !== "object") continue;
+    const item = row as Record<string, unknown>;
+    const nestedPayment =
+      item.Payment && typeof item.Payment === "object"
+        ? (item.Payment as Record<string, unknown>)
+        : undefined;
+    const paymentId =
+      (typeof nestedPayment?.PaymentId === "string" && nestedPayment.PaymentId) ||
+      (typeof item.PaymentId === "string" && item.PaymentId) ||
+      undefined;
+    const merchantOrder =
+      (typeof item.MerchantOrderId === "string" && item.MerchantOrderId) ||
+      (typeof nestedPayment?.MerchantOrderId === "string" && nestedPayment.MerchantOrderId) ||
+      cleanId;
+
+    parsedRows.push({
+      PaymentId: paymentId,
+      MerchantOrderId: merchantOrder,
+      Payment: nestedPayment || (paymentId || item.Status !== undefined ? item : undefined)
+    });
+  }
+
+  return parsedRows;
+}
+
+async function confirmApprovedCieloSale(
+  sale: {
+    Payment?: Record<string, unknown>;
+    MerchantOrderId?: string;
+    PaymentId?: string;
+  },
+  fallbackCode?: string
+) {
+  const payment = sale.Payment || {};
+  const statusNumber = Number(payment.Status);
+  if (!isCieloPaymentApproved(statusNumber)) {
+    return { synced: true as const, approved: false as const, status: statusNumber };
+  }
+
+  const paymentId =
+    (typeof payment.PaymentId === "string" && payment.PaymentId) ||
+    (typeof sale.PaymentId === "string" && sale.PaymentId) ||
+    undefined;
+  const merchantOrderId =
+    typeof sale.MerchantOrderId === "string"
+      ? sale.MerchantOrderId
+      : typeof payment.MerchantOrderId === "string"
+        ? payment.MerchantOrderId
+        : undefined;
+  const orderCode = normalizeOrderCode(merchantOrderId || fallbackCode || "");
+
+  await confirmOrderPayment(
+    { code: orderCode || undefined, paymentReference: paymentId },
+    "aprovado",
+    { paymentReference: paymentId }
+  );
+
+  return {
+    synced: true as const,
+    approved: true as const,
+    status: statusNumber,
+    merchantOrderId,
+    paymentId
+  };
+}
+
 export async function syncCieloPaymentStatus(paymentId: string, settings?: PaymentSettings) {
   const paymentSettings = settings || (await getPaymentSettings());
   const sale = await fetchCieloPaymentById(paymentId, paymentSettings);
-  if (!sale) return { synced: false as const, approved: false as const };
+  if (!sale) return { synced: false as const, approved: false as const, status: undefined as number | undefined };
+  return confirmApprovedCieloSale({ ...sale, PaymentId: paymentId });
+}
 
-  const payment = sale.Payment || {};
-  const statusNumber = Number(payment.Status);
-  const approved = isCieloPaymentApproved(statusNumber);
+export async function syncOrderPaymentFromCielo(
+  order: { code: string; paymentReference?: string | null },
+  settings?: PaymentSettings
+) {
+  const paymentSettings = settings || (await getPaymentSettings());
 
-  if (approved) {
-    await confirmOrderPayment({ paymentReference: paymentId }, "aprovado");
+  if (order.paymentReference && looksLikeCieloPaymentId(order.paymentReference)) {
+    const byPaymentId = await syncCieloPaymentStatus(order.paymentReference, paymentSettings);
+    if (byPaymentId.approved) return byPaymentId;
+  }
+
+  const sales = await fetchCieloSalesByMerchantOrderId(order.code, paymentSettings);
+  if (!sales.length) {
+    return { synced: false as const, approved: false as const, status: undefined as number | undefined };
+  }
+
+  let lastStatus: number | undefined;
+
+  for (const sale of sales) {
+    const paymentId =
+      sale.PaymentId || (typeof sale.Payment?.PaymentId === "string" ? sale.Payment.PaymentId : undefined);
+
+    // A consulta por MerchantOrderId costuma devolver só o PaymentId — busca o status completo.
+    if (paymentId) {
+      const detailed = await syncCieloPaymentStatus(paymentId, paymentSettings);
+      if (detailed.approved) return detailed;
+      if (typeof detailed.status === "number" && !Number.isNaN(detailed.status)) lastStatus = detailed.status;
+      continue;
+    }
+
+    const result = await confirmApprovedCieloSale(sale, order.code);
+    if (result.approved) return result;
+    if (typeof result.status === "number" && !Number.isNaN(result.status)) lastStatus = result.status;
   }
 
   return {
     synced: true as const,
-    approved,
-    status: statusNumber,
-    merchantOrderId: typeof sale.MerchantOrderId === "string" ? sale.MerchantOrderId : undefined
+    approved: false as const,
+    status: lastStatus
   };
 }
 
@@ -380,14 +525,17 @@ export async function createPaymentInstruction({
   card?: CardDetails;
 }): Promise<PaymentInstruction> {
   if (order.paymentMethod === "PIX") {
-    const cieloPix = settings.activeProvider === "CIELO"
-      ? await createCieloPixCharge(order, customer, settings).catch(() => null)
-      : null;
-    if (cieloPix?.status === "ready") return cieloPix;
+    // Com Cielo ativa, não cair no PIX estático: ele não gera webhook/consulta e nunca aprova sozinho.
+    if (settings.activeProvider === "CIELO") {
+      const cieloPix = await createCieloPixCharge(order, customer, settings).catch((error) => {
+        console.error("[Cielo PIX] Falha ao gerar cobrança:", error);
+        return null;
+      });
+      if (cieloPix) return cieloPix;
+    }
 
     const staticPix = await createStaticPixCharge(order).catch(() => null);
     if (staticPix) return staticPix;
-    if (cieloPix) return cieloPix;
 
     return {
       method: "PIX",
