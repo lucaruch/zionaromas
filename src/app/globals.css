@@ -135,14 +135,15 @@ div[id*="Cardinal"] {
 
 #zion-3ds-challenge-hint {
   position: fixed;
-  inset: 0;
+  left: 0;
+  right: 0;
+  bottom: 1.25rem;
   z-index: 2147482000;
   display: flex;
-  align-items: flex-end;
   justify-content: center;
-  padding: 1.25rem;
+  padding: 0 1.25rem;
   pointer-events: none;
-  background: rgba(0, 0, 0, 0.35);
+  background: transparent;
 }
 
 #zion-3ds-challenge-hint > span {

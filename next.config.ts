@@ -2,22 +2,13 @@ import type { NextConfig } from "next";
 
 /** Domínios necessários para o desafio 3DS (Cardinal + Braspag MPI + ACS dos bancos). */
 const threeDsScriptSrc = [
+  "'unsafe-eval'", // Cardinal Songbird exige eval
   "https://*.cardinalcommerce.com",
   "https://*.cardinaltrusted.com",
   "https://static.client.cardinaltrusted.com",
   "https://cas.static.client.cardinaltrusted.com",
   "https://songbird.cardinalcommerce.com",
   "https://songbirdstag.cardinalcommerce.com"
-].join(" ");
-
-const threeDsConnectSrc = [
-  "https://mpi.braspag.com.br",
-  "https://mpisandbox.braspag.com.br",
-  "https://auth.braspag.com.br",
-  "https://authsandbox.braspag.com.br",
-  "https://*.cardinalcommerce.com",
-  "https://*.cardinaltrusted.com",
-  "https://*.braspag.com.br"
 ].join(" ");
 
 const securityHeaders = [
@@ -41,22 +32,21 @@ const securityHeaders = [
       // ACS dos emissores muda por banco — wildcard é o padrão recomendado para 3DS 2.x.
       "frame-src 'self' https: data: blob:",
       "child-src 'self' https: data: blob:",
-      "worker-src 'self' blob:",
+      "worker-src 'self' blob: https:",
       "img-src 'self' data: blob: https:",
-      "font-src 'self' data:",
-      "style-src 'self' 'unsafe-inline'",
-      process.env.NODE_ENV === "production"
-        ? `script-src 'self' 'unsafe-inline' ${threeDsScriptSrc}`
-        : `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${threeDsScriptSrc}`,
+      "font-src 'self' data: https:",
+      "style-src 'self' 'unsafe-inline' https:",
+      // script-src: Songbird + MPI. unsafe-eval é obrigatório para o Cardinal.
+      `script-src 'self' 'unsafe-inline' ${threeDsScriptSrc}`,
+      // connect-src amplo em https: — 3DS fala com dezenas de ACS/Cardinal/Braspag.
       [
-        "connect-src 'self'",
+        "connect-src 'self' https: wss:",
         "https://viacep.com.br",
         "https://sandbox.melhorenvio.com.br",
         "https://www.melhorenvio.com.br",
         "https://melhorenvio.com.br",
         "https://api.cieloecommerce.cielo.com.br",
-        "https://apisandbox.cieloecommerce.cielo.com.br",
-        threeDsConnectSrc
+        "https://apisandbox.cieloecommerce.cielo.com.br"
       ].join(" ")
     ].join("; ")
   },

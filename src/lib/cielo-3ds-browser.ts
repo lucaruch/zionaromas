@@ -35,12 +35,19 @@ type BpmpiWindow = Window & {
   __zionBpmpiEnv?: "PRD" | "SDB";
   __zionBpmpiReady?: boolean;
   __zionBpmpiScriptLoading?: Promise<void>;
+  Cardinal?: unknown;
 };
 
 const SCRIPT_SRC = "/js/BP.Mpi.3ds20.min.js";
 
+const READY_TIMEOUT_MS = 25_000;
+const AUTH_TIMEOUT_MS = 90_000;
+
 const CHALLENGE_HINT =
-  "Confirme a compra na janela do seu banco (3DS). Se nada aparecer, desative bloqueador de anúncios/pop-up e tente de novo.";
+  "Confirme a compra na janela do banco. Se não aparecer em alguns segundos, desative o bloqueador de anúncios e tente de novo.";
+
+const STUCK_MESSAGE =
+  "A janela do banco (3DS) não abriu a tempo. Desative bloqueador de anúncios, recarregue com Ctrl+F5 e tente novamente.";
 
 function getWin(): BpmpiWindow {
   return window as BpmpiWindow;
@@ -52,25 +59,49 @@ function ensureConfig(environment: "PRD" | "SDB") {
     win.__zionBpmpiHandlers = {};
   }
 
+  // Sempre atualiza o ambiente antes do primeiro load.
+  win.__zionBpmpiEnv = environment;
+
   // bpmpi_config é lido uma vez no carregamento do script — handlers mutáveis.
   if (!win.bpmpi_config) {
-    win.__zionBpmpiEnv = environment;
     win.bpmpi_config = () => {
       const handlers = win.__zionBpmpiHandlers || {};
       return {
         Environment: win.__zionBpmpiEnv || environment,
-        Debug: false,
+        Debug: true,
         onReady: () => {
           win.__zionBpmpiReady = true;
+          console.info("[ZION 3DS] MPI pronto (onReady)");
           handlers.onReady?.();
         },
-        onSuccess: (data: Cielo3dsAuthResult) => handlers.onSuccess?.(data),
-        onFailure: (data: Cielo3dsAuthResult) => handlers.onFailure?.(data),
-        onUnenrolled: (data: Cielo3dsAuthResult) => handlers.onUnenrolled?.(data),
-        onDisabled: (data?: Cielo3dsAuthResult) => handlers.onDisabled?.(data),
-        onError: (data: Cielo3dsAuthResult) => handlers.onError?.(data),
-        onUnsupportedBrand: (data: Cielo3dsAuthResult) => handlers.onUnsupportedBrand?.(data),
-        onChallengeSuppression: (data?: Cielo3dsAuthResult) => handlers.onChallengeSuppression?.(data)
+        onSuccess: (data: Cielo3dsAuthResult) => {
+          console.info("[ZION 3DS] onSuccess", data);
+          handlers.onSuccess?.(data);
+        },
+        onFailure: (data: Cielo3dsAuthResult) => {
+          console.warn("[ZION 3DS] onFailure", data);
+          handlers.onFailure?.(data);
+        },
+        onUnenrolled: (data: Cielo3dsAuthResult) => {
+          console.warn("[ZION 3DS] onUnenrolled", data);
+          handlers.onUnenrolled?.(data);
+        },
+        onDisabled: (data?: Cielo3dsAuthResult) => {
+          console.warn("[ZION 3DS] onDisabled", data);
+          handlers.onDisabled?.(data);
+        },
+        onError: (data: Cielo3dsAuthResult) => {
+          console.error("[ZION 3DS] onError", data);
+          handlers.onError?.(data);
+        },
+        onUnsupportedBrand: (data: Cielo3dsAuthResult) => {
+          console.error("[ZION 3DS] onUnsupportedBrand", data);
+          handlers.onUnsupportedBrand?.(data);
+        },
+        onChallengeSuppression: (data?: Cielo3dsAuthResult) => {
+          console.warn("[ZION 3DS] onChallengeSuppression", data);
+          handlers.onChallengeSuppression?.(data);
+        }
       };
     };
   }
@@ -81,7 +112,17 @@ function ensureContainer() {
   if (!root) {
     root = document.createElement("div");
     root.id = "zion-bpmpi-fields";
-    root.style.display = "none";
+    // Não usar display:none — alguns browsers/scripts ignoram inputs em nós display:none.
+    root.style.position = "absolute";
+    root.style.width = "1px";
+    root.style.height = "1px";
+    root.style.overflow = "hidden";
+    root.style.clip = "rect(0 0 0 0)";
+    root.style.clipPath = "inset(50%)";
+    root.style.whiteSpace = "nowrap";
+    root.style.border = "0";
+    root.style.padding = "0";
+    root.style.margin = "-1px";
     root.setAttribute("aria-hidden", "true");
     document.body.appendChild(root);
   }
@@ -154,8 +195,8 @@ export function populateBpmpiFields(payload: Cielo3dsFieldPayload) {
 
   setField(root, "bpmpi_auth", "true");
   setField(root, "bpmpi_auth_suppresschallenge", "false");
-  // 05 = tela cheia — reduz chance do desafio ficar escondido atrás do layout.
-  setField(root, "bpmpi_challenge_window_size", "05");
+  // 03 = 500x600 — tamanho comum de desafio ACS (05 fullscreen às vezes falha).
+  setField(root, "bpmpi_challenge_window_size", "03");
   setField(root, "bpmpi_accesstoken", payload.accessToken);
   setField(root, "bpmpi_ordernumber", payload.orderNumber.replace(/[^a-zA-Z0-9]/g, "").slice(0, 50));
   setField(root, "bpmpi_currency", "BRL");
@@ -208,9 +249,17 @@ async function loadBpmpiScript(environment: "PRD" | "SDB") {
   win.__zionBpmpiScriptLoading = new Promise<void>((resolve, reject) => {
     const existing = document.querySelector(`script[src="${SCRIPT_SRC}"]`);
     if (existing) {
+      const started = Date.now();
       const check = () => {
-        if (typeof win.bpmpi_authenticate === "function") resolve();
-        else setTimeout(check, 50);
+        if (typeof win.bpmpi_authenticate === "function") {
+          resolve();
+          return;
+        }
+        if (Date.now() - started > 10_000) {
+          reject(new Error("Script 3DS não inicializou."));
+          return;
+        }
+        setTimeout(check, 50);
       };
       check();
       return;
@@ -218,7 +267,7 @@ async function loadBpmpiScript(environment: "PRD" | "SDB") {
 
     const script = document.createElement("script");
     script.src = SCRIPT_SRC;
-    script.async = true;
+    script.async = false;
     script.onload = () => resolve();
     script.onerror = () => reject(new Error("Falha ao carregar o script 3DS."));
     document.body.appendChild(script);
@@ -227,26 +276,46 @@ async function loadBpmpiScript(environment: "PRD" | "SDB") {
   await win.__zionBpmpiScriptLoading;
 }
 
-function waitForReady(timeoutMs = 20_000) {
+function waitForReady(timeoutMs = READY_TIMEOUT_MS) {
   const win = getWin();
   if (win.__zionBpmpiReady) return Promise.resolve();
 
   return new Promise<void>((resolve, reject) => {
+    const handlers = win.__zionBpmpiHandlers || (win.__zionBpmpiHandlers = {});
+    const previousReady = handlers.onReady;
+    const previousError = handlers.onError;
+
     const timer = window.setTimeout(() => {
+      cleanup();
       reject(
         new Error(
-          "Tempo esgotado ao iniciar o 3DS. Verifique bloqueadores de anúncio e tente novamente."
+          "Tempo esgotado ao iniciar o 3DS (Cardinal). Desative bloqueador de anúncios, use Ctrl+F5 e tente de novo."
         )
       );
     }, timeoutMs);
 
-    const handlers = win.__zionBpmpiHandlers || (win.__zionBpmpiHandlers = {});
-    const previous = handlers.onReady;
-    handlers.onReady = () => {
+    function cleanup() {
       window.clearTimeout(timer);
-      handlers.onReady = previous;
-      previous?.();
+      handlers.onReady = previousReady;
+      handlers.onError = previousError;
+    }
+
+    handlers.onReady = () => {
+      cleanup();
+      previousReady?.();
       resolve();
+    };
+
+    handlers.onError = (data) => {
+      cleanup();
+      previousError?.(data);
+      reject(
+        new Error(
+          data?.ReturnMessage
+            ? `Falha ao iniciar 3DS: ${data.ReturnMessage}`
+            : "Falha ao iniciar o 3DS (Cardinal/Braspag)."
+        )
+      );
     };
   });
 }
@@ -275,9 +344,6 @@ function authResultToExternal(
   };
 }
 
-const CHALLENGE_FAILED_MESSAGE =
-  "A verificação do banco (3DS) não foi concluída. Se a janela do banco não abriu, desative bloqueador de anúncios/pop-up, recarregue a página e tente de novo.";
-
 export async function runCielo3dsAuthentication(
   environment: "PRD" | "SDB",
   fields: Cielo3dsFieldPayload
@@ -286,26 +352,37 @@ export async function runCielo3dsAuthentication(
   ensureConfig(environment);
   populateBpmpiFields(fields);
 
-  // Anexa onReady antes do script para evitar corrida com o bpmpi_load() automático.
+  // Handlers de ready/error ANTES do script (bpmpi_load roda no parse).
   const readyPromise = win.__zionBpmpiReady ? Promise.resolve() : waitForReady();
   await loadBpmpiScript(environment);
+
+  // Se o auto-load não disparou onReady (ex.: script já estava em cache sem token), tenta de novo.
+  if (!win.__zionBpmpiReady && typeof win.bpmpi_load === "function") {
+    try {
+      win.bpmpi_load();
+    } catch {
+      // ignore
+    }
+  }
+
   await readyPromise;
 
   if (typeof win.bpmpi_authenticate !== "function") {
     throw new Error("Script 3DS não disponível.");
   }
 
-  // Token é removido do DOM no load; repor campos atualizados antes de autenticar.
+  // Repor campos (cartão/valor) imediatamente antes do authenticate.
   populateBpmpiFields(fields);
 
   return new Promise<Cielo3dsExternalAuth>((resolve, reject) => {
     const handlers = win.__zionBpmpiHandlers || (win.__zionBpmpiHandlers = {});
     const timer = window.setTimeout(() => {
       cleanup();
-      reject(new Error(CHALLENGE_FAILED_MESSAGE));
-    }, 180_000);
+      reject(new Error(STUCK_MESSAGE));
+    }, AUTH_TIMEOUT_MS);
 
     showChallengeHint();
+    console.info("[ZION 3DS] Chamando bpmpi_authenticate()");
 
     const finishOk = (data: Cielo3dsAuthResult) => {
       const external = authResultToExternal(data, { requireSuccess: true });
@@ -314,23 +391,22 @@ export async function runCielo3dsAuthentication(
         resolve(external);
         return;
       }
-      reject(new Error(data.ReturnMessage || CHALLENGE_FAILED_MESSAGE));
+      reject(new Error(data.ReturnMessage || STUCK_MESSAGE));
     };
 
     const finishSoft = (data: Cielo3dsAuthResult) => {
-      // Sem desafio/falha: só segue se houver ECI de attempt/sucesso + CAVV quando disponível.
       const external = authResultToExternal(data, { requireSuccess: true });
       cleanup();
       if (external && (external.cavv || external.referenceId)) {
         resolve(external);
         return;
       }
-      reject(new Error(data.ReturnMessage || CHALLENGE_FAILED_MESSAGE));
+      reject(new Error(data.ReturnMessage || STUCK_MESSAGE));
     };
 
     const finishError = (data?: Cielo3dsAuthResult) => {
       cleanup();
-      reject(new Error(data?.ReturnMessage || CHALLENGE_FAILED_MESSAGE));
+      reject(new Error(data?.ReturnMessage || STUCK_MESSAGE));
     };
 
     function cleanup() {
@@ -353,19 +429,18 @@ export async function runCielo3dsAuthentication(
     handlers.onUnsupportedBrand = finishError;
     handlers.onChallengeSuppression = () => {
       cleanup();
-      reject(
-        new Error(
-          "O desafio 3DS do banco foi bloqueado. Desative bloqueadores e tente novamente."
-        )
-      );
+      reject(new Error("O desafio 3DS do banco foi bloqueado. Desative bloqueadores e tente novamente."));
     };
 
-    try {
-      win.bpmpi_authenticate!();
-    } catch (error) {
-      cleanup();
-      reject(error instanceof Error ? error : new Error("Falha ao iniciar autenticação 3DS."));
-    }
+    // Libera o event loop para o overlay/hint pintar antes do desafio.
+    window.setTimeout(() => {
+      try {
+        win.bpmpi_authenticate!();
+      } catch (error) {
+        cleanup();
+        reject(error instanceof Error ? error : new Error("Falha ao iniciar autenticação 3DS."));
+      }
+    }, 50);
   });
 }
 
