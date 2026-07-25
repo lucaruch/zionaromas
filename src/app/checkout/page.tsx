@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/components/commerce/cart-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { fetchCielo3dsToken, runCielo3dsAuthentication } from "@/lib/cielo-3ds-browser";
 import { type PaymentMethod } from "@/lib/payments";
 import { formatCurrency } from "@/lib/utils";
 
@@ -259,9 +260,67 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (isCardPayment && phone.replace(/\D/g, "").length < 10) {
+      setCheckoutMessage("Informe um telefone válido para a autenticação 3DS do cartão.");
+      return;
+    }
+
     setCheckoutLoading(true);
 
     try {
+      let externalAuthentication:
+        | {
+            cavv?: string;
+            xid?: string;
+            eci: string;
+            version?: string;
+            referenceId?: string;
+          }
+        | undefined;
+
+      if (isCardPayment) {
+        setCheckoutMessage(
+          "Autenticando cartão com o banco (3DS)... Se abrir uma janela, confirme a compra nela."
+        );
+        const expDigits = cardExpiration.replace(/\D/g, "");
+        const expirationMonth = expDigits.slice(0, 2);
+        let expirationYear = expDigits.slice(2);
+        if (expirationYear.length === 2) expirationYear = `20${expirationYear}`;
+
+        const { accessToken, environment } = await fetchCielo3dsToken();
+        externalAuthentication = await runCielo3dsAuthentication(environment, {
+          accessToken,
+          orderNumber: `ZA${Date.now().toString().slice(-8)}`,
+          amountCents: Math.round(total * 100),
+          installments: paymentMethod === "CARTAO_CREDITO" ? cardInstallments : 1,
+          paymentMethod: paymentMethod === "CARTAO_DEBITO" ? "Debit" : "Credit",
+          cardNumber,
+          expirationMonth,
+          expirationYear,
+          customerName: name,
+          customerEmail: email,
+          customerDocument: document,
+          phone,
+          street1: `${isPickup ? address || "Retirada ZION AROMAS" : address}, ${isPickup ? number || "S/N" : number}`.slice(
+            0,
+            60
+          ),
+          street2: (complement || "Centro").slice(0, 60),
+          city: "Praia Grande",
+          state: "SP",
+          zipcode: cep.replace(/\D/g, "").length === 8 ? cep : "11700007",
+          merchantUrl: typeof window !== "undefined" ? window.location.origin : "https://zionaromas.com",
+          items: items.map((item) => ({
+            name: item.name,
+            sku: item.slug,
+            quantity: item.quantity,
+            unitPriceCents: Math.round((item.salePrice ?? item.price) * 100)
+          }))
+        });
+      }
+
+      setCheckoutMessage("Processando pagamento...");
+
       const response = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -282,7 +341,8 @@ export default function CheckoutPage() {
                 expirationDate: cardExpiration,
                 securityCode: cardSecurityCode,
                 brand: cardBrand,
-                installments: paymentMethod === "CARTAO_CREDITO" ? cardInstallments : 1
+                installments: paymentMethod === "CARTAO_CREDITO" ? cardInstallments : 1,
+                externalAuthentication
               }
             : undefined,
           coupon,
@@ -332,8 +392,12 @@ export default function CheckoutPage() {
       if (payment?.redirectUrl) {
         window.location.href = payment.redirectUrl;
       }
-    } catch {
-      setCheckoutMessage("Não foi possível finalizar o pedido agora.");
+    } catch (error) {
+      setCheckoutMessage(
+        error instanceof Error && error.message
+          ? error.message
+          : "Não foi possível finalizar o pedido agora."
+      );
     } finally {
       setCheckoutLoading(false);
     }
@@ -475,11 +539,9 @@ export default function CheckoutPage() {
                       Débito exige autenticação do banco emissor.
                     </p>
                   )}
-                  {paymentMethod === "CARTAO_CREDITO" ? (
-                    <p className="md:col-span-2 text-xs leading-5 text-white/45">
-                      O banco pode pedir autenticação (app ou senha) antes de aprovar o pagamento.
-                    </p>
-                  ) : null}
+                  <p className="md:col-span-2 text-xs leading-5 text-white/45">
+                    O pagamento passa pela autenticação 3DS do banco. Use cartão com compras online liberadas e telefone válido.
+                  </p>
                 </div>
               ) : null}
             </div>

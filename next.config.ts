@@ -1,5 +1,25 @@
 import type { NextConfig } from "next";
 
+/** Domínios necessários para o desafio 3DS (Cardinal + Braspag MPI + ACS dos bancos). */
+const threeDsScriptSrc = [
+  "https://*.cardinalcommerce.com",
+  "https://*.cardinaltrusted.com",
+  "https://static.client.cardinaltrusted.com",
+  "https://cas.static.client.cardinaltrusted.com",
+  "https://songbird.cardinalcommerce.com",
+  "https://songbirdstag.cardinalcommerce.com"
+].join(" ");
+
+const threeDsConnectSrc = [
+  "https://mpi.braspag.com.br",
+  "https://mpisandbox.braspag.com.br",
+  "https://auth.braspag.com.br",
+  "https://authsandbox.braspag.com.br",
+  "https://*.cardinalcommerce.com",
+  "https://*.cardinaltrusted.com",
+  "https://*.braspag.com.br"
+].join(" ");
+
 const securityHeaders = [
   { key: "X-Frame-Options", value: "SAMEORIGIN" },
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -16,14 +36,28 @@ const securityHeaders = [
       "base-uri 'self'",
       "object-src 'none'",
       "frame-ancestors 'self'",
-      "form-action 'self'",
-      "img-src 'self' data: blob:",
+      // Formulários do desafio 3DS postam para o ACS do banco (domínio variável).
+      "form-action 'self' https:",
+      // ACS dos emissores muda por banco — wildcard é o padrão recomendado para 3DS 2.x.
+      "frame-src 'self' https: data: blob:",
+      "child-src 'self' https: data: blob:",
+      "worker-src 'self' blob:",
+      "img-src 'self' data: blob: https:",
       "font-src 'self' data:",
       "style-src 'self' 'unsafe-inline'",
       process.env.NODE_ENV === "production"
-        ? "script-src 'self' 'unsafe-inline'"
-        : "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-      "connect-src 'self' https://viacep.com.br https://sandbox.melhorenvio.com.br https://www.melhorenvio.com.br https://melhorenvio.com.br https://api.cieloecommerce.cielo.com.br https://apisandbox.cieloecommerce.cielo.com.br"
+        ? `script-src 'self' 'unsafe-inline' ${threeDsScriptSrc}`
+        : `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${threeDsScriptSrc}`,
+      [
+        "connect-src 'self'",
+        "https://viacep.com.br",
+        "https://sandbox.melhorenvio.com.br",
+        "https://www.melhorenvio.com.br",
+        "https://melhorenvio.com.br",
+        "https://api.cieloecommerce.cielo.com.br",
+        "https://apisandbox.cieloecommerce.cielo.com.br",
+        threeDsConnectSrc
+      ].join(" ")
     ].join("; ")
   },
   ...(process.env.NODE_ENV === "production"

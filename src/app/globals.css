@@ -108,3 +108,51 @@ textarea {
     transform: translateY(0);
   }
 }
+
+/* Cardinal / Braspag 3DS — janela do banco precisa ficar acima do checkout */
+#Cardinal-Modal,
+#Cardinal-Overlay,
+#Cardinal-CCA-IFrame,
+.Cardinal-Modal,
+.Cardinal-Overlay,
+iframe[id*="Cardinal"],
+iframe[name*="cardinal"],
+iframe[name*="Cardinal"],
+iframe[src*="cardinal"],
+div[id*="Cardinal"] {
+  z-index: 2147483000 !important;
+  pointer-events: auto !important;
+}
+
+#Cardinal-Modal,
+.Cardinal-Modal {
+  position: fixed !important;
+  inset: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+#zion-3ds-challenge-hint {
+  position: fixed;
+  inset: 0;
+  z-index: 2147482000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1.25rem;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+#zion-3ds-challenge-hint > span {
+  pointer-events: none;
+  max-width: 28rem;
+  border: 1px solid rgba(212, 175, 55, 0.45);
+  background: rgba(8, 8, 8, 0.94);
+  color: #f5f5f5;
+  padding: 0.9rem 1.1rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  text-align: center;
+}

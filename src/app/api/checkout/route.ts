@@ -40,7 +40,16 @@ const schema = z.object({
       expirationDate: z.string().trim().min(4).max(10),
       securityCode: z.string().trim().min(3).max(4),
       brand: z.string().trim().min(2).max(30).optional().default("Visa"),
-      installments: z.number().int().min(1).max(12).optional().default(1)
+      installments: z.number().int().min(1).max(12).optional().default(1),
+      externalAuthentication: z
+        .object({
+          cavv: z.string().trim().max(200).optional(),
+          xid: z.string().trim().max(200).optional(),
+          eci: z.string().trim().min(1).max(4),
+          version: z.string().trim().max(4).optional(),
+          referenceId: z.string().trim().max(64).optional()
+        })
+        .optional()
     })
     .optional(),
   coupon: z.string().trim().max(40).optional().or(z.literal("")),
@@ -186,7 +195,8 @@ export async function POST(request: Request) {
     expirationDate: parsed.data.card.expirationDate,
     securityCode: parsed.data.card.securityCode,
     brand: parsed.data.card.brand || "Visa",
-    installments: parsed.data.card.installments
+    installments: parsed.data.card.installments,
+    externalAuthentication: parsed.data.card.externalAuthentication
   } : undefined;
 
   const paymentInstruction = await createPaymentInstruction({

@@ -6,6 +6,14 @@ import { confirmOrderPayment, confirmOrderPaymentByCode, normalizeOrderCode } fr
 import { prisma } from "@/lib/prisma";
 import { getPublicSiteUrl } from "@/lib/site-url";
 
+export type CardExternalAuthentication = {
+  cavv?: string;
+  xid?: string;
+  eci: string;
+  version?: string;
+  referenceId?: string;
+};
+
 export type CardDetails = {
   cardType: "CreditCard" | "DebitCard";
   cardNumber: string;
@@ -14,6 +22,7 @@ export type CardDetails = {
   securityCode: string;
   brand: string;
   installments?: number;
+  externalAuthentication?: CardExternalAuthentication;
 };
 
 export type PaymentInstruction = {
@@ -429,6 +438,13 @@ function formatCieloCardError(data: unknown, httpStatus: number, environmentLabe
     );
   }
 
+  if (httpStatus === 403) {
+    return (
+      "Cielo bloqueou a cobrança autenticada (HTTP 403). " +
+      "Confira se o 3DS está ativo e se CIELO_ESTABLISHMENT_CODE / CIELO_3DS_* estão corretos."
+    );
+  }
+
   if (message) return `Cielo recusou o cartão: ${message}`;
   return `Cielo recusou o cartão (HTTP ${httpStatus}).`;
 }
@@ -679,14 +695,15 @@ async function createCieloCardCharge(
     Brand: brand
   };
 
-  const buildPaymentPayload = (sandbox: boolean): Record<string, unknown> =>
-    isDebit
+  const externalAuth = card.externalAuthentication;
+  const hasExternalAuth = Boolean(externalAuth?.eci);
+
+  const buildPaymentPayload = (sandbox: boolean, mode: "external" | "plain"): Record<string, unknown> => {
+    const baseCard = isDebit
       ? {
           Type: "DebitCard",
           Amount: amount,
           SoftDescriptor: softDescriptor(),
-          Authenticate: true,
-          ReturnUrl: returnUrl,
           Tip: false,
           DebitCard: cardNode,
           ...(sandbox ? { Provider: cieloCardProvider() } : {})
@@ -697,140 +714,186 @@ async function createCieloCardCharge(
           SoftDescriptor: softDescriptor(),
           Installments: installments,
           Capture: true,
-          // Sem autenticação a Cielo/emissor costuma negar com código AI.
-          Authenticate: true,
-          ReturnUrl: returnUrl,
           CreditCard: cardNode,
           ...(sandbox ? { Provider: cieloCardProvider() } : {})
         };
 
+    if (mode === "external" && externalAuth?.eci) {
+      const externalAuthentication: Record<string, unknown> = {
+        Eci: externalAuth.eci,
+        ...(externalAuth.cavv ? { Cavv: externalAuth.cavv } : {}),
+        ...(externalAuth.xid ? { Xid: externalAuth.xid } : {}),
+        ...(externalAuth.version ? { Version: externalAuth.version } : { Version: "2" }),
+        ...(externalAuth.referenceId ? { ReferenceID: externalAuth.referenceId } : {})
+      };
+
+      return {
+        ...baseCard,
+        Authenticate: true,
+        ReturnUrl: returnUrl,
+        ExternalAuthentication: externalAuthentication
+      };
+    }
+
+    // Authenticate:true sem ExternalAuthentication costuma retornar HTTP 403.
+    return {
+      ...baseCard,
+      Authenticate: false
+    };
+  };
+
   let lastError = "Não foi possível processar o cartão na Cielo.";
   let lastRaw: unknown;
+
+  // Com 3DS no browser: autoriza com ExternalAuthentication. Sem 3DS: cobrança plain.
+  const modes: Array<"external" | "plain"> = hasExternalAuth
+    ? ["external"]
+    : isDebit
+      ? ["plain"]
+      : ["plain"];
 
   for (const apiUrl of cieloApiUrls(settings)) {
     const sandbox = isSandboxApiUrl(apiUrl);
     const environmentLabel = sandbox ? "Homologação/Sandbox" : "Produção";
-    const paymentPayload = buildPaymentPayload(sandbox);
 
-    try {
-      console.log(
-        `[Cielo Card] POST ${apiUrl}/1/sales | ${isDebit ? "DebitCard" : "CreditCard"} | pedido ${merchantOrderId} | brand=${brand} | env=${environmentLabel} | merchantIdLen=${credentials.merchantId.length}`
-      );
+    for (const mode of modes) {
+      const paymentPayload = buildPaymentPayload(sandbox, mode);
 
-      const response = await fetch(`${apiUrl}/1/sales`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          MerchantId: credentials.merchantId,
-          MerchantKey: credentials.merchantKey
-        },
-        body: JSON.stringify({
-          MerchantOrderId: merchantOrderId,
-          Customer: customerPayload,
-          Payment: paymentPayload
-        }),
-        signal: AbortSignal.timeout(20_000)
-      });
+      try {
+        console.log(
+          `[Cielo Card] POST ${apiUrl}/1/sales | ${isDebit ? "DebitCard" : "CreditCard"} | pedido ${merchantOrderId} | brand=${brand} | env=${environmentLabel} | mode=${mode}`
+        );
 
-      const data = await response.json().catch(() => ({}));
-      lastRaw = data;
-      console.log(`[Cielo Card] HTTP ${response.status} | Body: ${JSON.stringify(data)}`);
+        const response = await fetch(`${apiUrl}/1/sales`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            MerchantId: credentials.merchantId,
+            MerchantKey: credentials.merchantKey
+          },
+          body: JSON.stringify({
+            MerchantOrderId: merchantOrderId,
+            Customer: customerPayload,
+            Payment: paymentPayload
+          }),
+          signal: AbortSignal.timeout(20_000)
+        });
 
-      if (!response.ok) {
-        lastError = formatCieloCardError(data, response.status, environmentLabel);
-        const code = extractCieloErrorCode(data);
-        // Credenciais de produção no sandbox (ou o inverso) → tenta o outro ambiente.
-        if (
-          response.status === 401 ||
-          code === "129" ||
-          /affiliation not found/i.test(lastError) ||
-          /unauthorized/i.test(extractCieloErrorMessage(data))
-        ) {
-          continue;
-        }
-        // Outros erros de negócio não se resolvem mudando de ambiente.
-        break;
-      }
+        const data = await response.json().catch(() => ({}));
+        lastRaw = data;
+        console.log(`[Cielo Card] HTTP ${response.status} | Body: ${JSON.stringify(data)}`);
 
-      const payment =
-        data && typeof data === "object" && !Array.isArray(data)
-          ? ((data as { Payment?: Record<string, unknown> }).Payment || {})
-          : {};
-      const statusNumber = Number(payment.Status);
-      const returnMessage =
-        (typeof payment.ReturnMessage === "string" && payment.ReturnMessage) ||
-        extractCieloErrorMessage(data) ||
-        "Transação não autorizada";
-      const authenticationUrl =
-        typeof payment.AuthenticationUrl === "string" ? payment.AuthenticationUrl : undefined;
-      const paymentId =
-        (typeof payment.PaymentId === "string" && payment.PaymentId) ||
-        (typeof payment.Paymentid === "string" && payment.Paymentid) ||
-        undefined;
+        if (!response.ok) {
+          lastError = formatCieloCardError(data, response.status, environmentLabel);
+          const code = extractCieloErrorCode(data);
 
-      // Status 1 = Authorized, 2 = Payment Confirmed (Captured)
-      if (statusNumber === 2 || statusNumber === 1) {
-        try {
-          await confirmOrderPaymentByCode(order.code, "aprovado");
-          if (paymentId) {
-            await prisma.order.update({
-              where: { code: order.code },
-              data: { paymentReference: paymentId }
-            });
+          if (
+            response.status === 401 ||
+            code === "129" ||
+            /affiliation not found/i.test(lastError) ||
+            /unauthorized/i.test(extractCieloErrorMessage(data))
+          ) {
+            break; // troca de ambiente
           }
-          return {
-            method: "CARTAO" as const,
-            provider: providerLabels.CIELO,
-            status: "ready" as const,
-            message: "Pagamento com cartão APROVADO com sucesso!",
-            reference: paymentId,
-            raw: data
-          };
-        } catch (error) {
-          console.error(`[Cielo Card] Pagamento autorizado, mas pedido não confirmado:`, error);
+
+          // Erro de negócio: não adianta mudar auth/ambiente
           return {
             method: "CARTAO" as const,
             provider: providerLabels.CIELO,
             status: "manual" as const,
-            message: "Pagamento autorizado na Cielo. Nossa equipe confirmará o pedido em instantes.",
+            message: lastError,
+            raw: lastRaw
+          };
+        }
+
+        const payment =
+          data && typeof data === "object" && !Array.isArray(data)
+            ? ((data as { Payment?: Record<string, unknown> }).Payment || {})
+            : {};
+        const statusNumber = Number(payment.Status);
+        const returnMessage =
+          (typeof payment.ReturnMessage === "string" && payment.ReturnMessage) ||
+          extractCieloErrorMessage(data) ||
+          "Transação não autorizada";
+        const authenticationUrl =
+          typeof payment.AuthenticationUrl === "string" ? payment.AuthenticationUrl : undefined;
+        const paymentId =
+          (typeof payment.PaymentId === "string" && payment.PaymentId) ||
+          (typeof payment.Paymentid === "string" && payment.Paymentid) ||
+          undefined;
+
+        // Status 1 = Authorized, 2 = Payment Confirmed (Captured)
+        if (statusNumber === 2 || statusNumber === 1) {
+          try {
+            await confirmOrderPaymentByCode(order.code, "aprovado");
+            if (paymentId) {
+              await prisma.order.update({
+                where: { code: order.code },
+                data: { paymentReference: paymentId }
+              });
+            }
+            return {
+              method: "CARTAO" as const,
+              provider: providerLabels.CIELO,
+              status: "ready" as const,
+              message: "Pagamento com cartão APROVADO com sucesso!",
+              reference: paymentId,
+              raw: data
+            };
+          } catch (error) {
+            console.error(`[Cielo Card] Pagamento autorizado, mas pedido não confirmado:`, error);
+            return {
+              method: "CARTAO" as const,
+              provider: providerLabels.CIELO,
+              status: "manual" as const,
+              message: "Pagamento autorizado na Cielo. Nossa equipe confirmará o pedido em instantes.",
+              reference: paymentId,
+              raw: data
+            };
+          }
+        }
+
+        // Redirecionamento de autenticação (quando a Cielo devolver URL)
+        if (statusNumber === 12 || authenticationUrl) {
+          return {
+            method: "CARTAO" as const,
+            provider: providerLabels.CIELO,
+            status: "pending" as const,
+            message: "Aguardando autenticação do seu banco. Você será redirecionado.",
             reference: paymentId,
+            redirectUrl: authenticationUrl || returnUrl,
             raw: data
           };
         }
-      }
 
-      // 3DS / autenticação do banco (débito ou crédito autenticado)
-      if (statusNumber === 12 || authenticationUrl) {
+        const returnCode = String(payment.ReturnCode ?? "").toUpperCase();
+        if (returnCode === "AI") {
+          lastError =
+            "Cartão não autorizado: a autenticação do banco não foi concluída. " +
+            "Tente novamente e finalize a verificação na janela/app do seu banco (3DS). " +
+            "Se a janela não abrir, desative bloqueador de anúncios e recarregue a página.";
+        } else if (returnCode === "AH") {
+          lastError =
+            "Este cartão é de crédito. Selecione a opção Cartão de Crédito no checkout e tente novamente.";
+        } else {
+          lastError = `Cartão não autorizado pela Cielo: ${returnMessage}${
+            payment.ReturnCode != null ? ` (código ${payment.ReturnCode})` : ""
+          }`;
+        }
+
         return {
           method: "CARTAO" as const,
           provider: providerLabels.CIELO,
-          status: "pending" as const,
-          message: "Aguardando autenticação do seu banco. Você será redirecionado.",
+          status: "manual" as const,
+          message: lastError,
           reference: paymentId,
-          redirectUrl: authenticationUrl || returnUrl,
           raw: data
         };
+      } catch (error) {
+        console.error(`[Cielo Card] Falha em ${apiUrl}:`, error);
+        lastError = "Falha de conexão com a Cielo ao processar o cartão.";
       }
-
-      lastError = `Cartão não autorizado pela Cielo: ${returnMessage}${
-        payment.ReturnCode != null ? ` (código ${payment.ReturnCode})` : ""
-      }`;
-
-      const returnCode = String(payment.ReturnCode ?? "").toUpperCase();
-      if (returnCode === "AI") {
-        lastError =
-          "Cartão não autorizado: a autenticação do banco não foi concluída. " +
-          "Tente novamente e finalize a verificação no app/site do seu banco (3DS).";
-      } else if (returnCode === "AH") {
-        lastError =
-          "Este cartão é de crédito. Selecione a opção Cartão de Crédito no checkout e tente novamente.";
-      }
-
-      break;
-    } catch (error) {
-      console.error(`[Cielo Card] Falha em ${apiUrl}:`, error);
-      lastError = "Falha de conexão com a Cielo ao processar o cartão.";
     }
   }
 
