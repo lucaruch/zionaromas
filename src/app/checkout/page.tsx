@@ -305,7 +305,7 @@ export default function CheckoutPage() {
             orderNumber: `ZA${Date.now().toString().slice(-8)}`,
             amountCents,
             installments: paymentMethod === "CARTAO_CREDITO" ? cardInstallments : 1,
-            paymentMethod: paymentMethod === "CARTAO_DEBITO" ? "Debit" : "Credit",
+            paymentMethod: paymentMethod === "CARTAO_DEBITO" ? "debit" : "credit",
             cardNumber,
             expirationMonth,
             expirationYear,
