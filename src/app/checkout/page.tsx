@@ -288,10 +288,20 @@ export default function CheckoutPage() {
         if (expirationYear.length === 2) expirationYear = `20${expirationYear}`;
 
         const { accessToken, environment } = await fetchCielo3dsToken();
+        const amountCents = Math.round(total * 100);
+        if (!Number.isFinite(amountCents) || amountCents < 100) {
+          throw new Error("Valor do pedido inválido para autenticação 3DS. Recarregue o carrinho e tente de novo.");
+        }
+
+        const configuredSite =
+          (typeof process !== "undefined" && process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "")) ||
+          "https://zionaromas.com";
+        const merchantUrl = configuredSite.replace("://www.", "://");
+
         externalAuthentication = await runCielo3dsAuthentication(environment, {
           accessToken,
           orderNumber: `ZA${Date.now().toString().slice(-8)}`,
-          amountCents: Math.round(total * 100),
+          amountCents,
           installments: paymentMethod === "CARTAO_CREDITO" ? cardInstallments : 1,
           paymentMethod: paymentMethod === "CARTAO_DEBITO" ? "Debit" : "Credit",
           cardNumber,
@@ -309,7 +319,7 @@ export default function CheckoutPage() {
           city: "Praia Grande",
           state: "SP",
           zipcode: cep.replace(/\D/g, "").length === 8 ? cep : "11700007",
-          merchantUrl: typeof window !== "undefined" ? window.location.origin : "https://zionaromas.com",
+          merchantUrl,
           items: items.map((item) => ({
             name: item.name,
             sku: item.slug,

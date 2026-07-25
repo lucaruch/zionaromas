@@ -309,12 +309,19 @@ function waitForReady(timeoutMs = READY_TIMEOUT_MS) {
     handlers.onError = (data) => {
       cleanup();
       previousError?.(data);
+      const msg = data?.ReturnMessage || "";
+      const code = data?.ReturnCode || "";
+      if (code === "MPI900" || /error has occurred \(0\)/i.test(msg)) {
+        reject(
+          new Error(
+            "Braspag bloqueou o 3DS neste domínio (403). Use https://zionaromas.com (sem www), " +
+              "faça Ctrl+F5 e tente de novo. Se abrir em www, será redirecionado."
+          )
+        );
+        return;
+      }
       reject(
-        new Error(
-          data?.ReturnMessage
-            ? `Falha ao iniciar 3DS: ${data.ReturnMessage}`
-            : "Falha ao iniciar o 3DS (Cardinal/Braspag)."
-        )
+        new Error(msg ? `Falha ao iniciar 3DS: ${msg}` : "Falha ao iniciar o 3DS (Cardinal/Braspag).")
       );
     };
   });
@@ -406,7 +413,18 @@ export async function runCielo3dsAuthentication(
 
     const finishError = (data?: Cielo3dsAuthResult) => {
       cleanup();
-      reject(new Error(data?.ReturnMessage || STUCK_MESSAGE));
+      const msg = data?.ReturnMessage || "";
+      const code = data?.ReturnCode || "";
+      if (code === "MPI900" || /error has occurred \(0\)/i.test(msg)) {
+        reject(
+          new Error(
+            "Braspag bloqueou o 3DS neste domínio (403). Abra https://zionaromas.com/checkout (sem www), " +
+              "dê Ctrl+F5 e tente novamente."
+          )
+        );
+        return;
+      }
+      reject(new Error(msg || STUCK_MESSAGE));
     };
 
     function cleanup() {

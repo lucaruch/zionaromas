@@ -18,7 +18,8 @@ const securityHeaders = [
   { key: "X-DNS-Prefetch-Control", value: "off" },
   {
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+    // payment=* é exigido pelo device fingerprint Visa/Cardinal no 3DS
+    value: "payment=*, camera=(), microphone=(), geolocation=(), interest-cohort=()"
   },
   {
     key: "Content-Security-Policy",
@@ -61,6 +62,15 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ["lucide-react", "framer-motion"]
   },
+  // 3DS Braspag libera origem sem www (zionaromas.com). www causa enroll 403/CORS.
+  redirects: async () => [
+    {
+      source: "/:path*",
+      has: [{ type: "host", value: "www.zionaromas.com" }],
+      destination: "https://zionaromas.com/:path*",
+      permanent: true
+    }
+  ],
   headers: async () => [
     {
       source: "/admin/:path*",
