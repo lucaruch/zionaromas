@@ -35,6 +35,8 @@ type BpmpiWindow = Window & {
   __zionBpmpiEnv?: "PRD" | "SDB";
   __zionBpmpiReady?: boolean;
   __zionBpmpiScriptLoading?: Promise<void>;
+  __zionBpmpiReload?: boolean;
+  __zionBpmpiInitAmount?: number;
   Cardinal?: unknown;
 };
 
@@ -195,12 +197,12 @@ export function populateBpmpiFields(payload: Cielo3dsFieldPayload) {
 
   setField(root, "bpmpi_auth", "true");
   setField(root, "bpmpi_auth_suppresschallenge", "false");
-  // 03 = 500x600 — tamanho comum de desafio ACS (05 fullscreen às vezes falha).
+  // 03 = 500x600 — tamanho comum de desafio ACS
   setField(root, "bpmpi_challenge_window_size", "03");
   setField(root, "bpmpi_accesstoken", payload.accessToken);
   setField(root, "bpmpi_ordernumber", payload.orderNumber.replace(/[^a-zA-Z0-9]/g, "").slice(0, 50));
   setField(root, "bpmpi_currency", "BRL");
-  setField(root, "bpmpi_totalamount", String(Math.max(1, Math.round(payload.amountCents))));
+  setField(root, "bpmpi_totalamount", String(Math.round(payload.amountCents)));
   setField(root, "bpmpi_installments", String(Math.max(1, Math.min(12, payload.installments))));
   setField(root, "bpmpi_paymentmethod", payload.paymentMethod);
   setField(root, "bpmpi_cardnumber", payload.cardNumber.replace(/\D/g, ""));
@@ -311,17 +313,12 @@ function waitForReady(timeoutMs = READY_TIMEOUT_MS) {
       previousError?.(data);
       const msg = data?.ReturnMessage || "";
       const code = data?.ReturnCode || "";
-      if (code === "MPI900" || /error has occurred \(0\)/i.test(msg)) {
-        reject(
-          new Error(
-            "Braspag bloqueou o 3DS neste domínio (403). Use https://zionaromas.com (sem www), " +
-              "faça Ctrl+F5 e tente de novo. Se abrir em www, será redirecionado."
-          )
-        );
-        return;
-      }
       reject(
-        new Error(msg ? `Falha ao iniciar 3DS: ${msg}` : "Falha ao iniciar o 3DS (Cardinal/Braspag).")
+        new Error(
+          code || msg
+            ? `Falha no 3DS (${code || "erro"}): ${msg || "sem detalhes"}. Confira o valor do pedido e tente de novo.`
+            : "Falha ao iniciar o 3DS (Cardinal/Braspag)."
+        )
       );
     };
   });
@@ -355,24 +352,39 @@ export async function runCielo3dsAuthentication(
   environment: "PRD" | "SDB",
   fields: Cielo3dsFieldPayload
 ): Promise<Cielo3dsExternalAuth> {
+  if (!Number.isFinite(fields.amountCents) || fields.amountCents < 100) {
+    throw new Error("Valor do pedido inválido para 3DS. Recarregue o carrinho e tente de novo.");
+  }
+
   const win = getWin();
   ensureConfig(environment);
   populateBpmpiFields(fields);
 
-  // Handlers de ready/error ANTES do script (bpmpi_load roda no parse).
+  console.info("[ZION 3DS] amountCents=", fields.amountCents, "order=", fields.orderNumber);
+
+  // Se o MPI já iniciou com outro valor, força re-init (senão enroll dá 403).
+  const needsReload =
+    Boolean(win.__zionBpmpiReady) &&
+    win.__zionBpmpiInitAmount != null &&
+    win.__zionBpmpiInitAmount !== fields.amountCents;
+
+  if (needsReload) {
+    win.__zionBpmpiReload = true;
+    win.__zionBpmpiReady = false;
+  }
+
   const readyPromise = win.__zionBpmpiReady ? Promise.resolve() : waitForReady();
   await loadBpmpiScript(environment);
 
-  // Se o auto-load não disparou onReady (ex.: script já estava em cache sem token), tenta de novo.
+  // Script não faz auto-load — iniciamos só com token/valor corretos no DOM.
   if (!win.__zionBpmpiReady && typeof win.bpmpi_load === "function") {
-    try {
-      win.bpmpi_load();
-    } catch {
-      // ignore
-    }
+    win.bpmpi_load();
+  } else if (needsReload && typeof win.bpmpi_load === "function") {
+    win.bpmpi_load();
   }
 
   await readyPromise;
+  win.__zionBpmpiInitAmount = fields.amountCents;
 
   if (typeof win.bpmpi_authenticate !== "function") {
     throw new Error("Script 3DS não disponível.");
@@ -415,16 +427,13 @@ export async function runCielo3dsAuthentication(
       cleanup();
       const msg = data?.ReturnMessage || "";
       const code = data?.ReturnCode || "";
-      if (code === "MPI900" || /error has occurred \(0\)/i.test(msg)) {
-        reject(
-          new Error(
-            "Braspag bloqueou o 3DS neste domínio (403). Abra https://zionaromas.com/checkout (sem www), " +
-              "dê Ctrl+F5 e tente novamente."
-          )
-        );
-        return;
-      }
-      reject(new Error(msg || STUCK_MESSAGE));
+      reject(
+        new Error(
+          code || msg
+            ? `Falha no 3DS (${code || "erro"}): ${msg || "sem detalhes"}. Tente novamente ou use PIX.`
+            : STUCK_MESSAGE
+        )
+      );
     };
 
     function cleanup() {
