@@ -1,5 +1,5 @@
 import type { Order, PaymentMethod } from "@prisma/client";
-import { createPixPayload } from "@/lib/pix";
+import { createPixPayload, createQrCodeImage } from "@/lib/pix";
 import { providerLabels, type PaymentSettings } from "@/lib/payments";
 import { confirmOrderPaymentByCode } from "@/lib/order-workflow";
 import { getPublicSiteUrl } from "@/lib/site-url";
@@ -45,7 +45,7 @@ function base64Image(value: unknown) {
 }
 
 function cieloCardProvider() {
-  return "Cielo30" as const;
+  return "Simulado" as const;
 }
 
 function cieloPixProvider() {
@@ -71,7 +71,7 @@ function normalizeExpirationDate(value: string) {
 
 function sanitizeMerchantOrderId(value: string) {
   const clean = value.replace(/[^A-Za-z0-9]/g, "").trim().toUpperCase();
-  return clean.slice(0, 50) || "ZIONAORAMS";
+  return clean.slice(0, 50) || "ZIONAROMAS";
 }
 
 async function createCieloPixCharge(order: Order, customer: { name: string; email: string }, settings: PaymentSettings) {
@@ -83,6 +83,7 @@ async function createCieloPixCharge(order: Order, customer: { name: string; emai
   }
 
   const apiUrl = cieloApiUrl(settings);
+  const merchantOrderId = sanitizeMerchantOrderId(order.code);
   console.log(`[Cielo] Iniciando cobrança PIX | URL: ${apiUrl}/1/sales | MerchantId tamanho: ${merchantId.length} | MerchantKey tamanho: ${merchantKey.length}`);
 
   const response = await fetch(`${apiUrl}/1/sales`, {
@@ -131,7 +132,10 @@ async function createCieloPixCharge(order: Order, customer: { name: string; emai
       : typeof payment.QrCode === "string"
         ? payment.QrCode
         : undefined;
-  const pixQrCodeImage = base64Image(payment.QrcodeBase64Image ?? payment.QrCodeBase64Image);
+  const cieloPixImage = base64Image(payment.QrcodeBase64Image ?? payment.QrCodeBase64Image);
+  const pixQrCodeImage = pixQrCode
+    ? await createQrCodeImage(pixQrCode).catch(() => cieloPixImage)
+    : cieloPixImage;
 
   return {
     method: "PIX" as const,
@@ -175,9 +179,9 @@ async function createCieloCardCharge(
 
   const paymentPayload: Record<string, unknown> = {
     Type: isDebit ? "DebitCard" : "CreditCard",
-    Provider: cieloCardProvider(),
     Amount: cents(Number(order.total)),
     SoftDescriptor: "ZION AROMAS",
+    ...(settings.environment === "HOMOLOGACAO" ? { Provider: cieloCardProvider() } : {}),
     ...(isDebit
       ? {
           ReturnUrl: returnUrl,

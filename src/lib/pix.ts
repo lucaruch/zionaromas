@@ -17,6 +17,17 @@ function onlyPixSafe(value: string, max: number) {
     .toUpperCase();
 }
 
+function normalizePixKey(value: string) {
+  const trimmed = value.trim();
+  const digits = trimmed.replace(/\D/g, "");
+
+  if (digits.length === 11 || digits.length === 14) return digits;
+  if (trimmed.startsWith("+") && digits.length >= 12 && digits.length <= 13) return `+${digits}`;
+  if (trimmed.includes("@")) return trimmed.toLowerCase();
+
+  return trimmed;
+}
+
 function crc16(payload: string) {
   let crc = 0xffff;
 
@@ -37,8 +48,7 @@ export async function createPixPayload({
   merchantName,
   merchantCity,
   amount,
-  txid,
-  description
+  txid
 }: {
   key: string;
   merchantName: string;
@@ -47,7 +57,7 @@ export async function createPixPayload({
   txid: string;
   description?: string;
 }) {
-  const safeKey = key.trim();
+  const safeKey = normalizePixKey(key);
   const safeName = onlyPixSafe(merchantName || "ZION AROMAS", 25) || "ZION AROMAS";
   const safeCity = onlyPixSafe(merchantCity || "PRAIA GRANDE", 15) || "PRAIA GRANDE";
   const safeTxid = onlyPixSafe(txid, 25) || "***";
@@ -68,7 +78,13 @@ export async function createPixPayload({
     "6304"
   ].join("");
   const code = `${withoutCrc}${crc16(withoutCrc)}`;
-  const image = await QRCode.toDataURL(code, {
+  const image = await createQrCodeImage(code);
+
+  return { code, image };
+}
+
+export async function createQrCodeImage(code: string) {
+  return QRCode.toDataURL(code, {
     errorCorrectionLevel: "M",
     margin: 1,
     scale: 6,
@@ -77,6 +93,4 @@ export async function createPixPayload({
       light: "#FFFFFF"
     }
   });
-
-  return { code, image };
 }
