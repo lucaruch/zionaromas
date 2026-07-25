@@ -19,34 +19,35 @@ async function main() {
   });
 
   const brandSeeds = [
-    ["Maison Alhambra", "maison-alhambra"],
-    ["Al Wataniah", "al-wataniah"],
-    ["Armaf", "armaf"],
-    ["Lattafa", "lattafa"],
-    ["Orientica", "orientica"],
-    ["French Avenue", "french-avenue"],
-    ["Afnan", "afnan"],
-    ["Zakat", "zakat"]
+    { name: "Maison Alhambra", slug: "maison-alhambra", image: "/brands/maison-alhambra-real.png" },
+    { name: "Al Wataniah", slug: "al-wataniah", image: "/brands/al-wataniah-real.png" },
+    { name: "Armaf", slug: "armaf", image: "/brands/armaf-real.png" },
+    { name: "Lattafa", slug: "lattafa", image: "/brands/lattafa-real.png" },
+    { name: "Orientica", slug: "orientica", image: "/brands/orientica-real.png" },
+    { name: "French Avenue", slug: "french-avenue", image: "/brands/french-avenue-real.png" },
+    { name: "Afnan", slug: "afnan", image: "/brands/afnan-real.png" },
+    { name: "Zakat", slug: "zakat", image: "/brands/zakat-real.png" }
   ] as const;
 
   await Promise.all(
-    brandSeeds.map(([name, slug]) =>
+    brandSeeds.map(({ name, slug, image }) =>
       prisma.brand.upsert({
         where: { slug },
-        update: { name },
-        create: { name, slug }
+        update: { name, image },
+        create: { name, slug, image }
       })
     )
   );
 
   const categories = await Promise.all(
-    brandSeeds.map(([name, slug]) =>
+    brandSeeds.map(({ name, slug, image }) =>
       prisma.category.upsert({
         where: { slug },
-        update: { name },
+        update: { name, image },
         create: {
           name,
           slug,
+          image,
           description: "Marca de perfume árabe disponível na ZION AROMAS."
         }
       })

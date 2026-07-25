@@ -30,7 +30,7 @@ export default async function CategoriesPage() {
                     alt={`Perfumes árabes ${category.name}`}
                     fill
                     sizes="(max-width: 768px) 100vw, 40vw"
-                    className="object-cover transition duration-700 group-hover:scale-[1.03]"
+                    className="object-contain p-4 transition duration-700 group-hover:scale-[1.02]"
                   />
                 </div>
               </div>
@@ -44,7 +44,7 @@ export default async function CategoriesPage() {
               </div>
             </Link>
           ))}
-          {!categories.length ? <p className="text-sm text-white/50">Nenhuma marca com produto cadastrado no momento.</p> : null}
+          {!categories.length ? <p className="text-sm text-white/50">Novas marcas selecionadas serão exibidas aqui em breve.</p> : null}
         </div>
       </div>
     </section>

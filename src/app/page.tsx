@@ -91,7 +91,7 @@ export default async function HomePage() {
                     alt={`Perfumes árabes ${category.name}`}
                     fill
                     sizes="(max-width: 640px) 80vw, (max-width: 1024px) 40vw, 22vw"
-                    className="object-cover transition duration-700 group-hover:scale-[1.03]"
+                    className="object-contain p-4 transition duration-700 group-hover:scale-[1.02]"
                   />
                 </div>
                 <div className="relative p-5 text-white">
@@ -117,7 +117,7 @@ export default async function HomePage() {
               <ProductCard key={product.slug} product={product} dark />
             ))}
           </div>
-          {!featured.length ? <p className="text-center text-sm text-white/50">Cadastre produtos em destaque no painel administrativo.</p> : null}
+          {!featured.length ? <p className="text-center text-sm text-white/50">Novas escolhas em destaque aparecerão aqui em breve.</p> : null}
         </div>
       </section>
 
