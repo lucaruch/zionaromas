@@ -285,7 +285,7 @@ export default function CheckoutPage() {
           const { accessToken, environment } = await fetchCielo3dsToken();
           const amountCents = Math.round(total * 100);
           if (!Number.isFinite(amountCents) || amountCents < 100) {
-            throw new Error("Valor do pedido inválido para autenticação 3DS. Recarregue o carrinho e tente de novo.");
+            throw new Error("Valor do pedido inválido. Recarregue o carrinho e tente novamente.");
           }
 
           const configuredSite =
@@ -394,7 +394,7 @@ export default function CheckoutPage() {
             : cardFailed
               ? `Pagamento com cartão não concluído. ${payment?.message || data.nextStep || ""}`
               : cardPendingAuth
-                ? `Pedido ${data.orderCode}: redirecionando para autenticação do banco...`
+                ? `Pedido ${data.orderCode}: redirecionando para o ambiente seguro de pagamento...`
                 : `Pedido ${data.orderCode} recebido. ${data.nextStep}`
       );
 
@@ -566,11 +566,11 @@ export default function CheckoutPage() {
                     </select>
                   ) : (
                     <p className="flex min-h-12 items-center border border-gold/18 px-4 text-sm text-white/60">
-                      Débito exige autenticação do banco emissor.
+                      Débito passa pela confirmação segura da operadora.
                     </p>
                   )}
                   <p className="md:col-span-2 text-xs leading-5 text-white/45">
-                    O pagamento passa pela autenticação 3DS do banco. Use cartão com compras online liberadas e telefone válido.
+                    Use um cartão com compras online liberadas. A aprovação depende da operadora e do banco emissor.
                   </p>
                 </div>
               ) : null}
@@ -699,7 +699,7 @@ export default function CheckoutPage() {
                 ) : null}
                 {paymentResult.redirectUrl ? (
                   <a href={paymentResult.redirectUrl} className="mt-4 inline-flex w-full justify-center rounded-full bg-gold-metal px-5 py-3 text-sm font-bold text-black">
-                    Continuar autenticação do banco
+                    Continuar pagamento seguro
                   </a>
                 ) : null}
               </div>

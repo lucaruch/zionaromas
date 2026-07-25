@@ -425,18 +425,15 @@ function formatCieloCardError(data: unknown, httpStatus: number, environmentLabe
   const message = extractCieloErrorMessage(data);
 
   if (code === "129" || /affiliation not found/i.test(message)) {
-    return (
-      `Cielo não reconheceu a afiliação neste ambiente (${environmentLabel}). ` +
-      `Confira CIELO_MERCHANT_ID/CIELO_MERCHANT_KEY e o ambiente em /admin/configuracoes ` +
-      `(Homologação usa chaves sandbox; Produção usa chaves reais).`
+    console.error(
+      `[Cielo Card] Afiliação não reconhecida no ambiente ${environmentLabel}. Confira CIELO_MERCHANT_ID/CIELO_MERCHANT_KEY e ambiente.`
     );
+    return "Pagamento com cartão indisponível no momento. Tente novamente em instantes ou finalize por PIX.";
   }
 
   if (httpStatus === 403) {
-    return (
-      "Cielo bloqueou a cobrança autenticada (HTTP 403). " +
-      "Confira se o 3DS está ativo e se CIELO_ESTABLISHMENT_CODE / CIELO_3DS_* estão corretos."
-    );
+    console.error(`[Cielo Card] Cobrança bloqueada pela Cielo (HTTP 403) no ambiente ${environmentLabel}.`);
+    return "Pagamento com cartão não autorizado pela operadora. Tente outro cartão ou finalize por PIX.";
   }
 
   if (message) return `Cielo recusou o cartão: ${message}`;
@@ -486,7 +483,7 @@ async function createCieloPixCharge(
       method: "PIX" as const,
       provider: providerLabels.CIELO,
       status: "manual" as const,
-      message: "Credenciais da Cielo ausentes no servidor (CIELO_MERCHANT_ID / CIELO_MERCHANT_KEY)."
+      message: "PIX indisponível no momento. Tente novamente em instantes ou escolha outra forma de pagamento."
     };
   }
 
@@ -618,7 +615,7 @@ async function createCieloCardCharge(
       method: "CARTAO" as const,
       provider: providerLabels.CIELO,
       status: "manual" as const,
-      message: "Erro na operadora de cartão: Credenciais da loja não configuradas no servidor."
+      message: "Pagamento com cartão indisponível no momento. Tente novamente em instantes ou finalize por PIX."
     };
   }
 
@@ -739,12 +736,9 @@ async function createCieloCardCharge(
   let lastError = "Não foi possível processar o cartão na Cielo.";
   let lastRaw: unknown;
 
-  // Com 3DS no browser: autoriza com ExternalAuthentication. Sem 3DS: cobrança plain.
-  const modes: Array<"external" | "plain"> = hasExternalAuth
-    ? ["external"]
-    : isDebit
-      ? ["plain"]
-      : ["plain"];
+  // Quando a autenticação do banco não conclui, ainda tentamos a autorização padrão
+  // da operadora antes de retornar erro ao cliente.
+  const modes: Array<"external" | "plain"> = hasExternalAuth ? ["external", "plain"] : ["plain"];
 
   for (const apiUrl of cieloApiUrls(settings)) {
     const sandbox = isSandboxApiUrl(apiUrl);
@@ -789,6 +783,10 @@ async function createCieloCardCharge(
             /unauthorized/i.test(extractCieloErrorMessage(data))
           ) {
             break; // troca de ambiente
+          }
+
+          if (mode === "external") {
+            continue;
           }
 
           // Erro de negócio: não adianta mudar auth/ambiente
@@ -863,10 +861,12 @@ async function createCieloCardCharge(
 
         const returnCode = String(payment.ReturnCode ?? "").toUpperCase();
         if (returnCode === "AI") {
+          if (mode === "external") {
+            continue;
+          }
+
           lastError =
-            "Cartão não autorizado: a autenticação do banco não foi concluída. " +
-            "Tente novamente e finalize a verificação na janela/app do seu banco (3DS). " +
-            "Se a janela não abrir, desative bloqueador de anúncios e recarregue a página.";
+            "Cartão não autorizado pela operadora. Confira os dados, confirme se o cartão está liberado para compras online e tente novamente. Se preferir, finalize por PIX.";
         } else if (returnCode === "AH") {
           lastError =
             "Este cartão é de crédito. Selecione a opção Cartão de Crédito no checkout e tente novamente.";
@@ -939,8 +939,7 @@ export async function createPaymentInstruction({
       method: "PIX",
       provider: providerLabels[settings.activeProvider],
       status: "manual",
-      message:
-        "Configure CIELO_MERCHANT_ID e CIELO_MERCHANT_KEY no servidor para gerar PIX pela Cielo. A chave PIX_KEY não é usada para não cair em outro banco."
+      message: "PIX indisponível no momento. Tente novamente em instantes ou escolha outra forma de pagamento."
     };
   }
 
