@@ -397,6 +397,46 @@ function extractCieloErrorMessage(data: unknown) {
   return "";
 }
 
+function extractCieloErrorCode(data: unknown): string {
+  if (Array.isArray(data)) {
+    for (const item of data) {
+      if (!item || typeof item !== "object") continue;
+      const code = (item as Record<string, unknown>).Code ?? (item as Record<string, unknown>).code;
+      if (code != null && String(code).trim()) return String(code).trim();
+    }
+  }
+  if (data && typeof data === "object") {
+    const row = data as Record<string, unknown>;
+    if (row.Code != null) return String(row.Code);
+    const payment = row.Payment;
+    if (payment && typeof payment === "object") {
+      const returnCode = (payment as Record<string, unknown>).ReturnCode;
+      if (returnCode != null) return String(returnCode);
+    }
+  }
+  return "";
+}
+
+function formatCieloCardError(data: unknown, httpStatus: number, environmentLabel: string) {
+  const code = extractCieloErrorCode(data);
+  const message = extractCieloErrorMessage(data);
+
+  if (code === "129" || /affiliation not found/i.test(message)) {
+    return (
+      `Cielo não reconheceu a afiliação neste ambiente (${environmentLabel}). ` +
+      `Confira CIELO_MERCHANT_ID/CIELO_MERCHANT_KEY e o ambiente em /admin/configuracoes ` +
+      `(Homologação usa chaves sandbox; Produção usa chaves reais).`
+    );
+  }
+
+  if (message) return `Cielo recusou o cartão: ${message}`;
+  return `Cielo recusou o cartão (HTTP ${httpStatus}).`;
+}
+
+function isSandboxApiUrl(apiUrl: string) {
+  return apiUrl.includes("sandbox");
+}
+
 function extractPixFromPayment(payment: Record<string, unknown>) {
   const pixQrCode =
     (typeof payment.QrCodeString === "string" && payment.QrCodeString) ||
@@ -639,37 +679,39 @@ async function createCieloCardCharge(
     Brand: brand
   };
 
-  const paymentPayload: Record<string, unknown> = isDebit
-    ? {
-        Type: "DebitCard",
-        Amount: amount,
-        SoftDescriptor: softDescriptor(),
-        Authenticate: true,
-        ReturnUrl: returnUrl,
-        Tip: false,
-        DebitCard: cardNode,
-        ...(settings.environment === "HOMOLOGACAO" ? { Provider: cieloCardProvider() } : {})
-      }
-    : {
-        Type: "CreditCard",
-        Amount: amount,
-        SoftDescriptor: softDescriptor(),
-        Installments: installments,
-        Interest: "ByMerchant",
-        Capture: true,
-        Authenticate: false,
-        Tip: false,
-        CreditCard: cardNode,
-        ...(settings.environment === "HOMOLOGACAO" ? { Provider: cieloCardProvider() } : {})
-      };
+  const buildPaymentPayload = (sandbox: boolean): Record<string, unknown> =>
+    isDebit
+      ? {
+          Type: "DebitCard",
+          Amount: amount,
+          SoftDescriptor: softDescriptor(),
+          Authenticate: true,
+          ReturnUrl: returnUrl,
+          Tip: false,
+          DebitCard: cardNode,
+          ...(sandbox ? { Provider: cieloCardProvider() } : {})
+        }
+      : {
+          Type: "CreditCard",
+          Amount: amount,
+          SoftDescriptor: softDescriptor(),
+          Installments: installments,
+          Capture: true,
+          CreditCard: cardNode,
+          ...(sandbox ? { Provider: cieloCardProvider() } : {})
+        };
 
   let lastError = "Não foi possível processar o cartão na Cielo.";
   let lastRaw: unknown;
 
   for (const apiUrl of cieloApiUrls(settings)) {
+    const sandbox = isSandboxApiUrl(apiUrl);
+    const environmentLabel = sandbox ? "Homologação/Sandbox" : "Produção";
+    const paymentPayload = buildPaymentPayload(sandbox);
+
     try {
       console.log(
-        `[Cielo Card] POST ${apiUrl}/1/sales | ${isDebit ? "DebitCard" : "CreditCard"} | pedido ${merchantOrderId} | brand=${brand} | parcelas=${installments}`
+        `[Cielo Card] POST ${apiUrl}/1/sales | ${isDebit ? "DebitCard" : "CreditCard"} | pedido ${merchantOrderId} | brand=${brand} | env=${environmentLabel} | merchantIdLen=${credentials.merchantId.length}`
       );
 
       const response = await fetch(`${apiUrl}/1/sales`, {
@@ -692,12 +734,20 @@ async function createCieloCardCharge(
       lastRaw = data;
       console.log(`[Cielo Card] HTTP ${response.status} | Body: ${JSON.stringify(data)}`);
 
-      const errorMessage = extractCieloErrorMessage(data);
       if (!response.ok) {
-        lastError = errorMessage
-          ? `Cielo recusou o cartão: ${errorMessage}`
-          : `Cielo recusou o cartão (HTTP ${response.status}).`;
-        continue;
+        lastError = formatCieloCardError(data, response.status, environmentLabel);
+        const code = extractCieloErrorCode(data);
+        // Credenciais de produção no sandbox (ou o inverso) → tenta o outro ambiente.
+        if (
+          response.status === 401 ||
+          code === "129" ||
+          /affiliation not found/i.test(lastError) ||
+          /unauthorized/i.test(extractCieloErrorMessage(data))
+        ) {
+          continue;
+        }
+        // Outros erros de negócio não se resolvem mudando de ambiente.
+        break;
       }
 
       const payment =
@@ -707,7 +757,7 @@ async function createCieloCardCharge(
       const statusNumber = Number(payment.Status);
       const returnMessage =
         (typeof payment.ReturnMessage === "string" && payment.ReturnMessage) ||
-        errorMessage ||
+        extractCieloErrorMessage(data) ||
         "Transação não autorizada";
       const authenticationUrl =
         typeof payment.AuthenticationUrl === "string" ? payment.AuthenticationUrl : undefined;
@@ -763,6 +813,7 @@ async function createCieloCardCharge(
       lastError = `Cartão não autorizado pela Cielo: ${returnMessage}${
         payment.ReturnCode != null ? ` (código ${payment.ReturnCode})` : ""
       }`;
+      break;
     } catch (error) {
       console.error(`[Cielo Card] Falha em ${apiUrl}:`, error);
       lastError = "Falha de conexão com a Cielo ao processar o cartão.";

@@ -4,8 +4,11 @@ import { Check, ShieldCheck } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
+  environmentLabels,
+  paymentEnvironments,
   paymentProviders,
   providerLabels,
+  type PaymentEnvironment,
   type PaymentProvider,
   type PaymentSettings
 } from "@/lib/payments";
@@ -17,8 +20,14 @@ const providerDescriptions: Record<PaymentProvider, string> = {
   GETNET: "Operadora selecionada para processar as vendas online da loja."
 };
 
+const environmentHints: Record<PaymentEnvironment, string> = {
+  PRODUCAO: "Use as chaves reais CIELO_MERCHANT_ID / CIELO_MERCHANT_KEY de produção.",
+  HOMOLOGACAO: "Use as chaves sandbox da Cielo. Cartões de teste e Provider Simulado."
+};
+
 export function PaymentSettingsForm({ initialSettings }: { initialSettings: PaymentSettings }) {
   const [activeProvider, setActiveProvider] = useState<PaymentProvider>(initialSettings.activeProvider);
+  const [environment, setEnvironment] = useState<PaymentEnvironment>(initialSettings.environment);
   const [saveState, setSaveState] = useState<SaveState>("idle");
 
   const activeProviderName = providerLabels[activeProvider];
@@ -27,8 +36,8 @@ export function PaymentSettingsForm({ initialSettings }: { initialSettings: Paym
   const statusText = useMemo(() => {
     if (saveState === "saved") return "Configuração salva com sucesso.";
     if (saveState === "error") return "Não foi possível salvar. Tente novamente.";
-    return `${activeProviderName} selecionada para os pagamentos da loja.`;
-  }, [activeProviderName, saveState]);
+    return `${activeProviderName} · ${environmentLabels[environment]}`;
+  }, [activeProviderName, environment, saveState]);
 
   async function saveSettings() {
     if (!canSave) return;
@@ -39,7 +48,7 @@ export function PaymentSettingsForm({ initialSettings }: { initialSettings: Paym
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         activeProvider,
-        environment: initialSettings.environment,
+        environment,
         enabledMethods: initialSettings.enabledMethods
       })
     });
@@ -55,7 +64,7 @@ export function PaymentSettingsForm({ initialSettings }: { initialSettings: Paym
           <div>
             <h1 className="font-display text-4xl text-white sm:text-5xl">Operadora de pagamento</h1>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-white/60">
-              Escolha qual operadora será usada para processar os pagamentos da ZION AROMAS.
+              Escolha a operadora e o ambiente. O erro 129 (Affiliation not found) quase sempre é chave no ambiente errado.
             </p>
           </div>
           <div className="inline-flex w-max items-center gap-2 border border-gold/20 bg-black px-4 py-3 text-xs font-bold uppercase tracking-[0.18em] text-gold">
@@ -109,10 +118,37 @@ export function PaymentSettingsForm({ initialSettings }: { initialSettings: Paym
           </div>
         </section>
 
+        <section>
+          <h2 className="text-sm font-black uppercase tracking-[0.22em] text-white/72">Ambiente Cielo</h2>
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            {paymentEnvironments.map((env) => {
+              const selected = environment === env;
+              return (
+                <button
+                  key={env}
+                  type="button"
+                  onClick={() => {
+                    setEnvironment(env);
+                    setSaveState("idle");
+                  }}
+                  className={
+                    selected
+                      ? "border border-gold bg-gold/15 p-5 text-left text-white"
+                      : "border border-gold/16 bg-black/35 p-5 text-left text-white transition hover:border-gold/55"
+                  }
+                >
+                  <span className="block font-display text-2xl">{environmentLabels[env]}</span>
+                  <span className="mt-2 block text-sm leading-6 text-white/60">{environmentHints[env]}</span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
         <div className="flex flex-col gap-4 border-t border-gold/14 pt-6 sm:flex-row sm:items-center sm:justify-between">
           <p className={saveState === "error" ? "text-sm text-red-300" : "text-sm text-white/58"}>{statusText}</p>
           <Button type="button" onClick={saveSettings} disabled={!canSave} className="w-full sm:w-auto">
-            {saveState === "saving" ? "Salvando..." : "Salvar operadora"}
+            {saveState === "saving" ? "Salvando..." : "Salvar configuração"}
           </Button>
         </div>
       </div>
