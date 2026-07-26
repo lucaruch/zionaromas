@@ -209,6 +209,7 @@ function centerChallengeHost(element: HTMLElement) {
   setImportant(element, "padding", "0");
   setImportant(element, "transform", "none");
   setImportant(element, "background", "rgba(0, 0, 0, 0.72)");
+  setImportant(element, "pointer-events", "none");
 }
 
 function centerChallengeFrame(frame: HTMLIFrameElement) {
@@ -227,6 +228,7 @@ function centerChallengeFrame(frame: HTMLIFrameElement) {
   setImportant(frame, "background", "#ffffff");
   setImportant(frame, "box-shadow", "0 24px 80px rgba(0, 0, 0, 0.45)");
   setImportant(frame, "z-index", "2147483100");
+  setImportant(frame, "pointer-events", "auto");
 
   let parent = frame.parentElement;
   for (let depth = 0; parent && parent !== document.body && depth < 4; depth += 1) {

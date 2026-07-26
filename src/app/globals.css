@@ -191,6 +191,7 @@ body[data-zion-3ds-active="true"] iframe[data-zion-3ds-frame="true"] {
   background: #ffffff !important;
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45) !important;
   z-index: 2147483100 !important;
+  pointer-events: auto !important;
 }
 
 body[data-zion-3ds-active="true"] [data-zion-3ds-host="true"] {
@@ -207,7 +208,7 @@ body[data-zion-3ds-active="true"] [data-zion-3ds-host="true"] {
   transform: none !important;
   background: rgba(0, 0, 0, 0.72) !important;
   z-index: 2147483000 !important;
-  pointer-events: auto !important;
+  pointer-events: none !important;
 }
 
 @media (max-width: 640px) {
