@@ -371,7 +371,7 @@ export default function CheckoutPage() {
           : pixFailed
             ? `Não foi possível gerar o QR Code PIX. ${payment?.message || data.nextStep || ""}`
             : cardFailed
-              ? `Pagamento com cartão não concluído. ${payment?.message || data.nextStep || ""}`
+              ? payment?.message || data.nextStep || "Pagamento com cartão não concluído. Tente novamente."
               : cardPendingAuth
                 ? `Pedido ${data.orderCode}: redirecionando para o ambiente seguro de pagamento...`
                 : `Pedido ${data.orderCode} recebido. ${data.nextStep}`

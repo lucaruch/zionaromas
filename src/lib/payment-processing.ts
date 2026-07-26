@@ -339,10 +339,6 @@ function base64Image(value: unknown) {
   return `data:image/png;base64,${value}`;
 }
 
-function cieloCardProvider(sandbox: boolean) {
-  return sandbox ? "Simulado" : "Cielo30";
-}
-
 function softDescriptor() {
   return "ZIONAROMAS";
 }
@@ -392,8 +388,12 @@ function sanitizeMerchantOrderId(value: string) {
 function buildExternalAuthentication(value?: CardExternalAuthentication) {
   if (!value?.eci?.trim()) return null;
 
+  const eciDigits = value.eci.replace(/\D/g, "");
+  const normalizedEci = eciDigits ? String(Number(eciDigits)) : "";
+  if (!normalizedEci) return null;
+
   const external: Record<string, string> = {
-    Eci: value.eci.trim(),
+    Eci: normalizedEci,
     Version: value.version?.trim() === "2" ? "2.2.0" : value.version?.trim() || "2.2.0"
   };
 
@@ -774,7 +774,7 @@ async function createCieloCardCharge(
     Brand: brand
   };
 
-  const buildPaymentPayload = (sandbox: boolean): Record<string, unknown> => {
+  const buildPaymentPayload = (): Record<string, unknown> => {
     if (isDebit) {
       return {
         Type: "DebitCard",
@@ -783,7 +783,6 @@ async function createCieloCardCharge(
         ReturnUrl: returnUrl,
         Authenticate: true,
         ExternalAuthentication: externalAuthentication,
-        Provider: cieloCardProvider(sandbox),
         DebitCard: cardNode
       };
     }
@@ -797,7 +796,6 @@ async function createCieloCardCharge(
       Authenticate: true,
       ReturnUrl: returnUrl,
       ExternalAuthentication: externalAuthentication,
-      Provider: cieloCardProvider(sandbox),
       CreditCard: cardNode
     };
   };
@@ -808,7 +806,7 @@ async function createCieloCardCharge(
   for (const apiUrl of cieloApiUrls(settings)) {
     const sandbox = isSandboxApiUrl(apiUrl);
     const environmentLabel = sandbox ? "Homologação/Sandbox" : "Produção";
-    const paymentPayload = buildPaymentPayload(sandbox);
+    const paymentPayload = buildPaymentPayload();
 
       try {
         console.log(
