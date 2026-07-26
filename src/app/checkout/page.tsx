@@ -281,7 +281,7 @@ export default function CheckoutPage() {
           orderNumber: requestedOrderCode.replace(/[^a-zA-Z0-9]/g, ""),
           amountCents: Math.round(total * 100),
           installments: paymentMethod === "CARTAO_CREDITO" ? cardInstallments : 1,
-          paymentMethod: paymentMethod === "CARTAO_DEBITO" ? "Debit" : "Credit",
+          paymentMethod: paymentMethod === "CARTAO_DEBITO" ? "debit" : "credit",
           cardNumber,
           expirationMonth,
           expirationYear,

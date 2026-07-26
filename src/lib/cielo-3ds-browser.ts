@@ -169,7 +169,7 @@ export type Cielo3dsFieldPayload = {
   orderNumber: string;
   amountCents: number;
   installments: number;
-  paymentMethod: "Credit" | "Debit";
+  paymentMethod: "credit" | "debit";
   cardNumber: string;
   expirationMonth: string;
   expirationYear: string;
@@ -231,7 +231,7 @@ export function populateBpmpiFields(payload: Cielo3dsFieldPayload) {
   setField(root, "bpmpi_challenge_window_size", "03");
   setField(root, "bpmpi_accesstoken", payload.accessToken);
   setField(root, "bpmpi_ordernumber", payload.orderNumber.replace(/[^a-zA-Z0-9]/g, "").slice(0, 50));
-  setField(root, "bpmpi_currency", "BRL");
+  setField(root, "bpmpi_currency", "986");
   setField(root, "bpmpi_totalamount", String(Math.round(payload.amountCents)));
   setField(root, "bpmpi_installments", String(Math.max(1, Math.min(12, payload.installments))));
   setField(root, "bpmpi_paymentmethod", payload.paymentMethod);
