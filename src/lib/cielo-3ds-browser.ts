@@ -149,6 +149,10 @@ function clearCartFields(root: HTMLElement) {
   root.querySelectorAll('input[class*="bpmpi_cart_"]').forEach((node) => node.remove());
 }
 
+function clearEnrollmentControlFields(root: HTMLElement) {
+  root.querySelectorAll("input.bpmpi_auth_suppresschallenge, input.bpmpi_challenge_window_size").forEach((node) => node.remove());
+}
+
 function showChallengeHint() {
   if (document.getElementById("zion-3ds-challenge-hint")) return;
   const hint = document.createElement("div");
@@ -217,6 +221,7 @@ function asciiSku(value: string, fallback: string, maxLength: number) {
 export function populateBpmpiFields(payload: Cielo3dsFieldPayload) {
   const root = ensureContainer();
   clearCartFields(root);
+  clearEnrollmentControlFields(root);
   const customerIp = (payload.customerIp || "").trim();
   const billToName = asciiText(payload.customerName, "Cliente ZION AROMAS", 120);
   const street1 = asciiText(payload.street1, "Endereco do comprador", 60);
@@ -226,9 +231,6 @@ export function populateBpmpiFields(payload: Cielo3dsFieldPayload) {
   const email = payload.customerEmail.trim().slice(0, 255);
 
   setField(root, "bpmpi_auth", "true");
-  setField(root, "bpmpi_auth_suppresschallenge", "false");
-  // 03 = 500x600 — tamanho comum de desafio ACS
-  setField(root, "bpmpi_challenge_window_size", "03");
   setField(root, "bpmpi_accesstoken", payload.accessToken);
   setField(root, "bpmpi_ordernumber", payload.orderNumber.replace(/[^a-zA-Z0-9]/g, "").slice(0, 50));
   setField(root, "bpmpi_currency", "986");
