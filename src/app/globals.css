@@ -133,11 +133,61 @@ div[id*="Cardinal"] {
   justify-content: center !important;
 }
 
+#Cardinal-Overlay,
+.Cardinal-Overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  background: rgba(0, 0, 0, 0.72) !important;
+}
+
+#Cardinal-Modal,
+.Cardinal-Modal {
+  width: 100vw !important;
+  height: 100dvh !important;
+  padding: 1rem !important;
+  overflow: hidden !important;
+}
+
+#Cardinal-CCA-IFrame,
+iframe#Cardinal-CCA-IFrame,
+iframe[name="Cardinal-CCA-IFrame"] {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: translate(-50%, -50%) !important;
+  width: min(500px, calc(100vw - 24px)) !important;
+  height: min(600px, calc(100dvh - 56px)) !important;
+  max-width: calc(100vw - 24px) !important;
+  max-height: calc(100dvh - 56px) !important;
+  border: 0 !important;
+  background: #ffffff !important;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45) !important;
+}
+
+@media (max-width: 640px) {
+  #Cardinal-Modal,
+  .Cardinal-Modal {
+    padding: 0.75rem !important;
+  }
+
+  #Cardinal-CCA-IFrame,
+  iframe#Cardinal-CCA-IFrame,
+  iframe[name="Cardinal-CCA-IFrame"] {
+    width: calc(100vw - 18px) !important;
+    height: min(620px, calc(100dvh - 40px)) !important;
+    max-height: calc(100dvh - 40px) !important;
+  }
+}
+
 #zion-3ds-challenge-hint {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 1.25rem;
+  bottom: max(1rem, env(safe-area-inset-bottom));
   z-index: 2147482000;
   display: flex;
   justify-content: center;
