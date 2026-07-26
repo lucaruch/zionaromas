@@ -193,6 +193,23 @@ body[data-zion-3ds-active="true"] iframe[data-zion-3ds-frame="true"] {
   z-index: 2147483100 !important;
 }
 
+body[data-zion-3ds-active="true"] [data-zion-3ds-host="true"] {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  transform: none !important;
+  background: rgba(0, 0, 0, 0.72) !important;
+  z-index: 2147483000 !important;
+  pointer-events: auto !important;
+}
+
 @media (max-width: 640px) {
   #Cardinal-Modal,
   .Cardinal-Modal {

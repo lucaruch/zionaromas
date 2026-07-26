@@ -202,6 +202,15 @@ function centerChallengeWrapper(element: HTMLElement) {
   setImportant(element, "pointer-events", "auto");
 }
 
+function centerChallengeHost(element: HTMLElement) {
+  element.setAttribute("data-zion-3ds-host", "true");
+  centerChallengeWrapper(element);
+  setImportant(element, "margin", "0");
+  setImportant(element, "padding", "0");
+  setImportant(element, "transform", "none");
+  setImportant(element, "background", "rgba(0, 0, 0, 0.72)");
+}
+
 function centerChallengeFrame(frame: HTMLIFrameElement) {
   frame.setAttribute("data-zion-3ds-frame", "true");
   setImportant(frame, "position", "fixed");
@@ -221,9 +230,7 @@ function centerChallengeFrame(frame: HTMLIFrameElement) {
 
   let parent = frame.parentElement;
   for (let depth = 0; parent && parent !== document.body && depth < 4; depth += 1) {
-    const isSmallChallengeHost = parent.children.length <= 2 && (parent.textContent || "").trim().length < 200;
-    if (!looksLikeThreeDsElement(parent) && !isSmallChallengeHost) break;
-    centerChallengeWrapper(parent);
+    centerChallengeHost(parent);
     parent = parent.parentElement;
   }
 }
@@ -233,7 +240,9 @@ function applyChallengeFrameLayout() {
     if (looksLikeThreeDsElement(element)) centerChallengeWrapper(element);
   });
 
-  document.querySelectorAll<HTMLIFrameElement>("iframe").forEach((frame) => {
+  const frames = Array.from(document.querySelectorAll<HTMLIFrameElement>("iframe"));
+
+  frames.forEach((frame) => {
     if (frame.closest("#zion-bpmpi-fields")) return;
 
     const rect = frame.getBoundingClientRect();
@@ -245,6 +254,11 @@ function applyChallengeFrameLayout() {
       getComputedStyle(frame).position === "fixed";
 
     if (looksLikeThreeDsElement(frame) || isVisibleFrame) centerChallengeFrame(frame);
+  });
+
+  document.querySelectorAll<HTMLElement>("body > div, body > section").forEach((element) => {
+    if (element.id.startsWith("zion-")) return;
+    if (element.querySelector('iframe[data-zion-3ds-frame="true"]')) centerChallengeHost(element);
   });
 }
 
@@ -268,6 +282,10 @@ function startChallengeFrameGuard() {
   return () => {
     observer.disconnect();
     window.clearInterval(interval);
+    document.querySelectorAll("[data-zion-3ds-host], [data-zion-3ds-frame]").forEach((element) => {
+      element.removeAttribute("data-zion-3ds-host");
+      element.removeAttribute("data-zion-3ds-frame");
+    });
     document.body.removeAttribute("data-zion-3ds-active");
   };
 }
