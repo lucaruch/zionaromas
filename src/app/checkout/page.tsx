@@ -134,7 +134,7 @@ export default function CheckoutPage() {
     }
   }, []);
   useEffect(() => {
-    if (!orderCode || paymentApproved) return;
+    if (!orderCode || paymentApproved || paymentResult?.status === "manual") return;
 
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -177,7 +177,7 @@ export default function CheckoutPage() {
       cancelled = true;
       if (timer) clearTimeout(timer);
     };
-  }, [clear, orderCode, paymentApproved, paymentMethod, paymentSettings?.providerName]);
+  }, [clear, orderCode, paymentApproved, paymentResult?.status, paymentMethod, paymentSettings?.providerName]);
 
   async function quoteShipping(postalCode: string) {
     setShippingLoading(true);

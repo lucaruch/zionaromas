@@ -457,6 +457,26 @@ function extractCieloErrorCode(data: unknown): string {
   return "";
 }
 
+function cieloCardDeclineMessage(returnCode: string) {
+  switch (returnCode) {
+    case "GT":
+    case "GK":
+      return "A operadora bloqueou temporariamente novas tentativas por segurança. Não repita a compra com este cartão agora. Use outro cartão, escolha PIX ou entre em contato com a Cielo.";
+    case "AI":
+      return "Cartão não autorizado pela operadora. Confira os dados e confirme no aplicativo do banco se o cartão está liberado para compras online. Você também pode escolher PIX.";
+    case "AH":
+      return "Este cartão é de crédito. Selecione Cartão de Crédito e tente novamente.";
+    case "51":
+      return "Pagamento não autorizado por saldo ou limite insuficiente. Use outro cartão ou escolha PIX.";
+    case "54":
+      return "A validade informada para o cartão está vencida. Confira os dados ou escolha outra forma de pagamento.";
+    case "78":
+      return "O cartão ainda não está desbloqueado para compras. Faça o desbloqueio no banco ou escolha outra forma de pagamento.";
+    default:
+      return "Pagamento não autorizado pela operadora. Confira os dados, use outro cartão ou escolha PIX.";
+  }
+}
+
 function formatCieloCardError(data: unknown, httpStatus: number, environmentLabel: string) {
   const code = extractCieloErrorCode(data);
   const message = extractCieloErrorMessage(data);
@@ -917,16 +937,8 @@ async function createCieloCardCharge(
         }
 
         const returnCode = String(payment.ReturnCode ?? "").toUpperCase();
-        if (returnCode === "AI") {
-          lastError =
-            "Cartão não autorizado pela operadora. Confira os dados, confirme se o cartão está liberado para compras online e tente novamente. Se preferir, finalize por PIX.";
-        } else if (returnCode === "AH") {
-          lastError =
-            "Este cartão é de crédito. Selecione a opção Cartão de Crédito no checkout e tente novamente.";
-        } else {
-          console.error(`[Cielo Card] ReturnCode=${payment.ReturnCode ?? "-"} ReturnMessage=${returnMessage}`);
-          lastError = "Pagamento com cartão não concluído. Confira os dados, confirme se o cartão está liberado para compras online e tente novamente.";
-        }
+        console.error(`[Cielo Card] ReturnCode=${payment.ReturnCode ?? "-"} ReturnMessage=${returnMessage}`);
+        lastError = cieloCardDeclineMessage(returnCode);
 
         return {
           method: "CARTAO" as const,
