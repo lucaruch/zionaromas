@@ -220,23 +220,6 @@ function centerChallengeFrame(frame: HTMLIFrameElement) {
   setImportant(frame, "box-shadow", "0 24px 80px rgba(0, 0, 0, 0.45)");
   setImportant(frame, "z-index", "2147483400");
   setImportant(frame, "pointer-events", "auto");
-
-  let parent = frame.parentElement;
-  for (let depth = 0; parent && parent !== document.body && depth < 4; depth += 1) {
-    parent.setAttribute("data-zion-3ds-host", "true");
-    setImportant(parent, "position", "fixed");
-    setImportant(parent, "inset", "0");
-    setImportant(parent, "width", "100vw");
-    setImportant(parent, "height", "100dvh");
-    setImportant(parent, "margin", "0");
-    setImportant(parent, "padding", "0");
-    setImportant(parent, "overflow", "visible");
-    setImportant(parent, "transform", "none");
-    setImportant(parent, "background", "rgba(0, 0, 0, 0.72)");
-    setImportant(parent, "z-index", "2147483300");
-    setImportant(parent, "pointer-events", "auto");
-    parent = parent.parentElement;
-  }
 }
 
 function applyChallengeFrameLayout() {
@@ -260,13 +243,8 @@ function applyChallengeFrameLayout() {
     if (looksLikeThreeDsElement(frame) || isVisibleFrame) centerChallengeFrame(frame);
   });
 
-  document.querySelectorAll<HTMLElement>("[data-zion-3ds-host='true']").forEach((host) => {
-    Array.from(host.children).forEach((child) => {
-      if (child instanceof HTMLIFrameElement && child.getAttribute("data-zion-3ds-frame") === "true") return;
-      if (child instanceof HTMLElement && !child.querySelector("[data-zion-3ds-frame='true']")) {
-        setImportant(child, "pointer-events", "none");
-      }
-    });
+  document.querySelectorAll<HTMLElement>("[data-zion-3ds-frame='true']").forEach((frame) => {
+    setImportant(frame, "pointer-events", "auto");
   });
 }
 
@@ -290,8 +268,7 @@ function startChallengeFrameGuard() {
   return () => {
     observer.disconnect();
     window.clearInterval(interval);
-    document.querySelectorAll("[data-zion-3ds-host], [data-zion-3ds-frame]").forEach((element) => {
-      element.removeAttribute("data-zion-3ds-host");
+    document.querySelectorAll("[data-zion-3ds-frame]").forEach((element) => {
       element.removeAttribute("data-zion-3ds-frame");
     });
     document.body.removeAttribute("data-zion-3ds-active");
