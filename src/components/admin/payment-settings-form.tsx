@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import {
   paymentProviders,
   providerLabels,
-  type PaymentEnvironment,
   type PaymentProvider,
   type PaymentSettings
 } from "@/lib/payments";
@@ -20,7 +19,6 @@ const providerDescriptions: Record<PaymentProvider, string> = {
 
 export function PaymentSettingsForm({ initialSettings }: { initialSettings: PaymentSettings }) {
   const [activeProvider, setActiveProvider] = useState<PaymentProvider>(initialSettings.activeProvider);
-  const [environment] = useState<PaymentEnvironment>(initialSettings.environment);
   const [saveState, setSaveState] = useState<SaveState>("idle");
 
   const activeProviderName = providerLabels[activeProvider];
@@ -41,7 +39,7 @@ export function PaymentSettingsForm({ initialSettings }: { initialSettings: Paym
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         activeProvider,
-        environment,
+        environment: "PRODUCAO",
         enabledMethods: initialSettings.enabledMethods
       })
     });

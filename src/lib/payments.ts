@@ -40,10 +40,6 @@ function isProvider(value: unknown): value is PaymentProvider {
   return typeof value === "string" && paymentProviders.includes(value as PaymentProvider);
 }
 
-function isEnvironment(value: unknown): value is PaymentEnvironment {
-  return typeof value === "string" && paymentEnvironments.includes(value as PaymentEnvironment);
-}
-
 function isMethod(value: unknown): value is PaymentMethod {
   return typeof value === "string" && paymentMethods.includes(value as PaymentMethod);
 }
@@ -68,9 +64,7 @@ export function normalizePaymentSettings(value: unknown): PaymentSettings {
     activeProvider: isProvider(payload.activeProvider)
       ? payload.activeProvider
       : defaultPaymentSettings.activeProvider,
-    environment: isEnvironment(payload.environment)
-      ? payload.environment
-      : defaultPaymentSettings.environment,
+    environment: defaultPaymentSettings.environment,
     enabledMethods: enabledMethods.length ? [...new Set(enabledMethods)] : defaultPaymentSettings.enabledMethods
   };
 }
