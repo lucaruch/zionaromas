@@ -172,6 +172,12 @@ function setImportant(element: HTMLElement, property: string, value: string) {
   element.style.setProperty(property, value, "important");
 }
 
+function rememberChallengeStyle(element: HTMLElement) {
+  if (!element.hasAttribute("data-zion-3ds-original-style")) {
+    element.setAttribute("data-zion-3ds-original-style", element.getAttribute("style") || "");
+  }
+}
+
 function looksLikeThreeDsElement(element: Element) {
   if (element.id.startsWith("zion-")) return false;
 
@@ -189,20 +195,8 @@ function looksLikeThreeDsElement(element: Element) {
   return /cardinal|centinel|songbird|cca|3ds|challenge/.test(descriptor);
 }
 
-function centerChallengeWrapper(element: HTMLElement) {
-  setImportant(element, "position", "fixed");
-  setImportant(element, "inset", "0");
-  setImportant(element, "width", "100vw");
-  setImportant(element, "height", "100dvh");
-  setImportant(element, "display", "flex");
-  setImportant(element, "align-items", "center");
-  setImportant(element, "justify-content", "center");
-  setImportant(element, "overflow", "hidden");
-  setImportant(element, "z-index", "2147483000");
-  setImportant(element, "pointer-events", "auto");
-}
-
 function centerChallengeFrame(frame: HTMLIFrameElement) {
+  rememberChallengeStyle(frame);
   frame.setAttribute("data-zion-3ds-frame", "true");
 
   setImportant(frame, "position", "fixed");
@@ -220,13 +214,26 @@ function centerChallengeFrame(frame: HTMLIFrameElement) {
   setImportant(frame, "box-shadow", "0 24px 80px rgba(0, 0, 0, 0.45)");
   setImportant(frame, "z-index", "2147483400");
   setImportant(frame, "pointer-events", "auto");
+
+  let parent = frame.parentElement;
+  for (let depth = 0; parent && parent !== document.body && depth < 4; depth += 1) {
+    rememberChallengeStyle(parent);
+    parent.setAttribute("data-zion-3ds-host", "true");
+    setImportant(parent, "position", "fixed");
+    setImportant(parent, "inset", "0");
+    setImportant(parent, "width", "100vw");
+    setImportant(parent, "height", "100dvh");
+    setImportant(parent, "margin", "0");
+    setImportant(parent, "padding", "0");
+    setImportant(parent, "overflow", "visible");
+    setImportant(parent, "transform", "none");
+    setImportant(parent, "z-index", "2147483300");
+    setImportant(parent, "pointer-events", "auto");
+    parent = parent.parentElement;
+  }
 }
 
 function applyChallengeFrameLayout() {
-  document.querySelectorAll<HTMLElement>("div, section").forEach((element) => {
-    if (looksLikeThreeDsElement(element)) centerChallengeWrapper(element);
-  });
-
   const frames = Array.from(document.querySelectorAll<HTMLIFrameElement>("iframe"));
 
   frames.forEach((frame) => {
@@ -268,7 +275,12 @@ function startChallengeFrameGuard() {
   return () => {
     observer.disconnect();
     window.clearInterval(interval);
-    document.querySelectorAll("[data-zion-3ds-frame]").forEach((element) => {
+    document.querySelectorAll<HTMLElement>("[data-zion-3ds-original-style]").forEach((element) => {
+      const originalStyle = element.getAttribute("data-zion-3ds-original-style") || "";
+      if (originalStyle) element.setAttribute("style", originalStyle);
+      else element.removeAttribute("style");
+      element.removeAttribute("data-zion-3ds-original-style");
+      element.removeAttribute("data-zion-3ds-host");
       element.removeAttribute("data-zion-3ds-frame");
     });
     document.body.removeAttribute("data-zion-3ds-active");
