@@ -152,7 +152,15 @@ div[id*="Cardinal"] {
 
 #Cardinal-CCA-IFrame,
 iframe#Cardinal-CCA-IFrame,
-iframe[name="Cardinal-CCA-IFrame"] {
+iframe[name="Cardinal-CCA-IFrame"],
+iframe[id*="Cardinal" i],
+iframe[name*="Cardinal" i],
+iframe[src*="cardinal" i],
+iframe[src*="centinel" i],
+iframe[id*="CCA" i],
+iframe[name*="CCA" i],
+iframe[id*="challenge" i],
+iframe[name*="challenge" i] {
   position: fixed !important;
   top: 50% !important;
   left: 50% !important;
@@ -176,7 +184,15 @@ iframe[name="Cardinal-CCA-IFrame"] {
 
   #Cardinal-CCA-IFrame,
   iframe#Cardinal-CCA-IFrame,
-  iframe[name="Cardinal-CCA-IFrame"] {
+  iframe[name="Cardinal-CCA-IFrame"],
+  iframe[id*="Cardinal" i],
+  iframe[name*="Cardinal" i],
+  iframe[src*="cardinal" i],
+  iframe[src*="centinel" i],
+  iframe[id*="CCA" i],
+  iframe[name*="CCA" i],
+  iframe[id*="challenge" i],
+  iframe[name*="challenge" i] {
     width: calc(100vw - 18px) !important;
     height: min(620px, calc(100dvh - 40px)) !important;
     max-height: calc(100dvh - 40px) !important;

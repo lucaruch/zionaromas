@@ -168,6 +168,97 @@ function hideChallengeHint() {
   document.getElementById("zion-3ds-challenge-hint")?.remove();
 }
 
+function setImportant(element: HTMLElement, property: string, value: string) {
+  element.style.setProperty(property, value, "important");
+}
+
+function looksLikeThreeDsElement(element: Element) {
+  if (element.id.startsWith("zion-")) return false;
+
+  const descriptor = [
+    element.id,
+    typeof element.className === "string" ? element.className : "",
+    element.getAttribute("name") || "",
+    element.getAttribute("src") || "",
+    element.getAttribute("title") || "",
+    element.getAttribute("aria-label") || ""
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  return /cardinal|centinel|songbird|cca|3ds|challenge/.test(descriptor);
+}
+
+function centerChallengeWrapper(element: HTMLElement) {
+  setImportant(element, "position", "fixed");
+  setImportant(element, "inset", "0");
+  setImportant(element, "width", "100vw");
+  setImportant(element, "height", "100dvh");
+  setImportant(element, "display", "flex");
+  setImportant(element, "align-items", "center");
+  setImportant(element, "justify-content", "center");
+  setImportant(element, "overflow", "hidden");
+  setImportant(element, "z-index", "2147483000");
+  setImportant(element, "pointer-events", "auto");
+}
+
+function centerChallengeFrame(frame: HTMLIFrameElement) {
+  setImportant(frame, "position", "fixed");
+  setImportant(frame, "top", "50%");
+  setImportant(frame, "left", "50%");
+  setImportant(frame, "right", "auto");
+  setImportant(frame, "bottom", "auto");
+  setImportant(frame, "transform", "translate(-50%, -50%)");
+  setImportant(frame, "width", "min(500px, calc(100vw - 24px))");
+  setImportant(frame, "height", "min(620px, calc(100dvh - 40px))");
+  setImportant(frame, "max-width", "calc(100vw - 24px)");
+  setImportant(frame, "max-height", "calc(100dvh - 40px)");
+  setImportant(frame, "border", "0");
+  setImportant(frame, "background", "#ffffff");
+  setImportant(frame, "box-shadow", "0 24px 80px rgba(0, 0, 0, 0.45)");
+  setImportant(frame, "z-index", "2147483100");
+
+  let parent = frame.parentElement;
+  for (let depth = 0; parent && parent !== document.body && depth < 4; depth += 1) {
+    const isSmallChallengeHost = parent.children.length <= 2 && (parent.textContent || "").trim().length < 200;
+    if (!looksLikeThreeDsElement(parent) && !isSmallChallengeHost) break;
+    centerChallengeWrapper(parent);
+    parent = parent.parentElement;
+  }
+}
+
+function applyChallengeFrameLayout() {
+  document.querySelectorAll<HTMLElement>("div, section").forEach((element) => {
+    if (looksLikeThreeDsElement(element)) centerChallengeWrapper(element);
+  });
+
+  document.querySelectorAll<HTMLIFrameElement>("iframe").forEach((frame) => {
+    if (looksLikeThreeDsElement(frame)) centerChallengeFrame(frame);
+  });
+}
+
+function startChallengeFrameGuard() {
+  applyChallengeFrameLayout();
+
+  const observer = new MutationObserver(() => {
+    window.requestAnimationFrame(applyChallengeFrameLayout);
+  });
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ["id", "class", "name", "src", "style", "title"]
+  });
+
+  const interval = window.setInterval(applyChallengeFrameLayout, 250);
+
+  return () => {
+    observer.disconnect();
+    window.clearInterval(interval);
+  };
+}
+
 export type Cielo3dsFieldPayload = {
   accessToken: string;
   orderNumber: string;
@@ -466,6 +557,7 @@ export async function runCielo3dsAuthentication(
     }, AUTH_TIMEOUT_MS);
 
     showChallengeHint();
+    const stopChallengeFrameGuard = startChallengeFrameGuard();
     if (DEBUG_3DS) console.info("[ZION 3DS] Chamando bpmpi_authenticate()");
 
     const finishOk = (data: Cielo3dsAuthResult) => {
@@ -503,6 +595,7 @@ export async function runCielo3dsAuthentication(
 
     function cleanup() {
       window.clearTimeout(timer);
+      stopChallengeFrameGuard();
       hideChallengeHint();
       handlers.onSuccess = undefined;
       handlers.onFailure = undefined;
