@@ -339,8 +339,8 @@ function base64Image(value: unknown) {
   return `data:image/png;base64,${value}`;
 }
 
-function cieloCardProvider() {
-  return "Simulado" as const;
+function cieloCardProvider(sandbox: boolean) {
+  return sandbox ? "Simulado" : "Cielo30";
 }
 
 function softDescriptor() {
@@ -783,8 +783,8 @@ async function createCieloCardCharge(
         ReturnUrl: returnUrl,
         Authenticate: true,
         ExternalAuthentication: externalAuthentication,
-        DebitCard: cardNode,
-        ...(sandbox ? { Provider: cieloCardProvider() } : {})
+        Provider: cieloCardProvider(sandbox),
+        DebitCard: cardNode
       };
     }
 
@@ -797,8 +797,8 @@ async function createCieloCardCharge(
       Authenticate: true,
       ReturnUrl: returnUrl,
       ExternalAuthentication: externalAuthentication,
-      CreditCard: cardNode,
-      ...(sandbox ? { Provider: cieloCardProvider() } : {})
+      Provider: cieloCardProvider(sandbox),
+      CreditCard: cardNode
     };
   };
 
