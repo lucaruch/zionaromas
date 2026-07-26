@@ -4,6 +4,7 @@ export type Cielo3dsAuthResult = {
   Eci?: string | null;
   Version?: string | null;
   ReferenceId?: string | null;
+  ReferenceID?: string | null;
   ReturnCode?: string | null;
   ReturnMessage?: string | null;
 };
@@ -45,6 +46,7 @@ const SCRIPT_SRC = "/js/BP.Mpi.3ds20.min.js?v=20260725d";
 
 const READY_TIMEOUT_MS = 25_000;
 const AUTH_TIMEOUT_MS = 90_000;
+const DEBUG_3DS = process.env.NEXT_PUBLIC_CIELO_3DS_DEBUG === "true";
 
 const CHALLENGE_HINT =
   "Confirme a compra na janela do banco. Se não aparecer em alguns segundos, desative o bloqueador de anúncios e tente de novo.";
@@ -71,38 +73,38 @@ function ensureConfig(environment: "PRD" | "SDB") {
       const handlers = win.__zionBpmpiHandlers || {};
       return {
         Environment: win.__zionBpmpiEnv || environment,
-        Debug: true,
+        Debug: DEBUG_3DS,
         onReady: () => {
           win.__zionBpmpiReady = true;
-          console.info("[ZION 3DS] MPI pronto (onReady)");
+          if (DEBUG_3DS) console.info("[ZION 3DS] MPI pronto (onReady)");
           handlers.onReady?.();
         },
         onSuccess: (data: Cielo3dsAuthResult) => {
-          console.info("[ZION 3DS] onSuccess", data);
+          if (DEBUG_3DS) console.info("[ZION 3DS] onSuccess", data);
           handlers.onSuccess?.(data);
         },
         onFailure: (data: Cielo3dsAuthResult) => {
-          console.warn("[ZION 3DS] onFailure", data);
+          if (DEBUG_3DS) console.warn("[ZION 3DS] onFailure", data);
           handlers.onFailure?.(data);
         },
         onUnenrolled: (data: Cielo3dsAuthResult) => {
-          console.warn("[ZION 3DS] onUnenrolled", data);
+          if (DEBUG_3DS) console.warn("[ZION 3DS] onUnenrolled", data);
           handlers.onUnenrolled?.(data);
         },
         onDisabled: (data?: Cielo3dsAuthResult) => {
-          console.warn("[ZION 3DS] onDisabled", data);
+          if (DEBUG_3DS) console.warn("[ZION 3DS] onDisabled", data);
           handlers.onDisabled?.(data);
         },
         onError: (data: Cielo3dsAuthResult) => {
-          console.error("[ZION 3DS] onError", data);
+          if (DEBUG_3DS) console.error("[ZION 3DS] onError", data);
           handlers.onError?.(data);
         },
         onUnsupportedBrand: (data: Cielo3dsAuthResult) => {
-          console.error("[ZION 3DS] onUnsupportedBrand", data);
+          if (DEBUG_3DS) console.error("[ZION 3DS] onUnsupportedBrand", data);
           handlers.onUnsupportedBrand?.(data);
         },
         onChallengeSuppression: (data?: Cielo3dsAuthResult) => {
-          console.warn("[ZION 3DS] onChallengeSuppression", data);
+          if (DEBUG_3DS) console.warn("[ZION 3DS] onChallengeSuppression", data);
           handlers.onChallengeSuppression?.(data);
         }
       };
@@ -167,7 +169,7 @@ export type Cielo3dsFieldPayload = {
   orderNumber: string;
   amountCents: number;
   installments: number;
-  paymentMethod: "credit" | "debit";
+  paymentMethod: "Credit" | "Debit";
   cardNumber: string;
   expirationMonth: string;
   expirationYear: string;
@@ -229,7 +231,7 @@ export function populateBpmpiFields(payload: Cielo3dsFieldPayload) {
   setField(root, "bpmpi_challenge_window_size", "03");
   setField(root, "bpmpi_accesstoken", payload.accessToken);
   setField(root, "bpmpi_ordernumber", payload.orderNumber.replace(/[^a-zA-Z0-9]/g, "").slice(0, 50));
-  setField(root, "bpmpi_currency", "986");
+  setField(root, "bpmpi_currency", "BRL");
   setField(root, "bpmpi_totalamount", String(Math.round(payload.amountCents)));
   setField(root, "bpmpi_installments", String(Math.max(1, Math.min(12, payload.installments))));
   setField(root, "bpmpi_paymentmethod", payload.paymentMethod);
@@ -393,7 +395,7 @@ function authResultToExternal(
     cavv: data.Cavv ? String(data.Cavv) : undefined,
     xid: data.Xid ? String(data.Xid) : undefined,
     version: data.Version != null ? String(data.Version) : "2",
-    referenceId: data.ReferenceId ? String(data.ReferenceId) : undefined
+    referenceId: data.ReferenceId ? String(data.ReferenceId) : data.ReferenceID ? String(data.ReferenceID) : undefined
   };
 }
 
@@ -409,7 +411,9 @@ export async function runCielo3dsAuthentication(
   ensureConfig(environment);
   populateBpmpiFields(fields);
 
-  console.info("[ZION 3DS] amountCents=", fields.amountCents, "order=", fields.orderNumber, "tokenLen=", fields.accessToken.length);
+  if (DEBUG_3DS) {
+    console.info("[ZION 3DS] amountCents=", fields.amountCents, "order=", fields.orderNumber, "tokenLen=", fields.accessToken.length);
+  }
 
   const tokenInput = document.querySelector<HTMLInputElement>("input.bpmpi_accesstoken");
   if (!fields.accessToken || fields.accessToken.length < 20) {
@@ -460,7 +464,7 @@ export async function runCielo3dsAuthentication(
     }, AUTH_TIMEOUT_MS);
 
     showChallengeHint();
-    console.info("[ZION 3DS] Chamando bpmpi_authenticate()");
+    if (DEBUG_3DS) console.info("[ZION 3DS] Chamando bpmpi_authenticate()");
 
     const finishOk = (data: Cielo3dsAuthResult) => {
       const external = authResultToExternal(data, { requireSuccess: true });

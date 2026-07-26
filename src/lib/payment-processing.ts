@@ -7,6 +7,14 @@ import { confirmOrderPayment, confirmOrderPaymentByCode, normalizeOrderCode } fr
 import { prisma } from "@/lib/prisma";
 import { getPublicSiteUrl } from "@/lib/site-url";
 
+export type CardExternalAuthentication = {
+  cavv?: string;
+  xid?: string;
+  eci: string;
+  version?: string;
+  referenceId?: string;
+};
+
 export type CardDetails = {
   cardType: "CreditCard" | "DebitCard";
   cardNumber: string;
@@ -15,6 +23,7 @@ export type CardDetails = {
   securityCode: string;
   brand: string;
   installments?: number;
+  externalAuthentication?: CardExternalAuthentication;
 };
 
 export type PaymentInstruction = {
@@ -380,6 +389,21 @@ function sanitizeMerchantOrderId(value: string) {
   return clean.slice(0, 50) || "ZIONAROMAS";
 }
 
+function buildExternalAuthentication(value?: CardExternalAuthentication) {
+  if (!value?.eci?.trim()) return null;
+
+  const external: Record<string, string> = {
+    Eci: value.eci.trim(),
+    Version: value.version?.trim() === "2" ? "2.2.0" : value.version?.trim() || "2.2.0"
+  };
+
+  if (value.cavv?.trim()) external.Cavv = value.cavv.trim();
+  if (value.xid?.trim()) external.Xid = value.xid.trim();
+  if (value.referenceId?.trim()) external.ReferenceID = value.referenceId.trim();
+
+  return external;
+}
+
 function extractCieloErrorMessage(data: unknown) {
   if (Array.isArray(data)) {
     const parts = data
@@ -716,6 +740,16 @@ async function createCieloCardCharge(
     };
   }
 
+  const externalAuthentication = buildExternalAuthentication(card.externalAuthentication);
+  if (!externalAuthentication) {
+    return {
+      method: "CARTAO" as const,
+      provider: providerLabels.CIELO,
+      status: "manual" as const,
+      message: "Não foi possível validar a autenticação segura do cartão. Tente novamente ou finalize por PIX."
+    };
+  }
+
   const brand = detectCardBrand(cleanCardNumber, card.brand || "Visa");
   const merchantOrderId = sanitizeMerchantOrderId(order.code);
   const documentDigits = (customer.document || "").replace(/\D/g, "");
@@ -748,6 +782,7 @@ async function createCieloCardCharge(
         SoftDescriptor: softDescriptor(),
         ReturnUrl: returnUrl,
         Authenticate: true,
+        ExternalAuthentication: externalAuthentication,
         DebitCard: cardNode,
         ...(sandbox ? { Provider: cieloCardProvider() } : {})
       };
@@ -759,7 +794,9 @@ async function createCieloCardCharge(
       SoftDescriptor: softDescriptor(),
       Installments: installments,
       Capture: true,
-      Authenticate: false,
+      Authenticate: true,
+      ReturnUrl: returnUrl,
+      ExternalAuthentication: externalAuthentication,
       CreditCard: cardNode,
       ...(sandbox ? { Provider: cieloCardProvider() } : {})
     };

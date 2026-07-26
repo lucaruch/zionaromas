@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/components/commerce/cart-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { fetchCielo3dsToken, runCielo3dsAuthentication, type Cielo3dsExternalAuth } from "@/lib/cielo-3ds-browser";
 import { type PaymentMethod } from "@/lib/payments";
 import { formatCurrency } from "@/lib/utils";
 
@@ -263,12 +264,55 @@ export default function CheckoutPage() {
     setCheckoutLoading(true);
 
     try {
-      setCheckoutMessage(isCardPayment ? "Processando pagamento em ambiente seguro..." : "Gerando PIX seguro...");
+      const requestedOrderCode = `ZA-${Date.now().toString().slice(-8)}`;
+      let externalAuthentication: Cielo3dsExternalAuth | undefined;
+
+      setCheckoutMessage(isCardPayment ? "Validando cartão em ambiente seguro..." : "Gerando PIX seguro...");
+
+      if (isCardPayment) {
+        const expirationDigits = cardExpiration.replace(/\D/g, "");
+        const expirationMonth = expirationDigits.slice(0, 2);
+        const rawExpirationYear = expirationDigits.length >= 6 ? expirationDigits.slice(2, 6) : expirationDigits.slice(2, 4);
+        const expirationYear = rawExpirationYear.length === 2 ? `20${rawExpirationYear}` : rawExpirationYear;
+        const authToken = await fetchCielo3dsToken();
+
+        externalAuthentication = await runCielo3dsAuthentication(authToken.environment, {
+          accessToken: authToken.accessToken,
+          orderNumber: requestedOrderCode.replace(/[^a-zA-Z0-9]/g, ""),
+          amountCents: Math.round(total * 100),
+          installments: paymentMethod === "CARTAO_CREDITO" ? cardInstallments : 1,
+          paymentMethod: paymentMethod === "CARTAO_DEBITO" ? "Debit" : "Credit",
+          cardNumber,
+          expirationMonth,
+          expirationYear,
+          customerName: name,
+          customerEmail: email,
+          customerDocument: document,
+          phone,
+          street1: isPickup ? "Retirada na Loja ZION AROMAS" : address,
+          street2: isPickup ? "Galeria PG" : number || complement || "Complemento",
+          city: "Praia Grande",
+          state: "SP",
+          zipcode: cep.replace(/\D/g, "").length === 8 ? cep : "11700-007",
+          merchantUrl: window.location.origin,
+          items: [
+            {
+              name: "Pedido ZION AROMAS",
+              sku: requestedOrderCode.replace(/[^a-zA-Z0-9]/g, ""),
+              quantity: 1,
+              unitPriceCents: Math.round(total * 100)
+            }
+          ]
+        });
+
+        setCheckoutMessage("Autenticação concluída. Enviando pagamento para confirmação...");
+      }
 
       const response = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          orderCode: requestedOrderCode,
           customer: { name, email, phone, document },
           address: {
             postalCode: cep.replace(/\D/g, "").length === 8 ? cep : "11700-007",
@@ -285,7 +329,8 @@ export default function CheckoutPage() {
                 expirationDate: cardExpiration,
                 securityCode: cardSecurityCode,
                 brand: cardBrand,
-                installments: paymentMethod === "CARTAO_CREDITO" ? cardInstallments : 1
+                installments: paymentMethod === "CARTAO_CREDITO" ? cardInstallments : 1,
+                externalAuthentication
               }
             : undefined,
           coupon,

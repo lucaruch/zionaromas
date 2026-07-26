@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { isRateLimited, parseJson } from "@/lib/security";
 
 const schema = z.object({
+  orderCode: z.string().trim().max(20).optional(),
   customer: z.object({
     name: z.string().trim().min(2).max(80),
     email: z.string().trim().email().max(120),
@@ -40,7 +41,16 @@ const schema = z.object({
       expirationDate: z.string().trim().min(4).max(10),
       securityCode: z.string().trim().min(3).max(4),
       brand: z.string().trim().min(2).max(30).optional().default("Visa"),
-      installments: z.number().int().min(1).max(12).optional().default(1)
+      installments: z.number().int().min(1).max(12).optional().default(1),
+      externalAuthentication: z
+        .object({
+          cavv: z.string().trim().max(512).optional(),
+          xid: z.string().trim().max(512).optional(),
+          eci: z.string().trim().min(1).max(4),
+          version: z.string().trim().max(20).optional(),
+          referenceId: z.string().trim().max(120).optional()
+        })
+        .optional()
     })
     .optional(),
   coupon: z.string().trim().max(40).optional().or(z.literal("")),
@@ -117,7 +127,8 @@ export async function POST(request: Request) {
       : 0;
   const discount = Math.min(subtotal, automaticDiscount + couponDiscount + pixDiscount);
   const total = Math.max(0, subtotal + shipping - discount);
-  const orderCode = `ZA-${Date.now().toString().slice(-6)}`;
+  const requestedOrderCode = parsed.data.orderCode?.trim().toUpperCase() || "";
+  const orderCode = /^ZA-\d{6,10}$/.test(requestedOrderCode) ? requestedOrderCode : `ZA-${Date.now().toString().slice(-8)}`;
   const dbPaymentMethod = parsed.data.paymentMethod === "PIX" ? "PIX" : "CARTAO";
 
   const { order, customer } = await prisma.$transaction(async (tx) => {
@@ -186,7 +197,8 @@ export async function POST(request: Request) {
     expirationDate: parsed.data.card.expirationDate,
     securityCode: parsed.data.card.securityCode,
     brand: parsed.data.card.brand || "Visa",
-    installments: parsed.data.card.installments
+    installments: parsed.data.card.installments,
+    externalAuthentication: parsed.data.card.externalAuthentication
   } : undefined;
 
   const paymentInstruction = await createPaymentInstruction({
