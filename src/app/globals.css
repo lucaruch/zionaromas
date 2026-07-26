@@ -176,6 +176,23 @@ iframe[name*="challenge" i] {
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45) !important;
 }
 
+body[data-zion-3ds-active="true"] iframe[data-zion-3ds-frame="true"] {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: translate(-50%, -50%) !important;
+  width: min(500px, calc(100vw - 24px)) !important;
+  height: min(620px, calc(100dvh - 40px)) !important;
+  max-width: calc(100vw - 24px) !important;
+  max-height: calc(100dvh - 40px) !important;
+  border: 0 !important;
+  background: #ffffff !important;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45) !important;
+  z-index: 2147483100 !important;
+}
+
 @media (max-width: 640px) {
   #Cardinal-Modal,
   .Cardinal-Modal {
@@ -193,6 +210,12 @@ iframe[name*="challenge" i] {
   iframe[name*="CCA" i],
   iframe[id*="challenge" i],
   iframe[name*="challenge" i] {
+    width: calc(100vw - 18px) !important;
+    height: min(620px, calc(100dvh - 40px)) !important;
+    max-height: calc(100dvh - 40px) !important;
+  }
+
+  body[data-zion-3ds-active="true"] iframe[data-zion-3ds-frame="true"] {
     width: calc(100vw - 18px) !important;
     height: min(620px, calc(100dvh - 40px)) !important;
     max-height: calc(100dvh - 40px) !important;

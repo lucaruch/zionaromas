@@ -203,6 +203,7 @@ function centerChallengeWrapper(element: HTMLElement) {
 }
 
 function centerChallengeFrame(frame: HTMLIFrameElement) {
+  frame.setAttribute("data-zion-3ds-frame", "true");
   setImportant(frame, "position", "fixed");
   setImportant(frame, "top", "50%");
   setImportant(frame, "left", "50%");
@@ -233,11 +234,22 @@ function applyChallengeFrameLayout() {
   });
 
   document.querySelectorAll<HTMLIFrameElement>("iframe").forEach((frame) => {
-    if (looksLikeThreeDsElement(frame)) centerChallengeFrame(frame);
+    if (frame.closest("#zion-bpmpi-fields")) return;
+
+    const rect = frame.getBoundingClientRect();
+    const isVisibleFrame =
+      rect.width > 180 ||
+      rect.height > 120 ||
+      frame.offsetWidth > 180 ||
+      frame.offsetHeight > 120 ||
+      getComputedStyle(frame).position === "fixed";
+
+    if (looksLikeThreeDsElement(frame) || isVisibleFrame) centerChallengeFrame(frame);
   });
 }
 
 function startChallengeFrameGuard() {
+  document.body.setAttribute("data-zion-3ds-active", "true");
   applyChallengeFrameLayout();
 
   const observer = new MutationObserver(() => {
@@ -256,6 +268,7 @@ function startChallengeFrameGuard() {
   return () => {
     observer.disconnect();
     window.clearInterval(interval);
+    document.body.removeAttribute("data-zion-3ds-active");
   };
 }
 
