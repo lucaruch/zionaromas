@@ -208,41 +208,6 @@ body[data-zion-3ds-active="true"] [data-zion-3ds-host="true"] {
   transform: none !important;
   background: rgba(0, 0, 0, 0.72) !important;
   z-index: 2147483000 !important;
-  pointer-events: none !important;
-}
-
-#zion-3ds-shell {
-  position: fixed !important;
-  inset: 0 !important;
-  width: 100vw !important;
-  height: 100dvh !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  padding: 16px !important;
-  background: rgba(0, 0, 0, 0.72) !important;
-  z-index: 2147483200 !important;
-  pointer-events: auto !important;
-}
-
-#zion-3ds-dialog {
-  width: min(500px, calc(100vw - 24px)) !important;
-  height: min(620px, calc(100dvh - 40px)) !important;
-  max-width: calc(100vw - 24px) !important;
-  max-height: calc(100dvh - 40px) !important;
-  background: #ffffff !important;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45) !important;
-  pointer-events: auto !important;
-}
-
-#zion-3ds-dialog > iframe {
-  position: static !important;
-  width: 100% !important;
-  height: 100% !important;
-  max-width: none !important;
-  max-height: none !important;
-  transform: none !important;
-  border: 0 !important;
   pointer-events: auto !important;
 }
 

@@ -202,68 +202,41 @@ function centerChallengeWrapper(element: HTMLElement) {
   setImportant(element, "pointer-events", "auto");
 }
 
-function ensureChallengeShell() {
-  let shell = document.getElementById("zion-3ds-shell");
-  if (!shell) {
-    shell = document.createElement("div");
-    shell.id = "zion-3ds-shell";
-    shell.setAttribute("role", "presentation");
-    document.body.appendChild(shell);
-  }
-
-  let dialog = document.getElementById("zion-3ds-dialog");
-  if (!dialog) {
-    dialog = document.createElement("div");
-    dialog.id = "zion-3ds-dialog";
-    shell.appendChild(dialog);
-  }
-
-  setImportant(shell, "position", "fixed");
-  setImportant(shell, "inset", "0");
-  setImportant(shell, "width", "100vw");
-  setImportant(shell, "height", "100dvh");
-  setImportant(shell, "display", "flex");
-  setImportant(shell, "align-items", "center");
-  setImportant(shell, "justify-content", "center");
-  setImportant(shell, "padding", "16px");
-  setImportant(shell, "background", "rgba(0, 0, 0, 0.72)");
-  setImportant(shell, "z-index", "2147483200");
-  setImportant(shell, "pointer-events", "auto");
-
-  setImportant(dialog, "width", "min(500px, calc(100vw - 24px))");
-  setImportant(dialog, "height", "min(620px, calc(100dvh - 40px))");
-  setImportant(dialog, "max-width", "calc(100vw - 24px)");
-  setImportant(dialog, "max-height", "calc(100dvh - 40px)");
-  setImportant(dialog, "background", "#ffffff");
-  setImportant(dialog, "box-shadow", "0 24px 80px rgba(0, 0, 0, 0.45)");
-  setImportant(dialog, "pointer-events", "auto");
-
-  return dialog;
-}
-
 function centerChallengeFrame(frame: HTMLIFrameElement) {
   frame.setAttribute("data-zion-3ds-frame", "true");
 
-  const dialog = ensureChallengeShell();
-  if (frame.parentElement !== dialog) {
-    dialog.appendChild(frame);
-  }
-
-  setImportant(frame, "position", "static");
-  setImportant(frame, "top", "auto");
-  setImportant(frame, "left", "auto");
+  setImportant(frame, "position", "fixed");
+  setImportant(frame, "top", "50%");
+  setImportant(frame, "left", "50%");
   setImportant(frame, "right", "auto");
   setImportant(frame, "bottom", "auto");
-  setImportant(frame, "transform", "none");
-  setImportant(frame, "width", "100%");
-  setImportant(frame, "height", "100%");
-  setImportant(frame, "max-width", "none");
-  setImportant(frame, "max-height", "none");
+  setImportant(frame, "transform", "translate(-50%, -50%)");
+  setImportant(frame, "width", "min(500px, calc(100vw - 24px))");
+  setImportant(frame, "height", "min(620px, calc(100dvh - 40px))");
+  setImportant(frame, "max-width", "calc(100vw - 24px)");
+  setImportant(frame, "max-height", "calc(100dvh - 40px)");
   setImportant(frame, "border", "0");
   setImportant(frame, "background", "#ffffff");
-  setImportant(frame, "box-shadow", "none");
-  setImportant(frame, "z-index", "auto");
+  setImportant(frame, "box-shadow", "0 24px 80px rgba(0, 0, 0, 0.45)");
+  setImportant(frame, "z-index", "2147483400");
   setImportant(frame, "pointer-events", "auto");
+
+  let parent = frame.parentElement;
+  for (let depth = 0; parent && parent !== document.body && depth < 4; depth += 1) {
+    parent.setAttribute("data-zion-3ds-host", "true");
+    setImportant(parent, "position", "fixed");
+    setImportant(parent, "inset", "0");
+    setImportant(parent, "width", "100vw");
+    setImportant(parent, "height", "100dvh");
+    setImportant(parent, "margin", "0");
+    setImportant(parent, "padding", "0");
+    setImportant(parent, "overflow", "visible");
+    setImportant(parent, "transform", "none");
+    setImportant(parent, "background", "rgba(0, 0, 0, 0.72)");
+    setImportant(parent, "z-index", "2147483300");
+    setImportant(parent, "pointer-events", "auto");
+    parent = parent.parentElement;
+  }
 }
 
 function applyChallengeFrameLayout() {
@@ -287,8 +260,13 @@ function applyChallengeFrameLayout() {
     if (looksLikeThreeDsElement(frame) || isVisibleFrame) centerChallengeFrame(frame);
   });
 
-  document.getElementById("zion-3ds-shell")?.querySelectorAll<HTMLElement>("iframe").forEach((frame) => {
-    setImportant(frame, "pointer-events", "auto");
+  document.querySelectorAll<HTMLElement>("[data-zion-3ds-host='true']").forEach((host) => {
+    Array.from(host.children).forEach((child) => {
+      if (child instanceof HTMLIFrameElement && child.getAttribute("data-zion-3ds-frame") === "true") return;
+      if (child instanceof HTMLElement && !child.querySelector("[data-zion-3ds-frame='true']")) {
+        setImportant(child, "pointer-events", "none");
+      }
+    });
   });
 }
 
@@ -316,7 +294,6 @@ function startChallengeFrameGuard() {
       element.removeAttribute("data-zion-3ds-host");
       element.removeAttribute("data-zion-3ds-frame");
     });
-    document.getElementById("zion-3ds-shell")?.remove();
     document.body.removeAttribute("data-zion-3ds-active");
   };
 }
