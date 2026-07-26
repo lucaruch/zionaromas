@@ -28,6 +28,24 @@ type MpiHandlers = {
   onChallengeSuppression?: (data?: Cielo3dsAuthResult) => void;
 };
 
+type CardinalInlineDetails = {
+  paymentType?: string;
+  data?: { mode?: string };
+};
+
+type CardinalApi = {
+  configure: (options: Record<string, unknown>) => void;
+  on: (
+    event: string,
+    callback: (
+      htmlTemplate: string,
+      details: CardinalInlineDetails,
+      resolve: () => void,
+      reject: (error?: unknown) => void
+    ) => void
+  ) => void;
+};
+
 type BpmpiWindow = Window & {
   bpmpi_config?: () => Record<string, unknown>;
   bpmpi_authenticate?: () => void;
@@ -39,10 +57,11 @@ type BpmpiWindow = Window & {
   __zionBpmpiReload?: boolean;
   __zionBpmpiInitAmount?: number;
   __zionBpmpiAccessToken?: string;
-  Cardinal?: unknown;
+  Cardinal?: CardinalApi;
+  __zionBpmpiInlineRegistered?: boolean;
 };
 
-const SCRIPT_SRC = "/js/BP.Mpi.3ds20.min.js?v=20260725d";
+const SCRIPT_SRC = "/js/BP.Mpi.3ds20.min.js?v=20260726a";
 
 const READY_TIMEOUT_MS = 25_000;
 const AUTH_TIMEOUT_MS = 90_000;
@@ -168,123 +187,74 @@ function hideChallengeHint() {
   document.getElementById("zion-3ds-challenge-hint")?.remove();
 }
 
-function setImportant(element: HTMLElement, property: string, value: string) {
-  element.style.setProperty(property, value, "important");
-}
+function ensureInlineChallengeHost() {
+  let overlay = document.getElementById("zion-3ds-overlay");
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.id = "zion-3ds-overlay";
+    overlay.setAttribute("role", "dialog");
+    overlay.setAttribute("aria-modal", "true");
+    overlay.setAttribute("aria-label", "Autenticação segura do cartão");
 
-function rememberChallengeStyle(element: HTMLElement) {
-  if (!element.hasAttribute("data-zion-3ds-original-style")) {
-    element.setAttribute("data-zion-3ds-original-style", element.getAttribute("style") || "");
+    const host = document.createElement("div");
+    host.id = "zion-3ds-inline-host";
+    overlay.appendChild(host);
+    document.body.appendChild(overlay);
   }
-}
 
-function looksLikeThreeDsElement(element: Element) {
-  if (element.id.startsWith("zion-")) return false;
-
-  const descriptor = [
-    element.id,
-    typeof element.className === "string" ? element.className : "",
-    element.getAttribute("name") || "",
-    element.getAttribute("src") || "",
-    element.getAttribute("title") || "",
-    element.getAttribute("aria-label") || ""
-  ]
-    .join(" ")
-    .toLowerCase();
-
-  return /cardinal|centinel|songbird|cca|3ds|challenge/.test(descriptor);
-}
-
-function centerChallengeFrame(frame: HTMLIFrameElement) {
-  rememberChallengeStyle(frame);
-  frame.setAttribute("data-zion-3ds-frame", "true");
-
-  setImportant(frame, "position", "fixed");
-  setImportant(frame, "top", "50%");
-  setImportant(frame, "left", "50%");
-  setImportant(frame, "right", "auto");
-  setImportant(frame, "bottom", "auto");
-  setImportant(frame, "transform", "translate(-50%, -50%)");
-  setImportant(frame, "width", "min(500px, calc(100vw - 24px))");
-  setImportant(frame, "height", "min(620px, calc(100dvh - 40px))");
-  setImportant(frame, "max-width", "calc(100vw - 24px)");
-  setImportant(frame, "max-height", "calc(100dvh - 40px)");
-  setImportant(frame, "border", "0");
-  setImportant(frame, "background", "#ffffff");
-  setImportant(frame, "box-shadow", "0 24px 80px rgba(0, 0, 0, 0.45)");
-  setImportant(frame, "z-index", "2147483400");
-  setImportant(frame, "pointer-events", "auto");
-
-  let parent = frame.parentElement;
-  for (let depth = 0; parent && parent !== document.body && depth < 4; depth += 1) {
-    rememberChallengeStyle(parent);
-    parent.setAttribute("data-zion-3ds-host", "true");
-    setImportant(parent, "position", "fixed");
-    setImportant(parent, "inset", "0");
-    setImportant(parent, "width", "100vw");
-    setImportant(parent, "height", "100dvh");
-    setImportant(parent, "margin", "0");
-    setImportant(parent, "padding", "0");
-    setImportant(parent, "overflow", "visible");
-    setImportant(parent, "transform", "none");
-    setImportant(parent, "z-index", "2147483300");
-    setImportant(parent, "pointer-events", "auto");
-    parent = parent.parentElement;
-  }
-}
-
-function applyChallengeFrameLayout() {
-  const frames = Array.from(document.querySelectorAll<HTMLIFrameElement>("iframe"));
-
-  frames.forEach((frame) => {
-    if (frame.closest("#zion-bpmpi-fields")) return;
-
-    const rect = frame.getBoundingClientRect();
-    const isVisibleFrame =
-      rect.width > 180 ||
-      rect.height > 120 ||
-      frame.offsetWidth > 180 ||
-      frame.offsetHeight > 120 ||
-      getComputedStyle(frame).position === "fixed";
-
-    if (looksLikeThreeDsElement(frame) || isVisibleFrame) centerChallengeFrame(frame);
-  });
-
-  document.querySelectorAll<HTMLElement>("[data-zion-3ds-frame='true']").forEach((frame) => {
-    setImportant(frame, "pointer-events", "auto");
-  });
-}
-
-function startChallengeFrameGuard() {
-  document.body.setAttribute("data-zion-3ds-active", "true");
-  applyChallengeFrameLayout();
-
-  const observer = new MutationObserver(() => {
-    window.requestAnimationFrame(applyChallengeFrameLayout);
-  });
-
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true,
-    attributes: true,
-    attributeFilter: ["id", "class", "name", "src", "style", "title"]
-  });
-
-  const interval = window.setInterval(applyChallengeFrameLayout, 250);
-
-  return () => {
-    observer.disconnect();
-    window.clearInterval(interval);
-    document.querySelectorAll<HTMLElement>("[data-zion-3ds-original-style]").forEach((element) => {
-      const originalStyle = element.getAttribute("data-zion-3ds-original-style") || "";
-      if (originalStyle) element.setAttribute("style", originalStyle);
-      else element.removeAttribute("style");
-      element.removeAttribute("data-zion-3ds-original-style");
-      element.removeAttribute("data-zion-3ds-host");
-      element.removeAttribute("data-zion-3ds-frame");
-    });
-    document.body.removeAttribute("data-zion-3ds-active");
+  return {
+    overlay,
+    host: overlay.querySelector<HTMLElement>("#zion-3ds-inline-host")!
   };
+}
+
+function hideInlineChallenge() {
+  const overlay = document.getElementById("zion-3ds-overlay");
+  const host = document.getElementById("zion-3ds-inline-host");
+  document.body.removeAttribute("data-zion-3ds-active");
+  overlay?.removeAttribute("data-mode");
+  if (host) host.replaceChildren();
+}
+
+async function registerInlineChallenge(timeoutMs = 10_000) {
+  const win = getWin();
+  if (win.__zionBpmpiInlineRegistered) return;
+
+  const startedAt = Date.now();
+  while (!win.Cardinal && Date.now() - startedAt < timeoutMs) {
+    await new Promise((resolve) => window.setTimeout(resolve, 20));
+  }
+  if (!win.Cardinal) {
+    throw new Error("Não foi possível preparar a janela segura do banco.");
+  }
+
+  win.__zionBpmpiInlineRegistered = true;
+  win.Cardinal.configure({
+    framework: "inline",
+    displayLoading: true,
+    displayExitButton: true,
+    timeout: "8000",
+    maxRequestRetries: "10",
+    logging: { level: DEBUG_3DS ? "verbose" : "off" }
+  });
+
+  win.Cardinal.on("ui.inline.setup", (htmlTemplate, details, resolve, reject) => {
+    try {
+      if (!htmlTemplate || details?.paymentType !== "CCA") {
+        throw new Error("Desafio 3DS recebido em formato inválido.");
+      }
+
+      const { overlay, host } = ensureInlineChallengeHost();
+      const mode = details.data?.mode === "suppress" ? "suppress" : "static";
+      overlay.setAttribute("data-mode", mode);
+      host.innerHTML = htmlTemplate;
+      document.body.setAttribute("data-zion-3ds-active", "true");
+      showChallengeHint();
+      resolve();
+    } catch (error) {
+      reject(error);
+    }
+  });
 }
 
 export type Cielo3dsFieldPayload = {
@@ -567,7 +537,7 @@ export async function runCielo3dsAuthentication(
     win.bpmpi_load();
   }
 
-  await readyPromise;
+  await Promise.all([readyPromise, registerInlineChallenge()]);
   win.__zionBpmpiInitAmount = fields.amountCents;
 
   if (typeof win.bpmpi_authenticate !== "function") {
@@ -584,8 +554,6 @@ export async function runCielo3dsAuthentication(
       reject(new Error(STUCK_MESSAGE));
     }, AUTH_TIMEOUT_MS);
 
-    showChallengeHint();
-    const stopChallengeFrameGuard = startChallengeFrameGuard();
     if (DEBUG_3DS) console.info("[ZION 3DS] Chamando bpmpi_authenticate()");
 
     const finishOk = (data: Cielo3dsAuthResult) => {
@@ -623,7 +591,7 @@ export async function runCielo3dsAuthentication(
 
     function cleanup() {
       window.clearTimeout(timer);
-      stopChallengeFrameGuard();
+      hideInlineChallenge();
       hideChallengeHint();
       handlers.onSuccess = undefined;
       handlers.onFailure = undefined;

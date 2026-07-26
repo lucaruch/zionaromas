@@ -109,134 +109,60 @@ textarea {
   }
 }
 
-/* Cardinal / Braspag 3DS — janela do banco precisa ficar acima do checkout */
-#Cardinal-Modal,
-#Cardinal-Overlay,
-#Cardinal-CCA-IFrame,
-.Cardinal-Modal,
-.Cardinal-Overlay,
-iframe[id*="Cardinal"],
-iframe[name*="cardinal"],
-iframe[name*="Cardinal"],
-iframe[src*="cardinal"],
-div[id*="Cardinal"] {
-  z-index: 2147483000 !important;
-  pointer-events: auto !important;
+/* O iframe 3DS é criado diretamente no contêiner final. Os nós internos do
+   Cardinal não podem ser movidos depois que o conteúdo cross-origin carregar. */
+#zion-3ds-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: rgba(0, 0, 0, 0.82);
+  pointer-events: auto;
 }
 
-#Cardinal-Modal,
-.Cardinal-Modal {
-  position: fixed !important;
-  inset: 0 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
+body[data-zion-3ds-active="true"] #zion-3ds-overlay {
+  display: flex;
 }
 
-#Cardinal-Overlay,
-.Cardinal-Overlay {
-  position: fixed !important;
-  inset: 0 !important;
-  width: 100vw !important;
-  height: 100dvh !important;
-  background: rgba(0, 0, 0, 0.72) !important;
+#zion-3ds-inline-host {
+  width: min(500px, calc(100vw - 40px));
+  height: min(620px, calc(100dvh - 48px));
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+  pointer-events: auto;
 }
 
-#Cardinal-Modal,
-.Cardinal-Modal {
-  width: 100vw !important;
-  height: 100dvh !important;
-  padding: 1rem !important;
-  overflow: hidden !important;
-}
-
-#Cardinal-CCA-IFrame,
-iframe#Cardinal-CCA-IFrame,
-iframe[name="Cardinal-CCA-IFrame"],
-iframe[id*="Cardinal" i],
-iframe[name*="Cardinal" i],
-iframe[src*="cardinal" i],
-iframe[src*="centinel" i],
-iframe[id*="CCA" i],
-iframe[name*="CCA" i],
-iframe[id*="challenge" i],
-iframe[name*="challenge" i] {
-  position: fixed !important;
-  top: 50% !important;
-  left: 50% !important;
-  right: auto !important;
-  bottom: auto !important;
-  transform: translate(-50%, -50%) !important;
-  width: min(500px, calc(100vw - 24px)) !important;
-  height: min(600px, calc(100dvh - 56px)) !important;
-  max-width: calc(100vw - 24px) !important;
-  max-height: calc(100dvh - 56px) !important;
+#zion-3ds-inline-host > *,
+#zion-3ds-inline-host iframe {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
   border: 0 !important;
-  background: #ffffff !important;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45) !important;
-}
-
-body[data-zion-3ds-active="true"] iframe[data-zion-3ds-frame="true"] {
-  position: fixed !important;
-  top: 50% !important;
-  left: 50% !important;
-  right: auto !important;
-  bottom: auto !important;
-  transform: translate(-50%, -50%) !important;
-  width: min(500px, calc(100vw - 24px)) !important;
-  height: min(620px, calc(100dvh - 40px)) !important;
-  max-width: calc(100vw - 24px) !important;
-  max-height: calc(100dvh - 40px) !important;
-  border: 0 !important;
-  background: #ffffff !important;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45) !important;
-  z-index: 2147483100 !important;
   pointer-events: auto !important;
 }
 
-body[data-zion-3ds-active="true"] [data-zion-3ds-host="true"] {
-  position: fixed !important;
-  inset: 0 !important;
-  width: 100vw !important;
-  height: 100dvh !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  overflow: hidden !important;
-  transform: none !important;
-  background: rgba(0, 0, 0, 0.72) !important;
-  z-index: 2147483000 !important;
-  pointer-events: auto !important;
+#zion-3ds-overlay[data-mode="suppress"] {
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  background: transparent;
 }
 
 @media (max-width: 640px) {
-  #Cardinal-Modal,
-  .Cardinal-Modal {
-    padding: 0.75rem !important;
+  #zion-3ds-overlay {
+    padding: 0.5rem;
   }
 
-  #Cardinal-CCA-IFrame,
-  iframe#Cardinal-CCA-IFrame,
-  iframe[name="Cardinal-CCA-IFrame"],
-  iframe[id*="Cardinal" i],
-  iframe[name*="Cardinal" i],
-  iframe[src*="cardinal" i],
-  iframe[src*="centinel" i],
-  iframe[id*="CCA" i],
-  iframe[name*="CCA" i],
-  iframe[id*="challenge" i],
-  iframe[name*="challenge" i] {
-    width: calc(100vw - 18px) !important;
-    height: min(620px, calc(100dvh - 40px)) !important;
-    max-height: calc(100dvh - 40px) !important;
-  }
-
-  body[data-zion-3ds-active="true"] iframe[data-zion-3ds-frame="true"] {
-    width: calc(100vw - 18px) !important;
-    height: min(620px, calc(100dvh - 40px)) !important;
-    max-height: calc(100dvh - 40px) !important;
+  #zion-3ds-inline-host {
+    width: calc(100vw - 16px);
+    height: min(620px, calc(100dvh - 24px));
   }
 }
 
