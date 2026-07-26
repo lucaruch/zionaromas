@@ -1,18 +1,11 @@
 import type { Order, PaymentMethod } from "@prisma/client";
-import { createQrCodeImage } from "@/lib/pix";
+import { randomUUID } from "node:crypto";
+import { createPixPayload, createQrCodeImage, isValidPixPayload } from "@/lib/pix";
 import { getPaymentSettings } from "@/lib/payment-store";
 import { providerLabels, type PaymentSettings } from "@/lib/payments";
 import { confirmOrderPayment, confirmOrderPaymentByCode, normalizeOrderCode } from "@/lib/order-workflow";
 import { prisma } from "@/lib/prisma";
 import { getPublicSiteUrl } from "@/lib/site-url";
-
-export type CardExternalAuthentication = {
-  cavv?: string;
-  xid?: string;
-  eci: string;
-  version?: string;
-  referenceId?: string;
-};
 
 export type CardDetails = {
   cardType: "CreditCard" | "DebitCard";
@@ -22,7 +15,6 @@ export type CardDetails = {
   securityCode: string;
   brand: string;
   installments?: number;
-  externalAuthentication?: CardExternalAuthentication;
 };
 
 export type PaymentInstruction = {
@@ -46,13 +38,13 @@ function cents(value: number) {
 function cieloApiUrls(settings: PaymentSettings) {
   const production = "https://api.cieloecommerce.cielo.com.br";
   const sandbox = "https://apisandbox.cieloecommerce.cielo.com.br";
-  return settings.environment === "PRODUCAO" ? [production, sandbox] : [sandbox, production];
+  return [settings.environment === "PRODUCAO" ? production : sandbox];
 }
 
 function cieloQueryUrls(settings: PaymentSettings) {
   const production = "https://apiquery.cieloecommerce.cielo.com.br";
   const sandbox = "https://apiquerysandbox.cieloecommerce.cielo.com.br";
-  return settings.environment === "PRODUCAO" ? [production, sandbox] : [sandbox, production];
+  return [settings.environment === "PRODUCAO" ? production : sandbox];
 }
 
 const cieloApprovedStatuses = new Set([1, 2]);
@@ -62,6 +54,25 @@ function cieloCredentials() {
   const merchantKey = process.env.CIELO_MERCHANT_KEY?.trim();
   if (!merchantId || !merchantKey) return null;
   return { merchantId, merchantKey };
+}
+
+function cleanEnv(name: string) {
+  return (process.env[name] || "").trim().replace(/^['"]|['"]$/g, "").trim();
+}
+
+function pixFallbackCredentials() {
+  const key = cleanEnv("PIX_KEY");
+  if (!key) return null;
+
+  return {
+    key,
+    merchantName: cleanEnv("PIX_MERCHANT_NAME") || "ZION AROMAS",
+    merchantCity: cleanEnv("PIX_MERCHANT_CITY") || "PRAIA GRANDE"
+  };
+}
+
+function cieloRequestId() {
+  return randomUUID();
 }
 
 export function isCieloPaymentApproved(status: unknown) {
@@ -83,6 +94,7 @@ export async function fetchCieloPaymentById(paymentId: string, settings: Payment
         method: "GET",
         headers: {
           Accept: "application/json",
+          RequestId: cieloRequestId(),
           MerchantId: credentials.merchantId,
           MerchantKey: credentials.merchantKey
         },
@@ -115,6 +127,7 @@ export async function fetchCieloSalesByMerchantOrderId(merchantOrderId: string, 
         method: "GET",
         headers: {
           Accept: "application/json",
+          RequestId: cieloRequestId(),
           MerchantId: credentials.merchantId,
           MerchantKey: credentials.merchantKey
         },
@@ -436,8 +449,8 @@ function formatCieloCardError(data: unknown, httpStatus: number, environmentLabe
     return "Pagamento com cartão não autorizado pela operadora. Tente outro cartão ou finalize por PIX.";
   }
 
-  if (message) return `Cielo recusou o cartão: ${message}`;
-  return `Cielo recusou o cartão (HTTP ${httpStatus}).`;
+  if (message) console.error(`[Cielo Card] HTTP ${httpStatus}: ${message}`);
+  return "Pagamento com cartão não concluído. Confira os dados, confirme se o cartão está liberado para compras online e tente novamente.";
 }
 
 function isSandboxApiUrl(apiUrl: string) {
@@ -471,6 +484,48 @@ function extractPixFromPayment(payment: Record<string, unknown>) {
   };
 }
 
+async function createFallbackPixCharge(order: Order, lastRaw?: unknown): Promise<PaymentInstruction> {
+  const fallback = pixFallbackCredentials();
+  if (!fallback) {
+    return {
+      method: "PIX",
+      provider: providerLabels.CIELO,
+      status: "manual",
+      message: "PIX indisponível no momento. Escolha cartão ou tente novamente em instantes.",
+      raw: lastRaw
+    };
+  }
+
+  try {
+    const payload = await createPixPayload({
+      key: fallback.key,
+      merchantName: fallback.merchantName,
+      merchantCity: fallback.merchantCity,
+      amount: Number(order.total),
+      txid: sanitizeMerchantOrderId(order.code)
+    });
+
+    return {
+      method: "PIX",
+      provider: "PIX ZION AROMAS",
+      status: "ready",
+      message: "PIX gerado com segurança. Escaneie o QR Code ou copie o código para pagar.",
+      pixQrCode: payload.code,
+      pixQrCodeImage: payload.image,
+      raw: lastRaw || { fallback: "pix_key" }
+    };
+  } catch (error) {
+    console.error("[PIX fallback] Falha ao gerar PIX:", error);
+    return {
+      method: "PIX",
+      provider: providerLabels.CIELO,
+      status: "manual",
+      message: "PIX indisponível no momento. Escolha cartão ou tente novamente em instantes.",
+      raw: lastRaw
+    };
+  }
+}
+
 async function createCieloPixCharge(
   order: Order,
   customer: { name: string; email: string; document?: string },
@@ -479,12 +534,7 @@ async function createCieloPixCharge(
   const credentials = cieloCredentials();
   if (!credentials) {
     console.error("[Cielo] Credenciais ausentes: CIELO_MERCHANT_ID ou CIELO_MERCHANT_KEY não configurados.");
-    return {
-      method: "PIX" as const,
-      provider: providerLabels.CIELO,
-      status: "manual" as const,
-      message: "PIX indisponível no momento. Tente novamente em instantes ou escolha outra forma de pagamento."
-    };
+    return createFallbackPixCharge(order);
   }
 
   const amount = cents(Number(order.total));
@@ -506,7 +556,7 @@ async function createCieloPixCharge(
       method: "PIX" as const,
       provider: providerLabels.CIELO,
       status: "manual" as const,
-      message: "Informe um CPF ou CNPJ válido para gerar o PIX na Cielo."
+      message: "Informe um CPF ou CNPJ válido para gerar o PIX."
     };
   }
 
@@ -522,12 +572,12 @@ async function createCieloPixCharge(
     { Type: "Pix", Amount: amount, QrCodeExpiration: 86400 }
   ];
 
-  let lastError = "Não foi possível gerar o PIX na Cielo.";
+  let lastError = "Não foi possível gerar o PIX agora.";
   let lastRaw: unknown;
 
   for (const apiUrl of cieloApiUrls(settings)) {
     for (const paymentBody of paymentVariants) {
-      try {
+    try {
         console.log(
           `[Cielo] PIX POST ${apiUrl}/1/sales | MerchantOrderId=${merchantOrderId} | Amount=${amount} | Env=${settings.environment}`
         );
@@ -537,6 +587,7 @@ async function createCieloPixCharge(
           headers: {
             "Content-Type": "application/json",
             Accept: "application/json",
+            RequestId: cieloRequestId(),
             MerchantId: credentials.merchantId,
             MerchantKey: credentials.merchantKey
           },
@@ -554,9 +605,8 @@ async function createCieloPixCharge(
 
         const errorMessage = extractCieloErrorMessage(data);
         if (!response.ok) {
-          lastError = errorMessage
-            ? `Cielo recusou o PIX: ${errorMessage}`
-            : `Cielo recusou o PIX (HTTP ${response.status}). Confira se o PIX está habilitado em Meu Cadastro > Autorizações.`;
+          if (errorMessage) console.error(`[Cielo PIX] HTTP ${response.status}: ${errorMessage}`);
+          lastError = "PIX indisponível no momento. Tente novamente em instantes ou escolha outra forma de pagamento.";
           continue;
         }
 
@@ -565,18 +615,19 @@ async function createCieloPixCharge(
             ? ((data as { Payment?: Record<string, unknown> }).Payment || {})
             : {};
         const extracted = extractPixFromPayment(payment);
-        const pixQrCodeImage = extracted.pixQrCode
-          ? await createQrCodeImage(extracted.pixQrCode).catch(() => extracted.cieloPixImage)
+        const validPixQrCode = isValidPixPayload(extracted.pixQrCode) ? extracted.pixQrCode : undefined;
+        const pixQrCodeImage = validPixQrCode
+          ? await createQrCodeImage(validPixQrCode).catch(() => extracted.cieloPixImage)
           : extracted.cieloPixImage;
 
-        if (extracted.pixQrCode || pixQrCodeImage) {
+        if (validPixQrCode || pixQrCodeImage) {
           return {
             method: "PIX" as const,
             provider: providerLabels.CIELO,
             status: "ready" as const,
-            message: "PIX gerado pela Cielo. Escaneie o QR Code ou use o copia e cola.",
+            message: "PIX gerado com segurança. Escaneie o QR Code ou use o copia e cola.",
             reference: extracted.paymentId,
-            pixQrCode: extracted.pixQrCode,
+            pixQrCode: validPixQrCode,
             pixQrCodeImage,
             raw: data
           };
@@ -585,13 +636,16 @@ async function createCieloPixCharge(
         lastError =
           extracted.returnMessage ||
           errorMessage ||
-          "A Cielo respondeu sem QR Code. Verifique se o PIX está habilitado na conta Cielo.";
+          "PIX indisponível no momento. Tente novamente em instantes ou escolha outra forma de pagamento.";
       } catch (error) {
         console.error(`[Cielo] PIX falhou em ${apiUrl}:`, error);
-        lastError = "Falha de conexão com a Cielo ao gerar o PIX.";
+        lastError = "Falha de conexão ao gerar o PIX.";
       }
     }
   }
+
+  const fallbackPix = await createFallbackPixCharge(order, lastRaw);
+  if (fallbackPix.status === "ready") return fallbackPix;
 
   return {
     method: "PIX" as const,
@@ -686,70 +740,42 @@ async function createCieloCardCharge(
     Brand: brand
   };
 
-  const externalAuth = card.externalAuthentication;
-  const hasExternalAuth = Boolean(externalAuth?.eci);
-
-  const buildPaymentPayload = (sandbox: boolean, mode: "external" | "plain"): Record<string, unknown> => {
-    const baseCard = isDebit
-      ? {
-          Type: "DebitCard",
-          Amount: amount,
-          SoftDescriptor: softDescriptor(),
-          Tip: false,
-          DebitCard: cardNode,
-          ...(sandbox ? { Provider: cieloCardProvider() } : {})
-        }
-      : {
-          Type: "CreditCard",
-          Amount: amount,
-          SoftDescriptor: softDescriptor(),
-          Installments: installments,
-          Capture: true,
-          CreditCard: cardNode,
-          ...(sandbox ? { Provider: cieloCardProvider() } : {})
-        };
-
-    if (mode === "external" && externalAuth?.eci) {
-      const externalAuthentication: Record<string, unknown> = {
-        Eci: externalAuth.eci,
-        ...(externalAuth.cavv ? { Cavv: externalAuth.cavv } : {}),
-        ...(externalAuth.xid ? { Xid: externalAuth.xid } : {}),
-        ...(externalAuth.version ? { Version: externalAuth.version } : { Version: "2" }),
-        ...(externalAuth.referenceId ? { ReferenceID: externalAuth.referenceId } : {})
-      };
-
+  const buildPaymentPayload = (sandbox: boolean): Record<string, unknown> => {
+    if (isDebit) {
       return {
-        ...baseCard,
-        Authenticate: true,
+        Type: "DebitCard",
+        Amount: amount,
+        SoftDescriptor: softDescriptor(),
         ReturnUrl: returnUrl,
-        ExternalAuthentication: externalAuthentication
+        Authenticate: true,
+        DebitCard: cardNode,
+        ...(sandbox ? { Provider: cieloCardProvider() } : {})
       };
     }
 
-    // Authenticate:true sem ExternalAuthentication costuma retornar HTTP 403.
     return {
-      ...baseCard,
-      Authenticate: false
+      Type: "CreditCard",
+      Amount: amount,
+      SoftDescriptor: softDescriptor(),
+      Installments: installments,
+      Capture: true,
+      Authenticate: false,
+      CreditCard: cardNode,
+      ...(sandbox ? { Provider: cieloCardProvider() } : {})
     };
   };
 
-  let lastError = "Não foi possível processar o cartão na Cielo.";
+  let lastError = "Não foi possível processar o cartão agora.";
   let lastRaw: unknown;
-
-  // Quando a autenticação do banco não conclui, ainda tentamos a autorização padrão
-  // da operadora antes de retornar erro ao cliente.
-  const modes: Array<"external" | "plain"> = hasExternalAuth ? ["external", "plain"] : ["plain"];
 
   for (const apiUrl of cieloApiUrls(settings)) {
     const sandbox = isSandboxApiUrl(apiUrl);
     const environmentLabel = sandbox ? "Homologação/Sandbox" : "Produção";
-
-    for (const mode of modes) {
-      const paymentPayload = buildPaymentPayload(sandbox, mode);
+    const paymentPayload = buildPaymentPayload(sandbox);
 
       try {
         console.log(
-          `[Cielo Card] POST ${apiUrl}/1/sales | ${isDebit ? "DebitCard" : "CreditCard"} | pedido ${merchantOrderId} | brand=${brand} | env=${environmentLabel} | mode=${mode}`
+          `[Cielo Card] POST ${apiUrl}/1/sales | ${isDebit ? "DebitCard" : "CreditCard"} | pedido ${merchantOrderId} | brand=${brand} | env=${environmentLabel}`
         );
 
         const response = await fetch(`${apiUrl}/1/sales`, {
@@ -757,6 +783,7 @@ async function createCieloCardCharge(
           headers: {
             "Content-Type": "application/json",
             Accept: "application/json",
+            RequestId: cieloRequestId(),
             MerchantId: credentials.merchantId,
             MerchantKey: credentials.merchantKey
           },
@@ -782,14 +809,9 @@ async function createCieloCardCharge(
             /affiliation not found/i.test(lastError) ||
             /unauthorized/i.test(extractCieloErrorMessage(data))
           ) {
-            break; // troca de ambiente
+            break;
           }
 
-          if (mode === "external") {
-            continue;
-          }
-
-          // Erro de negócio: não adianta mudar auth/ambiente
           return {
             method: "CARTAO" as const,
             provider: providerLabels.CIELO,
@@ -829,7 +851,7 @@ async function createCieloCardCharge(
               method: "CARTAO" as const,
               provider: providerLabels.CIELO,
               status: "ready" as const,
-              message: "Pagamento com cartão APROVADO com sucesso!",
+              message: "Pagamento com cartão aprovado com sucesso!",
               reference: paymentId,
               raw: data
             };
@@ -839,7 +861,7 @@ async function createCieloCardCharge(
               method: "CARTAO" as const,
               provider: providerLabels.CIELO,
               status: "manual" as const,
-              message: "Pagamento autorizado na Cielo. Nossa equipe confirmará o pedido em instantes.",
+              message: "Pagamento autorizado. Nossa equipe confirmará o pedido em instantes.",
               reference: paymentId,
               raw: data
             };
@@ -861,19 +883,14 @@ async function createCieloCardCharge(
 
         const returnCode = String(payment.ReturnCode ?? "").toUpperCase();
         if (returnCode === "AI") {
-          if (mode === "external") {
-            continue;
-          }
-
           lastError =
             "Cartão não autorizado pela operadora. Confira os dados, confirme se o cartão está liberado para compras online e tente novamente. Se preferir, finalize por PIX.";
         } else if (returnCode === "AH") {
           lastError =
             "Este cartão é de crédito. Selecione a opção Cartão de Crédito no checkout e tente novamente.";
         } else {
-          lastError = `Cartão não autorizado pela Cielo: ${returnMessage}${
-            payment.ReturnCode != null ? ` (código ${payment.ReturnCode})` : ""
-          }`;
+          console.error(`[Cielo Card] ReturnCode=${payment.ReturnCode ?? "-"} ReturnMessage=${returnMessage}`);
+          lastError = "Pagamento com cartão não concluído. Confira os dados, confirme se o cartão está liberado para compras online e tente novamente.";
         }
 
         return {
@@ -884,10 +901,9 @@ async function createCieloCardCharge(
           reference: paymentId,
           raw: data
         };
-      } catch (error) {
+    } catch (error) {
         console.error(`[Cielo Card] Falha em ${apiUrl}:`, error);
-        lastError = "Falha de conexão com a Cielo ao processar o cartão.";
-      }
+        lastError = "Falha de conexão ao processar o cartão.";
     }
   }
 
@@ -912,35 +928,16 @@ export async function createPaymentInstruction({
   card?: CardDetails;
 }): Promise<PaymentInstruction> {
   if (order.paymentMethod === "PIX") {
-    const hasCieloCredentials = Boolean(process.env.CIELO_MERCHANT_ID?.trim() && process.env.CIELO_MERCHANT_KEY?.trim());
-
-    // PIX deve cair na Cielo — não usa PIX_KEY (chave de outro banco/CNPJ).
-    if (settings.activeProvider === "CIELO" && hasCieloCredentials) {
+    if (settings.activeProvider === "CIELO") {
       return (
         (await createCieloPixCharge(order, customer, settings).catch((error) => {
           console.error("[Cielo PIX] Falha ao gerar cobrança:", error);
-          return {
-            method: "PIX" as const,
-            provider: providerLabels.CIELO,
-            status: "manual" as const,
-            message: "Falha ao gerar PIX na Cielo. Tente novamente em instantes."
-          };
-        })) || {
-          method: "PIX",
-          provider: providerLabels.CIELO,
-          status: "manual",
-          message:
-            "Não foi possível gerar o PIX na Cielo. Verifique se o PIX está habilitado em Meu Cadastro > Autorizações."
-        }
+          return createFallbackPixCharge(order);
+        })) || (await createFallbackPixCharge(order))
       );
     }
 
-    return {
-      method: "PIX",
-      provider: providerLabels[settings.activeProvider],
-      status: "manual",
-      message: "PIX indisponível no momento. Tente novamente em instantes ou escolha outra forma de pagamento."
-    };
+    return createFallbackPixCharge(order);
   }
 
   if (card && settings.activeProvider === "CIELO") {
@@ -950,7 +947,7 @@ export async function createPaymentInstruction({
   return {
     method: "CARTAO",
     provider: providerLabels[settings.activeProvider],
-    status: "pending",
-    message: "Pedido recebido. A confirmação do cartão será processada pelo ambiente seguro da operadora."
+    status: "manual",
+    message: "Pagamento com cartão indisponível no momento. Finalize por PIX ou tente novamente em instantes."
   };
 }

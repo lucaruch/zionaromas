@@ -4,8 +4,6 @@ import { Check, ShieldCheck } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  environmentLabels,
-  paymentEnvironments,
   paymentProviders,
   providerLabels,
   type PaymentEnvironment,
@@ -16,28 +14,23 @@ import {
 type SaveState = "idle" | "saving" | "saved" | "error";
 
 const providerDescriptions: Record<PaymentProvider, string> = {
-  CIELO: "Operadora selecionada para processar as vendas online da loja.",
-  GETNET: "Operadora selecionada para processar as vendas online da loja."
-};
-
-const environmentHints: Record<PaymentEnvironment, string> = {
-  PRODUCAO: "Use as chaves reais CIELO_MERCHANT_ID / CIELO_MERCHANT_KEY de produção.",
-  HOMOLOGACAO: "Use as chaves sandbox da Cielo. Cartões de teste e Provider Simulado."
+  CIELO: "Receba PIX, crédito e débito pelo processamento seguro da Cielo.",
+  GETNET: "Receba PIX, crédito e débito pelo processamento seguro da Getnet."
 };
 
 export function PaymentSettingsForm({ initialSettings }: { initialSettings: PaymentSettings }) {
   const [activeProvider, setActiveProvider] = useState<PaymentProvider>(initialSettings.activeProvider);
-  const [environment, setEnvironment] = useState<PaymentEnvironment>(initialSettings.environment);
+  const [environment] = useState<PaymentEnvironment>(initialSettings.environment);
   const [saveState, setSaveState] = useState<SaveState>("idle");
 
   const activeProviderName = providerLabels[activeProvider];
   const canSave = saveState !== "saving";
 
   const statusText = useMemo(() => {
-    if (saveState === "saved") return "Configuração salva com sucesso.";
+    if (saveState === "saved") return "Forma de pagamento salva com sucesso.";
     if (saveState === "error") return "Não foi possível salvar. Tente novamente.";
-    return `${activeProviderName} · ${environmentLabels[environment]}`;
-  }, [activeProviderName, environment, saveState]);
+    return `${activeProviderName} selecionada`;
+  }, [activeProviderName, saveState]);
 
   async function saveSettings() {
     if (!canSave) return;
@@ -64,7 +57,7 @@ export function PaymentSettingsForm({ initialSettings }: { initialSettings: Paym
           <div>
             <h1 className="font-display text-4xl text-white sm:text-5xl">Operadora de pagamento</h1>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-white/60">
-              Escolha a operadora e o ambiente. O erro 129 (Affiliation not found) quase sempre é chave no ambiente errado.
+              Escolha qual operadora será usada no checkout da loja.
             </p>
           </div>
           <div className="inline-flex w-max items-center gap-2 border border-gold/20 bg-black px-4 py-3 text-xs font-bold uppercase tracking-[0.18em] text-gold">
@@ -112,33 +105,6 @@ export function PaymentSettingsForm({ initialSettings }: { initialSettings: Paym
                       {selected ? <Check className="h-4 w-4" /> : null}
                     </span>
                   </span>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-
-        <section>
-          <h2 className="text-sm font-black uppercase tracking-[0.22em] text-white/72">Ambiente Cielo</h2>
-          <div className="mt-4 grid gap-3 md:grid-cols-2">
-            {paymentEnvironments.map((env) => {
-              const selected = environment === env;
-              return (
-                <button
-                  key={env}
-                  type="button"
-                  onClick={() => {
-                    setEnvironment(env);
-                    setSaveState("idle");
-                  }}
-                  className={
-                    selected
-                      ? "border border-gold bg-gold/15 p-5 text-left text-white"
-                      : "border border-gold/16 bg-black/35 p-5 text-left text-white transition hover:border-gold/55"
-                  }
-                >
-                  <span className="block font-display text-2xl">{environmentLabels[env]}</span>
-                  <span className="mt-2 block text-sm leading-6 text-white/60">{environmentHints[env]}</span>
                 </button>
               );
             })}

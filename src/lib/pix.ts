@@ -43,6 +43,20 @@ function crc16(payload: string) {
   return crc.toString(16).toUpperCase().padStart(4, "0");
 }
 
+export function isValidPixPayload(value: unknown) {
+  if (typeof value !== "string") return false;
+
+  const code = value.trim();
+  if (!code.startsWith("000201") || !code.includes("br.gov.bcb.pix") || code.length < 80) return false;
+
+  const crcIndex = code.lastIndexOf("6304");
+  if (crcIndex < 0 || crcIndex + 8 !== code.length) return false;
+
+  const withoutChecksum = code.slice(0, crcIndex + 4);
+  const checksum = code.slice(crcIndex + 4).toUpperCase();
+  return /^[0-9A-F]{4}$/.test(checksum) && crc16(withoutChecksum) === checksum;
+}
+
 export async function createPixPayload({
   key,
   merchantName,
@@ -61,6 +75,10 @@ export async function createPixPayload({
   const safeName = onlyPixSafe(merchantName || "ZION AROMAS", 25) || "ZION AROMAS";
   const safeCity = onlyPixSafe(merchantCity || "PRAIA GRANDE", 15) || "PRAIA GRANDE";
   const safeTxid = onlyPixSafe(txid, 25) || "***";
+  if (!safeKey || safeKey.length < 5) {
+    throw new Error("Chave PIX invalida.");
+  }
+
   const merchantAccount = [
     tlv("00", "br.gov.bcb.pix"),
     tlv("01", safeKey)

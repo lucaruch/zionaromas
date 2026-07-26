@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/components/commerce/cart-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { fetchCielo3dsToken, runCielo3dsAuthentication } from "@/lib/cielo-3ds-browser";
 import { type PaymentMethod } from "@/lib/payments";
 import { formatCurrency } from "@/lib/utils";
 
@@ -264,79 +263,7 @@ export default function CheckoutPage() {
     setCheckoutLoading(true);
 
     try {
-      let externalAuthentication:
-        | {
-            cavv?: string;
-            xid?: string;
-            eci: string;
-            version?: string;
-            referenceId?: string;
-          }
-        | undefined;
-
-      if (isCardPayment) {
-        setCheckoutMessage("Validando o cartão com segurança...");
-        try {
-          const expDigits = cardExpiration.replace(/\D/g, "");
-          const expirationMonth = expDigits.slice(0, 2);
-          let expirationYear = expDigits.slice(2);
-          if (expirationYear.length === 2) expirationYear = `20${expirationYear}`;
-
-          const amountCents = Math.round(total * 100);
-          if (!Number.isFinite(amountCents) || amountCents < 100) {
-            throw new Error("Valor do pedido inválido. Recarregue o carrinho e tente novamente.");
-          }
-
-          const [{ accessToken, environment }, ipData] = await Promise.all([
-            fetchCielo3dsToken(),
-            fetch("/api/client-ip", { cache: "no-store" })
-              .then((response) => response.json())
-              .catch(() => ({}))
-          ]);
-          const customerIp = typeof ipData?.ip === "string" ? ipData.ip : "";
-
-          const configuredSite =
-            (typeof process !== "undefined" && process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "")) ||
-            "https://zionaromas.com";
-          const merchantUrl = configuredSite.replace("://www.", "://");
-
-          externalAuthentication = await runCielo3dsAuthentication(environment, {
-            accessToken,
-            orderNumber: `ZA${Date.now().toString().slice(-8)}`,
-            amountCents,
-            installments: paymentMethod === "CARTAO_CREDITO" ? cardInstallments : 1,
-            paymentMethod: paymentMethod === "CARTAO_DEBITO" ? "debit" : "credit",
-            cardNumber,
-            expirationMonth,
-            expirationYear,
-            customerName: name,
-            customerEmail: email,
-            customerDocument: document,
-            phone,
-            street1: `${isPickup ? address || "Retirada ZION AROMAS" : address}, ${isPickup ? number || "S/N" : number}`.slice(
-              0,
-              60
-            ),
-            street2: (complement || "Centro").slice(0, 60),
-            city: "Praia Grande",
-            state: "SP",
-            zipcode: cep.replace(/\D/g, "").length === 8 ? cep : "11700007",
-            merchantUrl,
-            customerIp,
-            items: items.map((item) => ({
-              name: item.name,
-              sku: item.slug,
-              quantity: item.quantity,
-              unitPriceCents: Math.round((item.salePrice ?? item.price) * 100)
-            }))
-          });
-        } catch (error) {
-          console.warn("[Checkout] 3DS indisponível, seguindo com autorização da operadora:", error);
-          externalAuthentication = undefined;
-        }
-      }
-
-      setCheckoutMessage("Processando pagamento...");
+      setCheckoutMessage(isCardPayment ? "Processando pagamento em ambiente seguro..." : "Gerando PIX seguro...");
 
       const response = await fetch("/api/checkout", {
         method: "POST",
@@ -358,8 +285,7 @@ export default function CheckoutPage() {
                 expirationDate: cardExpiration,
                 securityCode: cardSecurityCode,
                 brand: cardBrand,
-                installments: paymentMethod === "CARTAO_CREDITO" ? cardInstallments : 1,
-                externalAuthentication
+                installments: paymentMethod === "CARTAO_CREDITO" ? cardInstallments : 1
               }
             : undefined,
           coupon,
