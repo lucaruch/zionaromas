@@ -17,8 +17,8 @@ COPY . .
 
 ENV DATABASE_URL=postgresql://postgres:postgres@localhost:5432/zion_aromas?schema=public
 ENV AUTH_SECRET=build-time-secret
-ENV AUTH_URL=http://localhost:3000
-ENV NEXT_PUBLIC_SITE_URL=http://localhost:3000
+ENV AUTH_URL=https://zionaromas.com
+ENV NEXT_PUBLIC_SITE_URL=https://zionaromas.com
 ENV ADMIN_PASSWORD=build-time-admin-password
 
 RUN npm run build
