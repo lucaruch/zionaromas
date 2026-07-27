@@ -56,7 +56,7 @@ function cieloQueryUrls(settings: PaymentSettings) {
   return [settings.environment === "PRODUCAO" ? production : sandbox];
 }
 
-const cieloApprovedStatuses = new Set([1, 2]);
+const cieloApprovedStatuses = new Set([2]);
 
 function cieloCredentials() {
   const merchantId = process.env.CIELO_MERCHANT_ID?.trim();
@@ -380,6 +380,38 @@ function normalizeExpirationDate(value: string) {
   return `${month}/${year}`;
 }
 
+export function isValidCardNumber(value: string) {
+  const digits = value.replace(/\D/g, "");
+  if (digits.length < 13 || digits.length > 19) return false;
+
+  let sum = 0;
+  let doubleDigit = false;
+  for (let index = digits.length - 1; index >= 0; index -= 1) {
+    let digit = Number(digits[index]);
+    if (doubleDigit) {
+      digit *= 2;
+      if (digit > 9) digit -= 9;
+    }
+    sum += digit;
+    doubleDigit = !doubleDigit;
+  }
+  return sum % 10 === 0;
+}
+
+export function isValidCardExpiration(value: string, now = new Date()) {
+  const normalized = normalizeExpirationDate(value);
+  const match = normalized.match(/^(\d{2})\/(\d{4})$/);
+  if (!match) return false;
+
+  const month = Number(match[1]);
+  const year = Number(match[2]);
+  if (month < 1 || month > 12) return false;
+
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
+  return year > currentYear || (year === currentYear && month >= currentMonth);
+}
+
 function sanitizeMerchantOrderId(value: string) {
   const clean = value.replace(/[^A-Za-z0-9]/g, "").trim().toUpperCase();
   return clean.slice(0, 50) || "ZIONAROMAS";
@@ -499,6 +531,40 @@ function formatCieloCardError(data: unknown, httpStatus: number, environmentLabe
 
 function isSandboxApiUrl(apiUrl: string) {
   return apiUrl.includes("sandbox");
+}
+
+async function captureCieloCreditPayment(
+  apiUrl: string,
+  paymentId: string,
+  credentials: { merchantId: string; merchantKey: string }
+) {
+  const response = await fetch(`${apiUrl}/1/sales/${encodeURIComponent(paymentId)}/capture`, {
+    method: "PUT",
+    headers: {
+      Accept: "application/json",
+      "Content-Length": "0",
+      RequestId: cieloRequestId(),
+      MerchantId: credentials.merchantId,
+      MerchantKey: credentials.merchantKey
+    },
+    signal: AbortSignal.timeout(20_000)
+  });
+  const data = await response.json().catch(() => ({}));
+  const payment =
+    data && typeof data === "object" && !Array.isArray(data)
+      ? ((data as { Payment?: Record<string, unknown> }).Payment || (data as Record<string, unknown>))
+      : {};
+
+  console.log(
+    `[Cielo Card] CAPTURE HTTP ${response.status} | PaymentId=${paymentId} | Status=${String(payment.Status ?? "-")}`
+  );
+
+  return {
+    ok: response.ok && Number(payment.Status) === 2,
+    responseStatus: response.status,
+    payment,
+    data
+  };
 }
 
 function extractPixFromPayment(payment: Record<string, unknown>) {
@@ -645,7 +711,7 @@ async function createCieloPixCharge(
 
         const data = await response.json().catch(() => ({}));
         lastRaw = data;
-        console.log(`[Cielo] PIX HTTP ${response.status} | Body: ${JSON.stringify(data)}`);
+        console.log(`[Cielo] PIX HTTP ${response.status}`);
 
         const errorMessage = extractCieloErrorMessage(data);
         if (!response.ok) {
@@ -728,7 +794,7 @@ async function createCieloCardCharge(
   }
 
   const cleanCardNumber = card.cardNumber.replace(/\D/g, "");
-  if (cleanCardNumber.length < 13 || cleanCardNumber.length > 19) {
+  if (!isValidCardNumber(cleanCardNumber)) {
     return {
       method: "CARTAO" as const,
       provider: providerLabels.CIELO,
@@ -738,7 +804,7 @@ async function createCieloCardCharge(
   }
 
   const formattedExpiration = normalizeExpirationDate(card.expirationDate);
-  if (!/^\d{2}\/\d{4}$/.test(formattedExpiration) || formattedExpiration.endsWith("/0000")) {
+  if (!isValidCardExpiration(formattedExpiration)) {
     return {
       method: "CARTAO" as const,
       provider: providerLabels.CIELO,
@@ -761,7 +827,7 @@ async function createCieloCardCharge(
   }
 
   const externalAuthentication = buildExternalAuthentication(card.externalAuthentication);
-  if (!externalAuthentication) {
+  if (!externalAuthentication || !externalAuthentication.Cavv) {
     return {
       method: "CARTAO" as const,
       provider: providerLabels.CIELO,
@@ -776,6 +842,14 @@ async function createCieloCardCharge(
   const identityType = documentDigits.length === 14 ? "CNPJ" : documentDigits.length === 11 ? "CPF" : undefined;
   const installments = Math.max(1, Math.min(12, card.installments || 1));
   const securityCode = card.securityCode.replace(/\D/g, "").slice(0, 4);
+  if (!/^\d{3,4}$/.test(securityCode)) {
+    return {
+      method: "CARTAO" as const,
+      provider: providerLabels.CIELO,
+      status: "manual" as const,
+      message: "Código de segurança do cartão inválido."
+    };
+  }
 
   const customerPayload: Record<string, string> = {
     Name: sanitizeHolderName(customer.name) || customer.name,
@@ -852,7 +926,13 @@ async function createCieloCardCharge(
 
         const data = await response.json().catch(() => ({}));
         lastRaw = data;
-        console.log(`[Cielo Card] HTTP ${response.status} | Body: ${JSON.stringify(data)}`);
+        const responsePayment =
+          data && typeof data === "object" && !Array.isArray(data)
+            ? ((data as { Payment?: Record<string, unknown> }).Payment || {})
+            : {};
+        console.log(
+          `[Cielo Card] HTTP ${response.status} | Status=${String(responsePayment.Status ?? "-")} | ReturnCode=${String(responsePayment.ReturnCode ?? "-")} | PaymentId=${String(responsePayment.PaymentId ?? "-")}`
+        );
 
         if (!response.ok) {
           lastError = formatCieloCardError(data, response.status, environmentLabel);
@@ -892,8 +972,21 @@ async function createCieloCardCharge(
           (typeof payment.Paymentid === "string" && payment.Paymentid) ||
           undefined;
 
-        // Status 1 = Authorized, 2 = Payment Confirmed (Captured)
-        if (statusNumber === 2 || statusNumber === 1) {
+        // Status 1 = autorizado; crédito precisa ser capturado antes de confirmar o pedido.
+        let confirmedData: unknown = data;
+        let confirmedStatus = statusNumber;
+        if (statusNumber === 1 && !isDebit && paymentId) {
+          const capture = await captureCieloCreditPayment(apiUrl, paymentId, credentials);
+          confirmedData = { authorization: data, capture: capture.data };
+          confirmedStatus = capture.ok ? 2 : Number(capture.payment.Status);
+          if (!capture.ok) {
+            console.error(
+              `[Cielo Card] Captura não confirmada | PaymentId=${paymentId} | HTTP=${capture.responseStatus} | Status=${String(capture.payment.Status ?? "-")}`
+            );
+          }
+        }
+
+        if (confirmedStatus === 2) {
           try {
             await confirmOrderPaymentByCode(order.code, "aprovado");
             if (paymentId) {
@@ -908,7 +1001,7 @@ async function createCieloCardCharge(
               status: "ready" as const,
               message: "Pagamento com cartão aprovado com sucesso!",
               reference: paymentId,
-              raw: data
+              raw: confirmedData
             };
           } catch (error) {
             console.error(`[Cielo Card] Pagamento autorizado, mas pedido não confirmado:`, error);
@@ -918,9 +1011,20 @@ async function createCieloCardCharge(
               status: "manual" as const,
               message: "Pagamento autorizado. Nossa equipe confirmará o pedido em instantes.",
               reference: paymentId,
-              raw: data
+              raw: confirmedData
             };
           }
+        }
+
+        if (statusNumber === 1) {
+          return {
+            method: "CARTAO" as const,
+            provider: providerLabels.CIELO,
+            status: "pending" as const,
+            message: "Pagamento autorizado e aguardando confirmação da operadora.",
+            reference: paymentId,
+            raw: confirmedData
+          };
         }
 
         // Redirecionamento de autenticação (quando a Cielo devolver URL)

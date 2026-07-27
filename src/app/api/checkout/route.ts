@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
 import { z } from "zod";
-import { MOCK_PRODUCT_SLUGS } from "@/lib/mock-products";
+import {
+  canonicalItemFingerprint,
+  verifyCheckoutToken,
+  type CheckoutTokenPayload
+} from "@/lib/checkout-token";
 import { getPaymentSettings } from "@/lib/payment-store";
 import { createPaymentInstruction } from "@/lib/payment-processing";
 import { providerLabels } from "@/lib/payments";
@@ -9,7 +13,7 @@ import { prisma } from "@/lib/prisma";
 import { isRateLimited, parseJson } from "@/lib/security";
 
 const schema = z.object({
-  orderCode: z.string().trim().max(20).optional(),
+  checkoutToken: z.string().trim().min(40).max(12_000),
   customer: z.object({
     name: z.string().trim().min(2).max(80),
     email: z.string().trim().email().max(120),
@@ -52,9 +56,7 @@ const schema = z.object({
         })
         .optional()
     })
-    .optional(),
-  coupon: z.string().trim().max(40).optional().or(z.literal("")),
-  shipping: z.coerce.number().min(0).max(10_000).optional().default(0)
+    .optional()
 });
 
 export async function POST(request: Request) {
@@ -78,57 +80,89 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Informe os dados do cartão para continuar." }, { status: 400 });
   }
 
-  const productKeys = parsed.data.items.map((item) => item.productId);
-  const products = await prisma.product.findMany({
-    where: {
-      OR: [{ id: { in: productKeys } }, { slug: { in: productKeys } }],
-      status: "ACTIVE",
-      slug: { notIn: MOCK_PRODUCT_SLUGS }
-    }
+  let prepared: CheckoutTokenPayload | null;
+  try {
+    prepared = verifyCheckoutToken(parsed.data.checkoutToken);
+  } catch (error) {
+    console.error("[Checkout] Falha ao verificar assinatura:", error);
+    return NextResponse.json(
+      { error: "Não foi possível validar o pedido. Atualize a página e tente novamente." },
+      { status: 503 }
+    );
+  }
+
+  const requestFingerprint = canonicalItemFingerprint(parsed.data.items);
+  const preparedFingerprint = canonicalItemFingerprint(
+    prepared?.items.map((item) => ({ productId: item.productId, quantity: item.quantity })) || []
+  );
+  const postalCode = parsed.data.address.postalCode.replace(/\D/g, "");
+  if (
+    !prepared ||
+    prepared.paymentMethod !== parsed.data.paymentMethod ||
+    prepared.postalCode !== postalCode ||
+    preparedFingerprint !== requestFingerprint
+  ) {
+    return NextResponse.json(
+      { error: "O pedido mudou após a conferência. Revise o carrinho e tente novamente." },
+      { status: 400 }
+    );
+  }
+
+  const existingOrder = await prisma.order.findUnique({
+    where: { code: prepared.orderCode }
   });
-  const productMap = new Map(products.flatMap((product) => [[product.id, product], [product.slug, product]]));
-  const hasUnknownProduct = parsed.data.items.some((item) => !productMap.has(item.productId));
-  if (hasUnknownProduct) {
-    return NextResponse.json({ error: "Dados de checkout inválidos." }, { status: 400 });
+  if (existingOrder) {
+    const approved = existingOrder.paymentStatus === "aprovado";
+    return NextResponse.json({
+      ok: true,
+      orderCode: existingOrder.code,
+      status: existingOrder.status,
+      paymentStatus: existingOrder.paymentStatus,
+      paymentProvider: providerLabels[paymentSettings.activeProvider],
+      nextStep: approved
+        ? "Pagamento aprovado com sucesso."
+        : "Este pedido já foi recebido e está sendo conferido.",
+      payment: {
+        method: parsed.data.paymentMethod,
+        provider: existingOrder.paymentProvider || providerLabels[paymentSettings.activeProvider],
+        status: approved ? "ready" : "pending",
+        message: approved
+          ? "Pagamento aprovado com sucesso."
+          : "Este pedido já foi recebido e está sendo conferido.",
+        pixQrCode: existingOrder.pixQrCode,
+        pixQrCodeImage: existingOrder.pixQrCodeImage,
+        boletoUrl: existingOrder.boletoUrl,
+        boletoBarcode: existingOrder.boletoBarcode
+      }
+    });
+  }
+
+  const activeProducts = await prisma.product.findMany({
+    where: {
+      id: { in: prepared.items.map((item) => item.productId) },
+      status: "ACTIVE"
+    },
+    select: { id: true, stock: true }
+  });
+  const activeProductMap = new Map(activeProducts.map((product) => [product.id, product]));
+  if (
+    prepared.items.some((item) => {
+      const product = activeProductMap.get(item.productId);
+      return !product || product.stock < item.quantity;
+    })
+  ) {
+    return NextResponse.json(
+      { error: "Um produto ficou indisponível ou sem estoque. Revise o carrinho." },
+      { status: 409 }
+    );
   }
 
   const providerName = providerLabels[paymentSettings.activeProvider];
-  const subtotal = parsed.data.items.reduce((total, item) => {
-    const product = productMap.get(item.productId)!;
-    return total + Number(product.salePrice ?? product.price) * item.quantity;
-  }, 0);
-  const shipping = parsed.data.shipping ?? 0;
-  const automaticDiscount = subtotal > 400 ? 35 : 0;
-  const pixDiscount = parsed.data.paymentMethod === "PIX" ? subtotal * 0.10 : 0;
-  const couponCode = parsed.data.coupon?.trim().toUpperCase();
-  const coupon = couponCode
-    ? await prisma.coupon.findFirst({
-        where: {
-          code: couponCode,
-          active: true,
-          OR: [{ expiresAt: null }, { expiresAt: { gte: new Date() } }]
-        },
-        include: { _count: { select: { orders: true } } }
-      })
-    : null;
-  if (couponCode && !coupon) {
-    return NextResponse.json({ error: "Cupom inválido ou expirado." }, { status: 400 });
-  }
-
-  const couponAvailable = coupon ? !coupon.maxUses || coupon._count.orders < coupon.maxUses : false;
-  if (couponCode && coupon && !couponAvailable) {
-    return NextResponse.json({ error: "Cupom esgotado." }, { status: 400 });
-  }
-
-  const couponDiscount = couponAvailable && coupon?.discountValue
-    ? Number(coupon.discountValue)
-    : couponAvailable && coupon?.discountRate
-      ? subtotal * (coupon.discountRate / 100)
-      : 0;
-  const discount = Math.min(subtotal, automaticDiscount + couponDiscount + pixDiscount);
-  const total = Math.max(0, subtotal + shipping - discount);
-  const requestedOrderCode = parsed.data.orderCode?.trim().toUpperCase() || "";
-  const orderCode = /^ZA-\d{6,10}$/.test(requestedOrderCode) ? requestedOrderCode : `ZA-${Date.now().toString().slice(-8)}`;
+  const subtotal = prepared.subtotalCents / 100;
+  const shipping = prepared.shippingCents / 100;
+  const discount = prepared.discountCents / 100;
+  const total = prepared.totalCents / 100;
+  const orderCode = prepared.orderCode;
   const dbPaymentMethod = parsed.data.paymentMethod === "PIX" ? "PIX" : "CARTAO";
 
   const { order, customer } = await prisma.$transaction(async (tx) => {
@@ -166,7 +200,7 @@ export async function POST(request: Request) {
         code: orderCode,
         customerId: customer.id,
         addressId: address.id,
-        couponId: couponAvailable ? coupon?.id : null,
+        couponId: prepared.couponId,
         status: "RECEBIDO",
         paymentMethod: dbPaymentMethod,
         paymentStatus: "pendente",
@@ -175,14 +209,11 @@ export async function POST(request: Request) {
         discount,
         total,
         items: {
-          create: parsed.data.items.map((item) => {
-            const product = productMap.get(item.productId)!;
-            return {
-              productId: product.id,
-              quantity: item.quantity,
-              price: Number(product.salePrice ?? product.price)
-            };
-          })
+          create: prepared.items.map((item) => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            price: item.unitPriceCents / 100
+          }))
         }
       }
     });

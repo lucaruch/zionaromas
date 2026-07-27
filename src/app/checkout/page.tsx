@@ -16,6 +16,7 @@ type ShippingOption = {
   price: number;
   deliveryTime: number;
   source: string;
+  quoteToken?: string;
 };
 
 type PaymentOption = {
@@ -264,7 +265,28 @@ export default function CheckoutPage() {
     setCheckoutLoading(true);
 
     try {
-      const requestedOrderCode = `ZA-${Date.now().toString().slice(-8)}`;
+      const checkoutItems = items.map((item) => ({ productId: item.slug, quantity: item.quantity }));
+      const checkoutPostalCode = cep.replace(/\D/g, "").length === 8 ? cep : "11700-007";
+      const prepareResponse = await fetch("/api/checkout/prepare", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: checkoutItems,
+          paymentMethod,
+          coupon,
+          postalCode: checkoutPostalCode,
+          shippingOptionId: selectedShippingId,
+          shippingQuoteToken: selectedShipping?.quoteToken || ""
+        })
+      });
+      const prepared = await prepareResponse.json();
+      if (!prepareResponse.ok) {
+        setCheckoutMessage(prepared.error || "Não foi possível conferir o pedido agora.");
+        return;
+      }
+
+      const requestedOrderCode = String(prepared.orderCode);
+      const authoritativeTotalCents = Number(prepared.amountCents);
       let externalAuthentication: Cielo3dsExternalAuth | undefined;
 
       setCheckoutMessage(isCardPayment ? "Validando cartão em ambiente seguro..." : "Gerando PIX seguro...");
@@ -279,7 +301,7 @@ export default function CheckoutPage() {
         externalAuthentication = await runCielo3dsAuthentication(authToken.environment, {
           accessToken: authToken.accessToken,
           orderNumber: requestedOrderCode.replace(/[^a-zA-Z0-9]/g, ""),
-          amountCents: Math.round(total * 100),
+          amountCents: authoritativeTotalCents,
           installments: paymentMethod === "CARTAO_CREDITO" ? cardInstallments : 1,
           paymentMethod: paymentMethod === "CARTAO_DEBITO" ? "debit" : "credit",
           cardNumber,
@@ -293,16 +315,16 @@ export default function CheckoutPage() {
           street2: isPickup ? "Galeria PG" : number || complement || "Complemento",
           city: "Praia Grande",
           state: "SP",
-          zipcode: cep.replace(/\D/g, "").length === 8 ? cep : "11700-007",
+          zipcode: checkoutPostalCode,
           merchantUrl: window.location.origin,
-          items: [
-            {
-              name: "Pedido ZION AROMAS",
-              sku: requestedOrderCode.replace(/[^a-zA-Z0-9]/g, ""),
-              quantity: 1,
-              unitPriceCents: Math.round(total * 100)
-            }
-          ]
+          items: (prepared.items || []).map(
+            (item: { name: string; sku: string; quantity: number; unitPriceCents: number }) => ({
+              name: item.name,
+              sku: item.sku,
+              quantity: item.quantity,
+              unitPriceCents: item.unitPriceCents
+            })
+          )
         });
 
         setCheckoutMessage("Autenticação concluída. Enviando pagamento para confirmação...");
@@ -312,15 +334,15 @@ export default function CheckoutPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          orderCode: requestedOrderCode,
+          checkoutToken: prepared.checkoutToken,
           customer: { name, email, phone, document },
           address: {
-            postalCode: cep.replace(/\D/g, "").length === 8 ? cep : "11700-007",
+            postalCode: checkoutPostalCode,
             street: isPickup ? (address || "Retirada na Loja ZION AROMAS") : address,
             number: isPickup ? (number || "S/N") : number,
             complement
           },
-          items: items.map((item) => ({ productId: item.slug, quantity: item.quantity })),
+          items: checkoutItems,
           paymentMethod,
           card: isCardPayment
             ? {
@@ -332,9 +354,7 @@ export default function CheckoutPage() {
                 installments: paymentMethod === "CARTAO_CREDITO" ? cardInstallments : 1,
                 externalAuthentication
               }
-            : undefined,
-          coupon,
-          shipping
+            : undefined
         })
       });
 

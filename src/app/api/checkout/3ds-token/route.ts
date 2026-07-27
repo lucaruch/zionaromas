@@ -15,24 +15,26 @@ export async function GET(request: Request) {
   const diagnostics = getCielo3dsConfigDiagnostics();
 
   if (!isCielo3dsConfigured()) {
+    console.error("[Checkout 3DS] Configuração incompleta.", diagnostics);
     return NextResponse.json(
-      {
-        error: "3DS não configurado no servidor (CIELO_3DS_CLIENT_ID / CIELO_3DS_CLIENT_SECRET).",
-        diagnostics
-      },
+      { error: "A validação segura do cartão está indisponível no momento. Tente novamente em instantes." },
       { status: 503 }
     );
   }
 
   const settings = await getPaymentSettings();
   if (settings.activeProvider !== "CIELO") {
-    return NextResponse.json({ error: "Provedor ativo não é Cielo.", diagnostics }, { status: 400 });
+    return NextResponse.json(
+      { error: "Pagamento com cartão indisponível no momento." },
+      { status: 400 }
+    );
   }
 
   const result = await createCielo3dsAccessToken(settings);
   if (!result.ok) {
+    console.error("[Checkout 3DS] Falha ao iniciar autenticação.", result.message, result.diagnostics);
     return NextResponse.json(
-      { error: result.message, diagnostics: result.diagnostics || diagnostics },
+      { error: "Não foi possível iniciar a validação segura do cartão. Tente novamente." },
       { status: 502 }
     );
   }

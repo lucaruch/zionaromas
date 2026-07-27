@@ -282,10 +282,10 @@ export type Cielo3dsFieldPayload = {
 
 function normalizePhone(phone: string) {
   const digits = phone.replace(/\D/g, "");
-  if (!digits) return "5513999999999";
+  if (!digits) return "";
   if (digits.startsWith("55") && digits.length >= 12) return digits.slice(0, 15);
   if (digits.length >= 10 && digits.length <= 11) return `55${digits}`;
-  return digits.slice(0, 15);
+  return "";
 }
 
 function asciiText(value: string, fallback: string, maxLength: number) {
@@ -332,16 +332,10 @@ export function populateBpmpiFields(payload: Cielo3dsFieldPayload) {
   setField(root, "bpmpi_default_card", "false");
   setField(root, "bpmpi_order_productcode", "PHY");
   setField(root, "bpmpi_order_recurrence", "false");
-  setField(root, "bpmpi_order_countlast24hours", "1");
-  setField(root, "bpmpi_order_countlast6months", "1");
-  setField(root, "bpmpi_order_countlast1year", "1");
-  setField(root, "bpmpi_order_cardattemptslast24hours", "1");
   setField(root, "bpmpi_transaction_mode", "S");
-  setField(root, "bpmpi_merchant_newcustomer", "true");
   setField(root, "bpmpi_merchant_url", payload.merchantUrl.slice(0, 100));
   setField(root, "bpmpi_billto_customerid", payload.customerDocument.replace(/\D/g, "").slice(0, 14));
   setField(root, "bpmpi_billto_contactname", billToName);
-  setField(root, "bpmpi_billto_phonenumber", phone);
   setField(root, "bpmpi_billto_email", email);
   setField(root, "bpmpi_billto_street1", street1);
   setField(root, "bpmpi_billto_street2", street2);
@@ -351,7 +345,6 @@ export function populateBpmpiFields(payload: Cielo3dsFieldPayload) {
   setField(root, "bpmpi_billto_country", "BR");
   setField(root, "bpmpi_shipto_sameasbillto", "true");
   setField(root, "bpmpi_shipto_addressee", billToName.slice(0, 60));
-  setField(root, "bpmpi_shipto_phonenumber", phone);
   setField(root, "bpmpi_shipto_email", email);
   setField(root, "bpmpi_shipto_street1", street1);
   setField(root, "bpmpi_shipto_street2", street2);
@@ -361,6 +354,10 @@ export function populateBpmpiFields(payload: Cielo3dsFieldPayload) {
   setField(root, "bpmpi_shipto_country", "BR");
   setField(root, "bpmpi_shipto_shippingmethod", "other");
   setField(root, "bpmpi_useraccount_guest", "true");
+  if (phone) {
+    setField(root, "bpmpi_billto_phonenumber", phone);
+    setField(root, "bpmpi_shipto_phonenumber", phone);
+  }
   if (customerIp) {
     setField(root, "bpmpi_device_ipaddress", customerIp.slice(0, 45));
   }
@@ -453,15 +450,7 @@ function waitForReady(timeoutMs = READY_TIMEOUT_MS) {
     handlers.onError = (data) => {
       cleanup();
       previousError?.(data);
-      const msg = data?.ReturnMessage || "";
-      const code = data?.ReturnCode || "";
-      reject(
-        new Error(
-          code || msg
-            ? `Falha no 3DS (${code || "erro"}): ${msg || "sem detalhes"}. Confira o valor do pedido e tente de novo.`
-            : "Falha ao iniciar o 3DS (Cardinal/Braspag)."
-        )
-      );
+      reject(new Error("Não foi possível iniciar a validação segura do banco. Tente novamente."));
     };
   });
 }
@@ -578,15 +567,8 @@ export async function runCielo3dsAuthentication(
 
     const finishError = (data?: Cielo3dsAuthResult) => {
       cleanup();
-      const msg = data?.ReturnMessage || "";
-      const code = data?.ReturnCode || "";
-      reject(
-        new Error(
-          code || msg
-            ? `Falha no 3DS (${code || "erro"}): ${msg || "sem detalhes"}. Tente novamente ou use PIX.`
-            : STUCK_MESSAGE
-        )
-      );
+      if (DEBUG_3DS && data) console.error("[ZION 3DS] autenticação não concluída", data);
+      reject(new Error("A validação do banco não foi concluída. Tente novamente ou use PIX."));
     };
 
     function cleanup() {

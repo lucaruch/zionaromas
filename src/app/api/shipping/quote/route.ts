@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { canonicalItemFingerprint, createShippingQuoteToken } from "@/lib/checkout-token";
 import { MOCK_PRODUCT_SLUGS } from "@/lib/mock-products";
 import { prisma } from "@/lib/prisma";
 import { isRateLimited, parseJson } from "@/lib/security";
@@ -102,6 +103,30 @@ function melhorEnvioBaseUrl() {
   }
 }
 
+function signShippingOptions(
+  options: Array<{
+    id: number;
+    name: string;
+    company: string;
+    price: number;
+    deliveryTime: number;
+    source: string;
+  }>,
+  postalCode: string,
+  items: Array<{ slug: string; quantity: number }>
+) {
+  const itemFingerprint = canonicalItemFingerprint(items);
+  return options.map((option) => ({
+    ...option,
+    quoteToken: createShippingQuoteToken({
+      postalCode,
+      itemFingerprint,
+      optionId: option.id,
+      priceCents: Math.round(option.price * 100)
+    })
+  }));
+}
+
 export async function POST(request: Request) {
   if (isRateLimited(request, "shipping-quote", 40, 60_000)) {
     return NextResponse.json({ error: "Muitas tentativas. Aguarde um instante." }, { status: 429 });
@@ -153,8 +178,13 @@ export async function POST(request: Request) {
   const token = process.env.MELHOR_ENVIO_TOKEN;
 
   if (!token) {
+    const options = signShippingOptions(
+      [...extras, ...fallbackCorreiosQuote()],
+      destinationPostalCode,
+      parsed.data.items
+    );
     return NextResponse.json({
-      options: [...extras, ...fallbackCorreiosQuote()],
+      options,
       warning: "Cotação de entrega disponível com base nas opções dos Correios."
     });
   }
@@ -184,10 +214,15 @@ export async function POST(request: Request) {
     const data = (await response.json()) as MelhorEnvioService[];
 
     if (!response.ok) {
+      const options = signShippingOptions(
+        [...extras, ...fallbackCorreiosQuote()],
+        destinationPostalCode,
+        parsed.data.items
+      );
       return NextResponse.json(
         {
           error: "Não foi possível consultar o frete agora.",
-          options: [...extras, ...fallbackCorreiosQuote()]
+          options
         },
         { status: 502 }
       );
@@ -196,20 +231,31 @@ export async function POST(request: Request) {
     const options = data
       .filter((service) => !service.error)
       .map((service) => ({
-        id: service.id,
+        id: Number(service.id || 0),
         name: service.name || "Correios",
         company: service.company?.name || "Correios",
         price: Number(service.custom_price || service.price || 0),
         deliveryTime: service.custom_delivery_time || service.delivery_time || 0,
         source: "melhor-envio"
       }))
-      .filter((service) => service.price > 0);
+      .filter((service) => service.id > 0 && service.price > 0);
 
-    return NextResponse.json({ options: [...extras, ...(options.length ? options : fallbackCorreiosQuote())] });
+    return NextResponse.json({
+      options: signShippingOptions(
+        [...extras, ...(options.length ? options : fallbackCorreiosQuote())],
+        destinationPostalCode,
+        parsed.data.items
+      )
+    });
   } catch {
+    const options = signShippingOptions(
+      [...extras, ...fallbackCorreiosQuote()],
+      destinationPostalCode,
+      parsed.data.items
+    );
     return NextResponse.json({
       error: "Não foi possível consultar o frete agora.",
-      options: [...extras, ...fallbackCorreiosQuote()]
+      options
     });
   }
 }
