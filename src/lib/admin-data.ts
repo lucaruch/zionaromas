@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
 import { resolveProductImage } from "@/lib/media";
-import { syncPendingCieloOrders } from "@/lib/payment-processing";
 
 export type AdminStats = {
   products: number;
@@ -131,7 +130,7 @@ export type AdminBanner = {
 export async function getAdminStats(): Promise<AdminStats> {
   try {
     const [products, openOrders, customers, activeCoupons, newMessages] = await Promise.all([
-      prisma.product.count(),
+      prisma.product.count({ where: { status: { not: "ARCHIVED" } } }),
       prisma.order.count({
         where: {
           status: { in: ["PAGO", "SEPARACAO", "ENVIADO"] },
@@ -191,6 +190,7 @@ export async function getAdminCategories(): Promise<AdminCategory[]> {
 export async function getAdminProducts(): Promise<AdminProduct[]> {
   try {
     const products = await prisma.product.findMany({
+      where: { status: { not: "ARCHIVED" } },
       orderBy: { updatedAt: "desc" },
       include: { brand: true, category: true }
     });
@@ -253,12 +253,8 @@ export async function getAdminCoupons(): Promise<AdminCoupon[]> {
 
 export async function getAdminOrders(): Promise<AdminOrder[]> {
   try {
-    // Antes de listar, confirma na Cielo os PIX/cartões pendentes que já foram pagos.
-    await syncPendingCieloOrders(50).catch((error) => {
-      console.error("[getAdminOrders] Falha ao sincronizar pendentes:", error);
-    });
-
     const orders = await prisma.order.findMany({
+      where: { paymentStatus: "aprovado" },
       orderBy: { createdAt: "desc" },
       include: {
         customer: true,

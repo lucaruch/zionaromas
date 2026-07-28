@@ -3,6 +3,7 @@ import { z } from "zod";
 import { isAdminUnlocked } from "@/lib/admin-auth";
 import { deleteOrderWorkflow, updateOrderWorkflow } from "@/lib/order-workflow";
 import { prisma } from "@/lib/prisma";
+import { deleteProductWorkflow } from "@/lib/product-workflow";
 import { isRateLimited } from "@/lib/security";
 
 type AdminModel = {
@@ -293,11 +294,19 @@ export async function DELETE(request: Request, { params }: RouteContext) {
       return NextResponse.json({ ok: true });
     }
 
+    if (resource === "produtos") {
+      const result = await deleteProductWorkflow(id);
+      return NextResponse.json({ ok: true, ...result });
+    }
+
     await model.delete({ where: { id } });
     return NextResponse.json({ ok: true });
   } catch (error) {
     if (error instanceof Error && error.message === "order-not-found") {
       return NextResponse.json({ error: "Pedido não encontrado." }, { status: 404 });
+    }
+    if (error instanceof Error && error.message === "product-not-found") {
+      return NextResponse.json({ error: "Produto não encontrado." }, { status: 404 });
     }
     return NextResponse.json({ error: "Não foi possível excluir este registro." }, { status: 503 });
   }

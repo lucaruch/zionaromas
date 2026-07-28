@@ -228,10 +228,12 @@ export function AdminProductsManager({
   async function deleteProduct(id: string) {
     if (!confirm("Excluir este produto da loja?")) return;
     const response = await fetch(`/api/admin/produtos?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+    const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-      setMessage("Não foi possível excluir o produto.");
+      setMessage(data.error || "Não foi possível excluir o produto.");
       return;
     }
+    setMessage(data.archived ? "Produto removido da loja. O histórico dos pedidos foi preservado." : "Produto excluído.");
     router.refresh();
   }
 
