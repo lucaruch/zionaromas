@@ -59,7 +59,7 @@ export async function calculateCheckoutPricing(input: CheckoutPricingInput) {
           active: true,
           OR: [{ expiresAt: null }, { expiresAt: { gte: new Date() } }]
         },
-        include: { _count: { select: { orders: true } } }
+        include: { _count: { select: { orders: { where: { paymentStatus: "aprovado" } } } } }
       })
     : null;
 
@@ -75,11 +75,10 @@ export async function calculateCheckoutPricing(input: CheckoutPricingInput) {
     : coupon?.discountRate
       ? Math.round(subtotalCents * (coupon.discountRate / 100))
       : 0;
-  const automaticDiscountCents = subtotalCents > 40_000 ? 3_500 : 0;
   const pixDiscountCents = input.paymentMethod === "PIX" ? Math.round(subtotalCents * 0.1) : 0;
   const discountCents = Math.min(
     subtotalCents,
-    automaticDiscountCents + couponDiscountCents + pixDiscountCents
+    couponDiscountCents + pixDiscountCents
   );
   const totalCents = Math.max(1, subtotalCents + input.shippingCents - discountCents);
 

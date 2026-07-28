@@ -42,6 +42,21 @@ type CheckoutPaymentResult = {
   redirectUrl?: string;
 };
 
+type CheckoutPricingPreview = {
+  subtotal: number;
+  shipping: number;
+  discount: number;
+  total: number;
+};
+
+type CheckoutPrepareResponse = {
+  orderCode: string;
+  checkoutToken: string;
+  amountCents: number;
+  pricing: CheckoutPricingPreview;
+  items: Array<{ name: string; sku: string; quantity: number; unitPriceCents: number }>;
+};
+
 const paymentIcons: Record<PaymentMethod, LucideIcon> = {
   PIX: QrCode,
   CARTAO_CREDITO: CreditCard,
@@ -85,13 +100,26 @@ export default function CheckoutPage() {
   const [cardSecurityCode, setCardSecurityCode] = useState("");
   const [cardBrand, setCardBrand] = useState("Visa");
   const [cardInstallments, setCardInstallments] = useState(1);
+  const [pricingPreview, setPricingPreview] = useState<CheckoutPricingPreview | null>(null);
+  const [couponMessage, setCouponMessage] = useState("");
+  const [couponApplying, setCouponApplying] = useState(false);
   const pixDiscount = useMemo(() => (paymentMethod === "PIX" ? subtotal * 0.10 : 0), [paymentMethod, subtotal]);
-  const automaticDiscount = useMemo(() => (subtotal > 400 ? 35 : 0), [subtotal]);
-  const discount = automaticDiscount + pixDiscount;
   const selectedShipping = shippingOptions.find((option) => option.id === selectedShippingId);
   const shipping = selectedShipping?.price ?? 0;
+  const discount = pricingPreview?.discount ?? pixDiscount;
+  const displayShipping = pricingPreview?.shipping ?? shipping;
   const total = Math.max(0, subtotal + shipping - discount);
+  const displayTotal = pricingPreview?.total ?? total;
   const isCardPayment = paymentMethod === "CARTAO_CREDITO" || paymentMethod === "CARTAO_DEBITO";
+  const cartSignature = useMemo(
+    () => items.map((item) => `${item.slug}:${item.quantity}`).sort().join("|"),
+    [items]
+  );
+
+  useEffect(() => {
+    setPricingPreview(null);
+    setCouponMessage("");
+  }, [cartSignature, coupon, paymentMethod, selectedShippingId, selectedShipping?.quoteToken, subtotal, shipping]);
 
   useEffect(() => {
     let mounted = true;
@@ -229,6 +257,58 @@ export default function CheckoutPage() {
     }
   }
 
+  async function prepareCheckout() {
+    const checkoutItems = items.map((item) => ({ productId: item.slug, quantity: item.quantity }));
+    const checkoutPostalCode = cep.replace(/\D/g, "").length === 8 ? cep : "11700-007";
+    const prepareResponse = await fetch("/api/checkout/prepare", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        items: checkoutItems,
+        paymentMethod,
+        coupon,
+        postalCode: checkoutPostalCode,
+        shippingOptionId: selectedShippingId,
+        shippingQuoteToken: selectedShipping?.quoteToken || ""
+      })
+    });
+    const prepared = await prepareResponse.json();
+    if (!prepareResponse.ok) {
+      throw new Error(prepared.error || "Não foi possível conferir o pedido agora.");
+    }
+
+    return prepared as CheckoutPrepareResponse;
+  }
+
+  async function applyCoupon() {
+    setCouponMessage("");
+
+    if (!items.length) {
+      setCouponMessage("Adicione produtos ao carrinho para aplicar um cupom.");
+      return;
+    }
+
+    setCouponApplying(true);
+    try {
+      const prepared = await prepareCheckout();
+      setPricingPreview(prepared.pricing);
+      setCouponMessage(
+        coupon.trim()
+          ? `Cupom ${coupon.trim().toUpperCase()} aplicado ao pedido.`
+          : "Resumo atualizado com as condições atuais."
+      );
+    } catch (error) {
+      setPricingPreview(null);
+      setCouponMessage(
+        error instanceof Error && error.message
+          ? error.message
+          : "Não foi possível aplicar o cupom agora."
+      );
+    } finally {
+      setCouponApplying(false);
+    }
+  }
+
   async function finishOrder() {
     setCheckoutMessage("");
     setPaymentResult(null);
@@ -267,23 +347,8 @@ export default function CheckoutPage() {
     try {
       const checkoutItems = items.map((item) => ({ productId: item.slug, quantity: item.quantity }));
       const checkoutPostalCode = cep.replace(/\D/g, "").length === 8 ? cep : "11700-007";
-      const prepareResponse = await fetch("/api/checkout/prepare", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items: checkoutItems,
-          paymentMethod,
-          coupon,
-          postalCode: checkoutPostalCode,
-          shippingOptionId: selectedShippingId,
-          shippingQuoteToken: selectedShipping?.quoteToken || ""
-        })
-      });
-      const prepared = await prepareResponse.json();
-      if (!prepareResponse.ok) {
-        setCheckoutMessage(prepared.error || "Não foi possível conferir o pedido agora.");
-        return;
-      }
+      const prepared = await prepareCheckout();
+      setPricingPreview(prepared.pricing);
 
       const requestedOrderCode = String(prepared.orderCode);
       const authoritativeTotalCents = Number(prepared.amountCents);
@@ -559,7 +624,7 @@ export default function CheckoutPage() {
                     <select value={cardInstallments} onChange={(event) => setCardInstallments(Number(event.target.value))} className="h-12 border border-gold/18 bg-black px-4 text-sm text-white outline-none transition focus:border-gold">
                       {Array.from({ length: 12 }, (_, index) => index + 1).map((installment) => (
                         <option key={installment} value={installment}>
-                          {installment}x de {formatCurrency(total / installment)}
+                          {installment}x de {formatCurrency(displayTotal / installment)}
                         </option>
                       ))}
                     </select>
@@ -588,7 +653,21 @@ export default function CheckoutPage() {
                 </div>
               ))}
             </div>
-            <Input placeholder="Cupom de desconto" className="mt-6" value={coupon} onChange={(event) => setCoupon(event.target.value)} />
+            <div className="mt-6 grid gap-2 sm:grid-cols-[1fr_120px]">
+              <Input
+                placeholder="Cupom de desconto"
+                value={coupon}
+                onChange={(event) => setCoupon(event.target.value.toUpperCase())}
+              />
+              <Button type="button" variant="glass" disabled={couponApplying || !items.length} onClick={applyCoupon}>
+                {couponApplying ? "Aplicando..." : "Aplicar"}
+              </Button>
+            </div>
+            {couponMessage ? (
+              <p className={`mt-3 text-xs leading-5 ${pricingPreview ? "text-emerald-300" : "text-gold"}`}>
+                {couponMessage}
+              </p>
+            ) : null}
             <div className="mt-6 grid gap-3 border-t border-gold/15 pt-6 text-sm text-white/70">
               <div className="flex justify-between gap-4">
                 <span>Subtotal</span>
@@ -596,7 +675,7 @@ export default function CheckoutPage() {
               </div>
               <div className="flex justify-between gap-4">
                 <span>Frete</span>
-                <strong className="text-white">{selectedShipping ? formatCurrency(shipping) : "Calcular"}</strong>
+                <strong className="text-white">{selectedShipping ? formatCurrency(displayShipping) : "Calcular"}</strong>
               </div>
               <div className="flex justify-between gap-4">
                 <span>Desconto aplicado</span>
@@ -604,7 +683,7 @@ export default function CheckoutPage() {
               </div>
               <div className="flex justify-between gap-4 text-lg text-white">
                 <span>Total</span>
-                <strong>{formatCurrency(total)}</strong>
+                <strong>{formatCurrency(displayTotal)}</strong>
               </div>
             </div>
             {checkoutMessage ? (
