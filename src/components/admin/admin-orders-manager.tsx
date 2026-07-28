@@ -130,7 +130,13 @@ export function AdminOrdersManager({ orders }: { orders: AdminOrder[] }) {
               >
                 {paymentStatusLabels[order.paymentStatus] || order.paymentStatus}
               </span>
-              <span className="text-xs text-white/45">{new Date(order.createdAt).toLocaleString("pt-BR")}</span>
+              <span className="text-xs text-white/45">
+                {new Intl.DateTimeFormat("pt-BR", {
+                  dateStyle: "short",
+                  timeStyle: "short",
+                  timeZone: "America/Sao_Paulo"
+                }).format(new Date(order.createdAt))}
+              </span>
             </div>
 
             <div className="mt-5 grid gap-5 lg:grid-cols-2">
