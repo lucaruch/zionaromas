@@ -3,6 +3,7 @@ import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 import {
   canonicalItemFingerprint,
+  normalizeCartProductIds,
   verifyCheckoutToken,
   type CheckoutTokenPayload
 } from "@/lib/checkout-token";
@@ -91,7 +92,16 @@ export async function POST(request: Request) {
     );
   }
 
-  const requestFingerprint = canonicalItemFingerprint(parsed.data.items);
+  const requestedProductKeys = parsed.data.items.map((item) => item.productId);
+  const activeProducts = await prisma.product.findMany({
+    where: {
+      OR: [{ id: { in: requestedProductKeys } }, { slug: { in: requestedProductKeys } }],
+      status: "ACTIVE"
+    },
+    select: { id: true, slug: true, stock: true }
+  });
+  const normalizedRequestItems = normalizeCartProductIds(parsed.data.items, activeProducts);
+  const requestFingerprint = canonicalItemFingerprint(normalizedRequestItems);
   const preparedFingerprint = canonicalItemFingerprint(
     prepared?.items.map((item) => ({ productId: item.productId, quantity: item.quantity })) || []
   );
@@ -137,13 +147,6 @@ export async function POST(request: Request) {
     });
   }
 
-  const activeProducts = await prisma.product.findMany({
-    where: {
-      id: { in: prepared.items.map((item) => item.productId) },
-      status: "ACTIVE"
-    },
-    select: { id: true, stock: true }
-  });
   const activeProductMap = new Map(activeProducts.map((product) => [product.id, product]));
   if (
     prepared.items.some((item) => {

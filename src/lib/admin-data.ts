@@ -259,9 +259,6 @@ export async function getAdminOrders(): Promise<AdminOrder[]> {
     });
 
     const orders = await prisma.order.findMany({
-      where: {
-        paymentStatus: "aprovado"
-      },
       orderBy: { createdAt: "desc" },
       include: {
         customer: true,

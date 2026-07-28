@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { MessageCircle, Search } from "lucide-react";
+import { Loader2, MessageCircle, Search, Trash2 } from "lucide-react";
 import type { AdminOrder } from "@/lib/admin-data";
 import { formatCurrency } from "@/lib/utils";
 
@@ -33,6 +33,7 @@ export function AdminOrdersManager({ orders }: { orders: AdminOrder[] }) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [message, setMessage] = useState("");
+  const [deletingId, setDeletingId] = useState("");
 
   const filteredOrders = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -67,6 +68,26 @@ export function AdminOrdersManager({ orders }: { orders: AdminOrder[] }) {
       return;
     }
 
+    router.refresh();
+  }
+
+  async function deleteOrder(order: AdminOrder) {
+    if (!window.confirm(`Excluir definitivamente o pedido ${order.code}?`)) return;
+
+    setMessage("");
+    setDeletingId(order.id);
+    const response = await fetch(`/api/admin/pedidos?id=${encodeURIComponent(order.id)}`, {
+      method: "DELETE"
+    });
+    const data = await response.json().catch(() => ({}));
+    setDeletingId("");
+
+    if (!response.ok) {
+      setMessage(data.error || "Não foi possível excluir o pedido.");
+      return;
+    }
+
+    setMessage(`Pedido ${order.code} excluído.`);
     router.refresh();
   }
 
@@ -168,6 +189,15 @@ export function AdminOrdersManager({ orders }: { orders: AdminOrder[] }) {
                 <MessageCircle className="h-4 w-4" /> Contato
               </a>
             ) : null}
+            <button
+              type="button"
+              onClick={() => deleteOrder(order)}
+              disabled={deletingId === order.id}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-red-400/25 text-xs font-black uppercase tracking-[0.12em] text-red-200 transition hover:border-red-300 hover:text-white disabled:cursor-wait disabled:opacity-55"
+            >
+              {deletingId === order.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              Excluir pedido
+            </button>
           </aside>
         </article>
       ))}

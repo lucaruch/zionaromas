@@ -126,6 +126,37 @@ export async function updateOrderWorkflow(
   });
 }
 
+export async function deleteOrderWorkflow(id: string) {
+  return prisma.$transaction(async (tx) => {
+    const order = await tx.order.findUnique({
+      where: { id },
+      include: { items: true }
+    });
+
+    if (!order) throw new Error("order-not-found");
+
+    if (order.stockReducedAt) {
+      for (const item of order.items) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: { stock: { increment: item.quantity } }
+        });
+      }
+    }
+
+    await tx.order.delete({ where: { id } });
+
+    if (order.addressId) {
+      const linkedOrders = await tx.order.count({ where: { addressId: order.addressId } });
+      if (!linkedOrders) {
+        await tx.address.delete({ where: { id: order.addressId } }).catch(() => null);
+      }
+    }
+
+    return order;
+  });
+}
+
 export async function confirmOrderPaymentByCode(code: string, paymentStatus = "aprovado") {
   const order = await findOrderForPayment({ code });
   if (!order) throw new Error("order-not-found");

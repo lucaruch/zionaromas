@@ -4,6 +4,7 @@ import {
   canonicalItemFingerprint,
   createCheckoutToken,
   createShippingQuoteToken,
+  normalizeCartProductIds,
   verifyCheckoutToken,
   verifyShippingQuoteToken
 } from "../src/lib/checkout-token";
@@ -71,6 +72,19 @@ test("canonical cart fingerprint is stable and quantity-sensitive", () => {
   assert.notEqual(
     canonicalItemFingerprint([{ productId: "a", quantity: 1 }]),
     canonicalItemFingerprint([{ productId: "a", quantity: 2 }])
+  );
+});
+
+test("cart slugs resolve to the same product ids signed by checkout preparation", () => {
+  const requested = normalizeCartProductIds(
+    [{ productId: "afeeq-edp", quantity: 1 }],
+    [{ id: "product-db-id", slug: "afeeq-edp" }]
+  );
+
+  assert.equal(canonicalItemFingerprint(requested), "product-db-id:1");
+  assert.equal(
+    canonicalItemFingerprint([{ productId: "product-db-id", quantity: 1 }]),
+    canonicalItemFingerprint(requested)
   );
 });
 

@@ -92,6 +92,18 @@ export function canonicalItemFingerprint(items: Array<{ productId?: string; slug
     .join("|");
 }
 
+export function normalizeCartProductIds(
+  items: Array<{ productId: string; quantity: number }>,
+  products: Array<{ id: string; slug: string }>
+) {
+  const productIdByKey = new Map(products.flatMap((product) => [[product.id, product.id], [product.slug, product.id]]));
+
+  return items.map((item) => ({
+    productId: productIdByKey.get(item.productId) || item.productId,
+    quantity: item.quantity
+  }));
+}
+
 export function createShippingQuoteToken(
   payload: Omit<ShippingQuoteTokenPayload, "version" | "kind" | "expiresAt">,
   ttlMs = 10 * 60_000

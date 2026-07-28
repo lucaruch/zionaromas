@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isAdminUnlocked } from "@/lib/admin-auth";
-import { updateOrderWorkflow } from "@/lib/order-workflow";
+import { deleteOrderWorkflow, updateOrderWorkflow } from "@/lib/order-workflow";
 import { prisma } from "@/lib/prisma";
 import { isRateLimited } from "@/lib/security";
 
@@ -288,9 +288,17 @@ export async function DELETE(request: Request, { params }: RouteContext) {
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "ID obrigatório." }, { status: 400 });
   try {
+    if (resource === "pedidos") {
+      await deleteOrderWorkflow(id);
+      return NextResponse.json({ ok: true });
+    }
+
     await model.delete({ where: { id } });
     return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json({ error: "Banco de dados indisponível." }, { status: 503 });
+  } catch (error) {
+    if (error instanceof Error && error.message === "order-not-found") {
+      return NextResponse.json({ error: "Pedido não encontrado." }, { status: 404 });
+    }
+    return NextResponse.json({ error: "Não foi possível excluir este registro." }, { status: 503 });
   }
 }
