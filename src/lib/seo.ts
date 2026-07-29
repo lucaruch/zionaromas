@@ -38,7 +38,7 @@ export function productJsonLd(product: {
   rating: number;
   reviews: number;
 }) {
-  return {
+  const jsonLd: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.name,
@@ -52,11 +52,16 @@ export function productJsonLd(product: {
       price: product.price,
       availability: "https://schema.org/InStock",
       url: `${siteUrl}/produto/${product.slug}`
-    },
-    aggregateRating: {
+    }
+  };
+
+  if (product.reviews > 0) {
+    jsonLd.aggregateRating = {
       "@type": "AggregateRating",
       ratingValue: product.rating,
       reviewCount: product.reviews
-    }
-  };
+    };
+  }
+
+  return jsonLd;
 }

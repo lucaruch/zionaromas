@@ -6,6 +6,7 @@ import { ProductCard } from "@/components/commerce/product-card";
 import { ProductGallery } from "@/components/commerce/product-gallery";
 import { Badge } from "@/components/ui/badge";
 import { getCatalogProduct, getCatalogProducts } from "@/lib/catalog";
+import type { Product } from "@/lib/data";
 import { productJsonLd } from "@/lib/seo";
 import { formatCurrency } from "@/lib/utils";
 
@@ -13,6 +14,40 @@ export const dynamic = "force-dynamic";
 
 export function generateStaticParams() {
   return [];
+}
+
+function getUsageImpressions(product: Product) {
+  const primaryNote = product.notes[0] || "assinatura oriental";
+  const secondaryNote = product.notes[1] || "presença marcante";
+  const brandCopy: Record<string, string> = {
+    Afnan: "perfumes intensos, modernos e com ótima projeção",
+    "Al Wataniah": "fragrâncias envolventes, com doçura equilibrada e acabamento oriental",
+    Armaf: "criações versáteis, fáceis de usar e com presença elegante",
+    Lattafa: "perfumes árabes conhecidos pelo rastro, intensidade e excelente valor percebido",
+    Zakat: "fragrâncias de impacto para quem gosta de presença marcante",
+    "French Avenue": "perfumes sofisticados, com leitura contemporânea e boa performance",
+    "Maison Alhambra": "fragrâncias refinadas, com proposta elegante para diferentes ocasiões",
+    Orientica: "perfumes de apresentação marcante, com assinatura luxuosa e envolvente"
+  };
+  const brandProfile = brandCopy[product.brand] || "perfumes árabes selecionados pela curadoria da ZION AROMAS";
+
+  return [
+    {
+      title: "Primeira impressão",
+      text: `${product.name} entrega uma saída bem definida, com ${primaryNote.toLowerCase()} em evidência e evolução confortável na pele.`,
+      label: "Perfil olfativo"
+    },
+    {
+      title: "Presença no uso",
+      text: `Boa escolha para quem procura ${secondaryNote.toLowerCase()}, rastro elegante e uma fragrância que não passa despercebida.`,
+      label: "Desempenho"
+    },
+    {
+      title: "Experiência da marca",
+      text: `${product.brand} é reconhecida por ${brandProfile}. Um perfume indicado para quem valoriza presença, embalagem e custo-benefício.`,
+      label: "Curadoria ZION"
+    }
+  ];
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -36,6 +71,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   if (!product) notFound();
   const products = await getCatalogProducts();
   const related = products.filter((item) => item.categorySlug === product.categorySlug && item.slug !== product.slug).slice(0, 3);
+  const usageImpressions = getUsageImpressions(product);
 
   return (
     <section className="arabic-pattern bg-black pb-20 pt-28 text-white sm:pt-32">
@@ -57,7 +93,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             <Badge className="border-gold/40 bg-gold/10 text-gold">{product.category}</Badge>
             <h1 className="mt-5 break-words font-display text-4xl leading-tight sm:text-5xl md:text-6xl">{product.name}</h1>
             <p className="mt-4 flex flex-wrap items-center gap-2 text-sm text-white/55">
-              <Star className="h-4 w-4 fill-gold text-gold" /> {product.rating} · {product.reviews} avaliações
+              <Star className="h-4 w-4 fill-gold text-gold" /> Perfume árabe selecionado pela curadoria ZION
             </p>
             <p className="mt-6 text-base leading-8 text-white/65 sm:text-lg">{product.shortDescription}</p>
             <div className="mt-7 flex flex-wrap items-end gap-4">
@@ -101,12 +137,12 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             <h2 className="mt-4 font-display text-4xl">Impressões de uso</h2>
           </div>
           <div className="grid gap-4 md:grid-cols-3">
-            {["Fixação impecável", "Entrega elegante", "Fragrância sofisticada"].map((title, index) => (
-              <div key={title} className="border border-gold/18 bg-white/[0.035] p-5 sm:p-6">
+            {usageImpressions.map((impression) => (
+              <div key={impression.title} className="border border-gold/18 bg-white/[0.035] p-5 sm:p-6">
                 <p className="mb-3 flex gap-1 text-gold">{Array.from({ length: 5 }).map((_, star) => <Star key={star} className="h-4 w-4 fill-current" />)}</p>
-                <h3 className="font-semibold">{title}</h3>
-                <p className="mt-2 text-sm leading-6 text-white/58">Fragrância bem apresentada, marcante e com sensação de cuidado em cada detalhe.</p>
-                <p className="mt-4 text-xs uppercase tracking-[0.16em] text-gold/60">Cliente {index + 1}</p>
+                <h3 className="font-semibold">{impression.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-white/58">{impression.text}</p>
+                <p className="mt-4 text-xs uppercase tracking-[0.16em] text-gold/60">{impression.label}</p>
               </div>
             ))}
           </div>
