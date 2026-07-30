@@ -13,7 +13,7 @@ export default function AboutPage() {
               A ZION AROMAS nasceu para aproximar a perfumaria árabe de quem valoriza intensidade, sofisticação e uma assinatura olfativa que permanece.
             </p>
             <p>
-              Nossa seleção reúne marcas reconhecidas no universo oriental, como Lattafa, Maison Alhambra, Armaf, Afnan, Al Wataniah, French Avenue, Orientica e Zakat. Cada fragrância é escolhida pelo equilíbrio entre desempenho, beleza olfativa e valor percebido.
+              Nossa seleção reúne marcas reconhecidas no universo oriental, como Lattafa, Maison Alhambra, Armaf, Afnan, Al Wataniah, French Avenue, Orientica, Zakat e Mawwal Arábia. Cada fragrância é escolhida pelo equilíbrio entre desempenho, beleza olfativa e valor percebido.
             </p>
             <p>
               Atendemos online e em Praia Grande com orientação próxima, embalagem cuidadosa e atenção aos detalhes que transformam a compra em uma experiência de presente, mesmo quando o perfume é para você.

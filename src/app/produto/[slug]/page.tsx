@@ -27,6 +27,7 @@ function getUsageImpressions(product: Product) {
     Zakat: "fragrâncias de impacto para quem gosta de presença marcante",
     "French Avenue": "perfumes sofisticados, com leitura contemporânea e boa performance",
     "Maison Alhambra": "fragrâncias refinadas, com proposta elegante para diferentes ocasiões",
+    "Mawwal Arábia": "body sprays, body creams e perfumes pensados para perfumação em camadas",
     Orientica: "perfumes de apresentação marcante, com assinatura luxuosa e envolvente"
   };
   const brandProfile = brandCopy[product.brand] || "perfumes árabes selecionados pela curadoria da ZION AROMAS";

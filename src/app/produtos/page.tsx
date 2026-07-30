@@ -5,7 +5,7 @@ import { getCatalogCategories, getCatalogProducts } from "@/lib/catalog";
 
 export const metadata: Metadata = {
   title: "Produtos",
-  description: "Perfumes árabes selecionados de marcas como Lattafa, Maison Alhambra, Armaf, Afnan, Al Wataniah e French Avenue."
+  description: "Perfumes árabes selecionados de marcas como Lattafa, Maison Alhambra, Armaf, Afnan, Al Wataniah, French Avenue e Mawwal Arábia."
 };
 
 export const dynamic = "force-dynamic";

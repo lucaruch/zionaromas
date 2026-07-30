@@ -38,6 +38,15 @@ export default async function CategoriesPage() {
                 <p className="mb-3 text-[10px] font-black uppercase tracking-[0.22em] text-gold/70">Marca de perfume árabe</p>
                 <h2 className="font-display text-3xl text-gold">{category.name}</h2>
                 <p className="mt-4 leading-7 text-white/60">{category.description}</p>
+                {category.subtitles.length ? (
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    {category.subtitles.map((subtitle) => (
+                      <span key={subtitle} className="border border-gold/25 bg-gold/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-gold">
+                        {subtitle}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
                 <span className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-gold">
                   Ver perfumes da marca <ArrowRight className="h-4 w-4" />
                 </span>

@@ -9,6 +9,7 @@ export type CatalogCategory = {
   slug: string;
   image: string;
   description: string;
+  subtitles: string[];
 };
 
 function toNumber(value: unknown) {
@@ -105,16 +106,15 @@ export async function getCatalogProduct(slug: string) {
 export async function getCatalogCategories(): Promise<CatalogCategory[]> {
   try {
     const categories = await prisma.category.findMany({
-      orderBy: { name: "asc" },
-      include: { _count: { select: { products: true } } }
+      orderBy: { name: "asc" }
     });
     return categories
-      .filter((category) => category._count.products > 0)
       .map((category) => ({
         name: category.name,
         slug: category.slug,
         image: category.image || `/brands/${category.slug}-real.png`,
-        description: normalizePortugueseCopy(category.description || "Marca de perfume árabe disponível na ZION AROMAS.")
+        description: normalizePortugueseCopy(category.description || "Marca de perfume árabe disponível na ZION AROMAS."),
+        subtitles: category.slug === "mawwal-arabia" ? ["Body Spray", "Body Cream", "Perfumes"] : []
       }));
   } catch {
     return [];

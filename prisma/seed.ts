@@ -25,7 +25,7 @@ async function main() {
     }
   });
 
-  const brandSeeds = [
+  const brandSeeds: Array<{ name: string; slug: string; image: string; description?: string }> = [
     { name: "Maison Alhambra", slug: "maison-alhambra", image: "/brands/maison-alhambra-real.png" },
     { name: "Al Wataniah", slug: "al-wataniah", image: "/brands/al-wataniah-real.png" },
     { name: "Armaf", slug: "armaf", image: "/brands/armaf-real.png" },
@@ -33,8 +33,14 @@ async function main() {
     { name: "Orientica", slug: "orientica", image: "/brands/orientica-real.png" },
     { name: "French Avenue", slug: "french-avenue", image: "/brands/french-avenue-real.png" },
     { name: "Afnan", slug: "afnan", image: "/brands/afnan-real.png" },
-    { name: "Zakat", slug: "zakat", image: "/brands/zakat-real.png" }
-  ] as const;
+    { name: "Zakat", slug: "zakat", image: "/brands/zakat-real.png" },
+    {
+      name: "Mawwal Arábia",
+      slug: "mawwal-arabia",
+      image: "/brand/zion-aromas-logo.png",
+      description: "Marca árabe disponível na ZION AROMAS, com seleção em Body Spray, Body Cream e Perfumes."
+    }
+  ];
 
   await Promise.all(
     brandSeeds.map(({ name, slug, image }) =>
@@ -47,15 +53,15 @@ async function main() {
   );
 
   const categories = await Promise.all(
-    brandSeeds.map(({ name, slug, image }) =>
+    brandSeeds.map(({ name, slug, image, description }) =>
       prisma.category.upsert({
         where: { slug },
-        update: { name, image },
+        update: { name, image, description: description ?? "Marca de perfume árabe disponível na ZION AROMAS." },
         create: {
           name,
           slug,
           image,
-          description: "Marca de perfume árabe disponível na ZION AROMAS."
+          description: description ?? "Marca de perfume árabe disponível na ZION AROMAS."
         }
       })
     )

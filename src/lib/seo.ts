@@ -10,8 +10,8 @@ export const defaultMetadata: Metadata = {
     template: "%s | ZION AROMAS"
   },
   description:
-    "Perfumes árabes selecionados de marcas como Lattafa, Maison Alhambra, Armaf, Afnan, Al Wataniah e French Avenue.",
-  keywords: ["perfume árabe", "perfumes árabes", "Lattafa", "Maison Alhambra", "Armaf", "Afnan", "oud", "âmbar", "ZION AROMAS"],
+    "Perfumes árabes selecionados de marcas como Lattafa, Maison Alhambra, Armaf, Afnan, Al Wataniah, French Avenue e Mawwal Arábia.",
+  keywords: ["perfume árabe", "perfumes árabes", "Lattafa", "Maison Alhambra", "Armaf", "Afnan", "Mawwal Arábia", "oud", "âmbar", "ZION AROMAS"],
   openGraph: {
     type: "website",
     locale: "pt_BR",
