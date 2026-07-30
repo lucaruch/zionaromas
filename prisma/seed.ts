@@ -37,8 +37,8 @@ async function main() {
     {
       name: "Mawwal Arábia",
       slug: "mawwal-arabia",
-      image: "/brand/zion-aromas-logo.png",
-      description: "Marca árabe disponível na ZION AROMAS, com seleção em Body Spray, Body Cream e Perfumes."
+      image: "/brands/mawwal-arabia-real.webp",
+      description: "Marca árabe disponível na ZION AROMAS, com seleção em Perfumes, Body Spray, Body Splash e Body Cream."
     }
   ];
 

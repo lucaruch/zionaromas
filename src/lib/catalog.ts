@@ -114,7 +114,7 @@ export async function getCatalogCategories(): Promise<CatalogCategory[]> {
         slug: category.slug,
         image: category.image || `/brands/${category.slug}-real.png`,
         description: normalizePortugueseCopy(category.description || "Marca de perfume árabe disponível na ZION AROMAS."),
-        subtitles: category.slug === "mawwal-arabia" ? ["Body Spray", "Body Cream", "Perfumes"] : []
+        subtitles: category.slug === "mawwal-arabia" ? ["Perfumes", "Body Spray", "Body Splash", "Body Cream"] : []
       }));
   } catch {
     return [];

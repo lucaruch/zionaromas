@@ -7,7 +7,7 @@ const brandFallbacks: Record<string, string> = {
   "french-avenue": "/brands/french-avenue-real.png",
   afnan: "/brands/afnan-real.png",
   zakat: "/brands/zakat-real.png",
-  "mawwal-arabia": "/brand/zion-aromas-logo.png"
+  "mawwal-arabia": "/brands/mawwal-arabia-real.webp"
 };
 
 const defaultFallback = "/brand/zion-aromas-logo.png";
